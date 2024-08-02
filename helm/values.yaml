@@ -1,0 +1,21 @@
+app:
+  name: ui
+  image:
+    repository: "onecx/onecx-search-config-ui"
+  routing:
+    enabled: true
+    path: /mfe/search-config/
+
+  operator:
+    # Microfrontend
+    microfrontend:
+      enabled: true
+      specs:
+        search-config:
+          exposedModule: "./OneCXSearchConfigComponent"
+          description: "Search config component"
+          type: COMPONENT
+          technology: WEBCOMPONENTMODULE
+          remoteName: onecx-search-config
+          tagName: ocx-search-config-component
+# PIPE Config
