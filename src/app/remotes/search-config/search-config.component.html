@@ -1,1 +1,16 @@
-<p>search config remote component</p>
+<div *ngIf="formGroup">
+  <form [formGroup]="formGroup">
+    <div *ngIf="searchConfigs$ | async as searchConfigs">
+      <div *ngIf="searchConfigs.length > 0">
+        <p-dropdown
+          id="searchConfigDropdown"
+          formControlName="searchConfig"
+          [options]="searchConfigs"
+          optionLabel="name"
+          [showClear]="true"
+          (onChange)="onSearchConfigChange($event)"
+        ></p-dropdown>
+      </div>
+    </div>
+  </form>
+</div>
