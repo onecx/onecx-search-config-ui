@@ -55,10 +55,10 @@ const config = withModuleFederationPlugin({
       requiredVersion: 'auto',
       includeSecondaries: true
     },
-    '@onecx/keycloak-auth': {
-      requiredVersion: 'auto',
-      includeSecondaries: true
-    },
+    // '@onecx/keycloak-auth': {
+    //   requiredVersion: 'auto',
+    //   includeSecondaries: true
+    // },
     '@onecx/portal-integration-angular': {
       requiredVersion: 'auto',
       includeSecondaries: true

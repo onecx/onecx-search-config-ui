@@ -1,0 +1,10 @@
+{
+  "VALIDATION": {
+    "ERRORS": {
+      "EMPTY_REQUIRED_FIELD": "This field is required.",
+      "MAXIMUM_LENGTH": "Only {{chars}} characters are allowed.",
+      "MINIMUM_LENGTH": "At least {{chars}} characters are required.",
+      "PATTERN_ERROR": "The input does not match the required pattern"
+    }
+  }
+}
