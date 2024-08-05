@@ -6,5 +6,24 @@
       "MINIMUM_LENGTH": "At least {{chars}} characters are required.",
       "PATTERN_ERROR": "The input does not match the required pattern"
     }
+  },
+  "SEARCH_CONFIG": {
+    "SAVE": "Save config",
+    "PLACEHOLDER": "Choose search config",
+    "CREATE_EDIT_PLACEHOLDER": "Please enter the name of the search configuration",
+    "SAVE_COLUMNS_OPTION": "Do you want to save the shown columns?",
+    "SAVE_INPUT_FIELDS_OPTION": "Do you want to save the input values from the input fields?",
+    "CREATE_EDIT_DIALOG": {
+      "CREATE_HEADER": "Create search config",
+      "EDIT_HEADER": "Edit search config",
+      "CONFIRM": "Confirm",
+      "CANCEL": "Cancel",
+      "CREATE_SUCCESS": "Successfully added search config",
+      "CREATE_FAILURE": "Failed to add search config",
+      "EDIT_SUCCESS": "Successfully edited search config",
+      "EDIT_FAILURE": "Failed to edit search config"
+    },
+    "DELETE_SUCCESS": "Successfully deleted search config",
+    "DELETE_FAILURE": "Failed to delete search config"
   }
 }

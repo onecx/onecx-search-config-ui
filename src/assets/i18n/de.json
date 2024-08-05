@@ -6,5 +6,24 @@
       "MINIMUM_LENGTH": "Es sind mindestens {{chars}} Zeichen erforderlich.",
       "PATTERN_ERROR": "Die Eingabe entspricht nicht dem benötigten Format."
     }
+  },
+  "SEARCH_CONFIG": {
+    "SAVE": "DE: Save config",
+    "PLACEHOLDER": "DE: Choose search config",
+    "CREATE_EDIT_PLACEHOLDER": "Bitte geben Sie den Namen der Suchkonfiguration an.",
+    "SAVE_COLUMNS_OPTION": "Möchten Sie die angezeigten Spalten speichern?",
+    "SAVE_INPUT_FIELDS_OPTION": "Möchten Sie die Werte aus den Suchfeldern speichern?",
+    "CREATE_EDIT_DIALOG": {
+      "CREATE_HEADER": "DE: Create search config",
+      "EDIT_HEADER": "DE: Edit search config",
+      "CONFIRM": "DE: Confirm",
+      "CANCEL": "DE: Cancel",
+      "CREATE_SUCCESS": "DE: Successfully added search config",
+      "CREATE_FAILURE": "DE: Failed to add search config",
+      "EDIT_SUCCESS": "DE: Successfully edited search config",
+      "EDIT_FAILURE": "DE: Failed to edit search config"
+    },
+    "DELETE_SUCCESS": "DE: Successfully deleted search config",
+    "DELETE_FAILURE": "DE: Failed to delete search config"
   }
 }

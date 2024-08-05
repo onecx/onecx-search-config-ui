@@ -1,16 +1,20 @@
-<div *ngIf="formGroup">
-  <form [formGroup]="formGroup">
-    <div *ngIf="searchConfigs$ | async as searchConfigs">
-      <div *ngIf="searchConfigs.length > 0">
-        <p-dropdown
-          id="searchConfigDropdown"
-          formControlName="searchConfig"
-          [options]="searchConfigs"
-          optionLabel="name"
-          [showClear]="true"
-          (onChange)="onSearchConfigChange($event)"
-        ></p-dropdown>
+<div class="flex gap-2 justify-content-end align-content-center align-items-center">
+  <div *ngIf="formGroup">
+    <form [formGroup]="formGroup">
+      <div *ngIf="searchConfigs$ | async as searchConfigs">
+        <div *ngIf="searchConfigs.length > 0">
+          <p-dropdown
+            id="searchConfigDropdown"
+            formControlName="searchConfig"
+            [options]="searchConfigs"
+            optionLabel="name"
+            [showClear]="true"
+            [placeholder]="'SEARCH_CONFIG.PLACEHOLDER' | translate"
+            (onChange)="onSearchConfigChange($event)"
+          ></p-dropdown>
+        </div>
       </div>
-    </div>
-  </form>
+    </form>
+  </div>
+  <p-button [label]="'SEARCH_CONFIG.SAVE' | translate" (onClick)="saveSearchConfig()"></p-button>
 </div>
