@@ -8,7 +8,7 @@
     }
   },
   "SEARCH_CONFIG": {
-    "SAVE": "DE: Save config",
+    "CREATE": "DE: Create search config",
     "PLACEHOLDER": "DE: Choose search config",
     "CREATE_EDIT_PLACEHOLDER": "Bitte geben Sie den Namen der Suchkonfiguration an.",
     "SAVE_COLUMNS_OPTION": "Möchten Sie die angezeigten Spalten speichern?",

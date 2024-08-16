@@ -2,19 +2,49 @@
   <div *ngIf="formGroup">
     <form [formGroup]="formGroup">
       <div *ngIf="searchConfigs$ | async as searchConfigs">
-        <div *ngIf="searchConfigs.length > 0">
-          <p-dropdown
-            id="searchConfigDropdown"
-            formControlName="searchConfig"
-            [options]="searchConfigs"
-            optionLabel="name"
-            [showClear]="true"
-            [placeholder]="'SEARCH_CONFIG.PLACEHOLDER' | translate"
-            (onChange)="onSearchConfigChange($event)"
-          ></p-dropdown>
-        </div>
+        <p-dropdown
+          id="searchConfigDropdown"
+          formControlName="searchConfig"
+          [options]="[addSearchConfigOption].concat(searchConfigs)"
+          optionLabel="name"
+          [placeholder]="'SEARCH_CONFIG.PLACEHOLDER' | translate"
+          (onChange)="onSearchConfigChange($event)"
+          appendTo="body"
+        >
+          <ng-template let-config pTemplate="selectedItem">
+            <div class="flex align-items-center gap-2" *ngIf="!config.id">
+              {{ 'SEARCH_CONFIG.PLACEHOLDER' | translate }}
+            </div>
+            <div class="flex align-items-center gap-2" *ngIf="config.id">{{ config.name }}</div>
+          </ng-template>
+          <ng-template let-config pTemplate="item">
+            <div class="flex align-items-center gap-2" *ngIf="!config.id">
+              <i class="{{ plusIcon }}"></i> {{ 'SEARCH_CONFIG.CREATE' | translate }}
+            </div>
+            <div class="flex align-items-center gap-2 justify-content-between" *ngIf="config.id">
+              <div>{{ config.name }}</div>
+              <div>
+                <button
+                  pButton
+                  type="button"
+                  class="p-button-rounded font-medium p-button-text p-button-icon-only"
+                  (click)="editSearchConfig($event, config)"
+                >
+                  <span class="{{ editIcon }}"></span>
+                </button>
+                <button
+                  pButton
+                  type="button"
+                  class="p-button-rounded font-medium p-button-text p-button-icon-only"
+                  (click)="deleteSearchConfig($event, config)"
+                >
+                  <span class="{{ deleteIcon }}"></span>
+                </button>
+              </div>
+            </div>
+          </ng-template>
+        </p-dropdown>
       </div>
     </form>
   </div>
-  <p-button [label]="'SEARCH_CONFIG.SAVE' | translate" (onClick)="saveSearchConfig()"></p-button>
 </div>
