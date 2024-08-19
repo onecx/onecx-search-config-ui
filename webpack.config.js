@@ -5,9 +5,10 @@ const config = withModuleFederationPlugin({
   name: 'onecx-search-config-ui',
   filename: 'remoteEntry.js',
   exposes: {
-    './OneCXSearchConfigComponent': 'src/app/remotes/search-config/search-config.component.bootstrap.ts'
+    './OneCXSearchConfigComponent': 'src/app/remotes/search-config/search-config.component.bootstrap.ts',
+    './OneCXColumnGroupSelectionComponent':
+      'src/app/remotes/column-group-selection/column-group-selection.component.bootstrap.ts'
   },
-  // TODO: Share correct packages
   shared: share({
     '@angular/core': { requiredVersion: 'auto', includeSecondaries: true },
     '@angular/forms': {

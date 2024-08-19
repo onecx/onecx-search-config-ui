@@ -25,5 +25,39 @@
     },
     "DELETE_SUCCESS": "DE: Successfully deleted search config",
     "DELETE_FAILURE": "DE: Failed to delete search config"
+  },
+  "OCX_CUSTOM_GROUP_COLUMN_SELECTOR": {
+    "DROPDOWN_LABEL": "Spaltengruppe",
+    "OPEN_BUTTON_DETAIL": "Dialog zur Auswahl einer benutzerdefinierten Gruppe öffnen",
+    "ACTIVE_COLUMNS_LABEL": "Aktive Spalten",
+    "INACTIVE_COLUMNS_LABEL": "Inaktive Spalten",
+    "SAVE_BUTTON_LABEL": "Speichern",
+    "CANCEL_BUTTON_LABEL": "Abbrechen",
+    "DIALOG_TITLE": "Spalten für benutzerdefinierte Gruppe auswählen",
+    "CONFIGURE_ACTION_COLUMN": {
+      "TITLE": "Aktionsspalte konfigurieren",
+      "FREEZE": "Aktionsspalte immer anzeigen",
+      "POSITION": "Position der Aktionsspalte",
+      "YES": "Ja",
+      "NO": "Nein",
+      "LEFT": "Links",
+      "RIGHT": "Rechts"
+    },
+    "ARIA_LABELS": {
+      "UP": "Spalte nach oben verschieben",
+      "TOP": "Spalte an den Anfang verschieben",
+      "DOWN": "Spalte nach unten verschieben",
+      "BOTTOM": "Spalte ans Ende verschieben",
+      "RIGHT": "Spalte als inaktiv setzen",
+      "ALL_RIGHT": "Alle Spalten als inaktiv setzen",
+      "LEFT": "Spalte als aktiv setzen",
+      "ALL_LEFT": "Alle Spalten als aktiv setzen",
+      "CLOSE": "Dialog schließen"
+    },
+    "PREDEFINED_GROUP": {
+      "DEFAULT": "Standard",
+      "EXTENDED": "Erweitert",
+      "FULL": "Vollständig"
+    }
   }
 }

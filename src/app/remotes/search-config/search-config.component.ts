@@ -22,6 +22,7 @@ import { BehaviorSubject, ReplaySubject, catchError, combineLatest, filter, map,
 import {
   Configuration,
   CreateSearchConfigRequest,
+  SearchConfig,
   SearchConfigAPIService,
   SearchConfigInfo,
   UpdateSearchConfigRequest
@@ -36,11 +37,13 @@ import {
 } from './create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component'
 import { DropdownModule } from 'primeng/dropdown'
 import { PrimeIcons } from 'primeng/api'
+import { EventsTopic } from '@onecx/integration-interface'
 
 @Component({
   selector: 'app-ocx-search-config',
   standalone: true,
   templateUrl: './search-config.component.html',
+  styleUrls: ['./search-config.component.scss'],
   imports: [
     AngularRemoteComponentsModule,
     CommonModule,
@@ -71,6 +74,8 @@ import { PrimeIcons } from 'primeng/api'
   ]
 })
 export class OneCXSearchConfigComponent implements ocxRemoteComponent, ocxRemoteWebcomponent, OnChanges, OnInit {
+  private eventsTopic$ = new EventsTopic()
+
   private _pageName = new BehaviorSubject<string>('')
   @Input() get pageName(): string {
     return this._pageName.getValue()
@@ -135,6 +140,16 @@ export class OneCXSearchConfigComponent implements ocxRemoteComponent, ocxRemote
     this.baseUrl.next(config.baseUrl)
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    console.log(changes)
+
+    if (this.configSelected) this.configSelected = false
+    else if (this.hasInputsChanged(changes) || this.hasColumnsChanged(changes)) {
+      this.changeSearchConfig(undefined)
+      this.setSearchConfig(null)
+    }
+  }
+
   onSearchConfigChange(event: { originalEvent: Event; value: SearchConfigInfo }) {
     if (!event.value.id) {
       this.saveSearchConfig()
@@ -148,22 +163,29 @@ export class OneCXSearchConfigComponent implements ocxRemoteComponent, ocxRemote
         // TODO: Fix openAPI
         (config: any) => {
           this.configSelected = true
-          this.searchConfigSelected.emit({
-            inputValues: config.values,
-            displayedColumns: config.columns
-          })
+          this.changeSearchConfig(config)
         }
       )
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    console.log(changes)
-
-    if (this.configSelected) this.configSelected = false
-    else if (this.hasInputsChanged(changes) || this.hasColumnsChanged(changes)) {
+  changeSearchConfig(config: SearchConfig | SearchConfigInfo | undefined) {
+    if (!config) {
       this.searchConfigSelected.emit(undefined)
-      this.setSearchConfig(null)
+      return
     }
+
+    if ('values' in config && 'columns' in config) {
+      this.searchConfigSelected.emit({
+        inputValues: config.values,
+        displayedColumns: config.columns
+      })
+    }
+    this.eventsTopic$.publish({
+      type: 'searchConfig#configChange',
+      payload: {
+        name: config.name
+      }
+    })
   }
 
   saveSearchConfig() {
@@ -218,7 +240,9 @@ export class OneCXSearchConfigComponent implements ocxRemoteComponent, ocxRemote
       .subscribe((result) => {
         if (result) {
           this.searchConfigs$.next(result.configs)
-          this.setSearchConfig(this.searchConfigs$.getValue().find((config) => config.name === result.newConfigName))
+          const searchConfig = this.searchConfigs$.getValue().find((config) => config.name === result.newConfigName)
+          this.setSearchConfig(searchConfig)
+          this.changeSearchConfig(searchConfig)
         }
       })
   }
@@ -320,14 +344,22 @@ export class OneCXSearchConfigComponent implements ocxRemoteComponent, ocxRemote
             summaryKey: 'SEARCH_CONFIG.DELETE_SUCCESS'
           })
           this.searchConfigs$.next(this.searchConfigs$.getValue().filter((config) => config.id !== searchConfigInfo.id))
+          this.eventsTopic$.publish({
+            type: 'searchConfig#configDelete',
+            payload: {
+              name: searchConfigInfo.id
+            }
+          })
         }
       })
   }
 
   private hasInputsChanged(changes: SimpleChanges): boolean {
     return (
+      changes['currentInputFieldValues'] &&
+      !changes['currentInputFieldValues'].firstChange &&
       JSON.stringify(changes['currentInputFieldValues'].currentValue) !==
-      JSON.stringify(changes['currentInputFieldValues'].previousValue)
+        JSON.stringify(changes['currentInputFieldValues'].previousValue)
     )
   }
 
