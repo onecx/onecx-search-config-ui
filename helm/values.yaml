@@ -1,0 +1,34 @@
+app:
+  name: ui
+  image:
+    repository: 'onecx/search-config-ui'
+  routing:
+    enabled: true
+    path: /mfe/searchConfig/
+
+  operator:
+    # Microfrontend
+    microfrontend:
+      enabled: true
+      specs:
+        main:
+          exposedModule: './SearchConfigModule'
+          description: 'OneCX SearchConfig Module'
+          note: 'OneCX SearchConfig UI module auto import via MF operator'
+          type: MODULE
+          technology: WEBCOMPONENTMODULE
+          remoteName: search-config
+          tagName: search-config-webcomponent
+    # Permission
+    permission:
+      enabled: true
+      spec:
+        permissions:
+    # Keycloak
+    keycloak:
+      client:
+        enabled: true
+        spec:
+          kcConfig:
+            clientId: 'search-config-ui'
+# PIPE Config

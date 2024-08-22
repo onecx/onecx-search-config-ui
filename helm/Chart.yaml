@@ -1,0 +1,17 @@
+apiVersion: v2
+name: search-config-ui
+version: 0.0.0
+description: search-config UI
+home: https://github.com/onecx/search-config-ui
+keywords:
+  - search-config
+sources:
+  - https://github.com/onecx/search-config-ui
+maintainers:
+  - name: OneCX Developer Team
+    email: tkit_dev@1000kit.org
+dependencies:
+  - name: helm-angular-app
+    version: ^0
+    repository: oci://ghcr.io/onecx/charts
+    alias: app
