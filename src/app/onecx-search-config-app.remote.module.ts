@@ -90,13 +90,13 @@ effectProvidersForWorkaround.forEach((p) => (p.ɵprov.providedIn = null));
     },
   ],
 })
-export class SearchConfigModule implements DoBootstrap {
+export class OnecxSearchConfigModule implements DoBootstrap {
   constructor(private injector: Injector) {}
 
   ngDoBootstrap(): void {
     createAppEntrypoint(
       AppEntrypointComponent,
-      'search-config-webcomponent',
+      'onecx-search-config-webcomponent',
       this.injector
     );
   }

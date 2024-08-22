@@ -1,6 +1,6 @@
 ---
 openapi: 3.0.3
 info:
-  title: search-config-bff
+  title: onecx-search-config-bff
   version: '1.0'
 paths: {}
