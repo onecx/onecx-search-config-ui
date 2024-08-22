@@ -8,7 +8,7 @@
     }
   },
   "SEARCH_CONFIG": {
-    "CREATE": "DE: Create search config",
+    "CREATE": "DE: Add search config",
     "PLACEHOLDER": "DE: Choose search config",
     "CREATE_EDIT_PLACEHOLDER": "Bitte geben Sie den Namen der Suchkonfiguration an.",
     "SAVE_COLUMNS_OPTION": "Möchten Sie die angezeigten Spalten speichern?",
@@ -24,7 +24,8 @@
       "EDIT_FAILURE": "DE: Failed to edit search config"
     },
     "DELETE_SUCCESS": "DE: Successfully deleted search config",
-    "DELETE_FAILURE": "DE: Failed to delete search config"
+    "DELETE_FAILURE": "DE: Failed to delete search config",
+    "FETCH_FAILURE": "DE: Failed to load search config"
   },
   "OCX_CUSTOM_GROUP_COLUMN_SELECTOR": {
     "DROPDOWN_LABEL": "Spaltengruppe",

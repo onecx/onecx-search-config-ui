@@ -19,7 +19,7 @@ import {
   ocxRemoteWebcomponent,
   provideTranslateServiceForRoot
 } from '@onecx/angular-remote-components'
-import { BehaviorSubject, Observable, ReplaySubject, combineLatest, filter, map, mergeMap, tap } from 'rxjs'
+import { BehaviorSubject, Observable, ReplaySubject, combineLatest, filter, map, mergeMap } from 'rxjs'
 import { SharedModule } from 'src/app/shared/shared.module'
 import { FormsModule, ReactiveFormsModule } from '@angular/forms'
 import { ButtonModule } from 'primeng/button'
@@ -28,6 +28,7 @@ import { Configuration, SearchConfigAPIService, SearchConfigInfo } from 'src/app
 import { environment } from 'src/environments/environment'
 import { EventsTopic } from '@onecx/integration-interface'
 
+// TODO: its giving injection error
 export function createTranslateLoader(
   httpClient: HttpClient,
   baseUrl: ReplaySubject<string>,
@@ -108,7 +109,7 @@ export class OneCXColumnGroupSelectionComponent implements ocxRemoteComponent, o
   set columns(value: DataTableColumn[]) {
     this.columns$.next(value)
   }
-  // TODO: Translations not working because no access to translations
+
   @Input() defaultGroupKey = ''
   @Input() customGroupKey = ''
   @Input() placeholderKey = ''
@@ -118,30 +119,68 @@ export class OneCXColumnGroupSelectionComponent implements ocxRemoteComponent, o
 
   allGroupKeys$: Observable<string[]> | undefined
   searchConfigs$: BehaviorSubject<SearchConfigInfo[]> = new BehaviorSubject<SearchConfigInfo[]>([])
+  searchConfigsWithColumns$: Observable<SearchConfigInfo[]>
 
   constructor(
     @Inject(BASE_URL) private baseUrl: ReplaySubject<string>,
     private userService: UserService,
     private translateService: TranslateService,
-    private searchConfigService: SearchConfigAPIService
+    private searchConfigService: SearchConfigAPIService,
+    private appStateService: AppStateService
   ) {
     this.userService.lang$.subscribe((lang) => this.translateService.use(lang))
+
     this.eventsTopic$.pipe(filter((e) => e.type === 'searchConfig#configChange')).subscribe((e) => {
-      const data: any = e.payload
-      this.selectedGroupKey = data.name
-      this.changeGroupSelection({ value: data.name })
+      console.log(e)
+      const payload: any = e.payload
+      const config: SearchConfigInfo = payload.config
+
+      if (config && config.columns.length > 0) {
+        this.selectedGroupKey = config.name
+        this.changeGroupSelection({ value: config.name })
+      } else {
+        if (this.isSearchConfigSelected()) {
+          this.selectedGroupKey = this.customGroupKey
+          this.changeGroupSelection({ value: this.customGroupKey })
+        }
+      }
     })
 
-    combineLatest([this.baseUrl, this._pageName])
+    this.eventsTopic$.pipe(filter((e) => e.type === 'searchConfig#configCreate')).subscribe((e) => {
+      // const payload: any = e.payload
+      // const config: SearchConfigInfo = payload.config
+    })
+
+    this.eventsTopic$.pipe(filter((e) => e.type === 'searchConfig#configUpdate')).subscribe((e) => {
+      // const payload: any = e.payload
+      // const config: SearchConfigInfo = payload.config
+    })
+
+    this.eventsTopic$.pipe(filter((e) => e.type === 'searchConfig#configDelete')).subscribe((e) => {
+      // const payload: any = e.payload
+      // const config: SearchConfigInfo = payload.config
+    })
+
+    combineLatest([this.baseUrl, this._pageName, this.appStateService.currentMfe$.asObservable()])
       .pipe(
-        filter(([_, pageName]) => pageName.length > 0),
-        mergeMap(([_, pageName]) => {
+        filter(([_, pageName, currentMfe]) => pageName.length > 0),
+        mergeMap(([_, pageName, currentMfe]) => {
           return this.searchConfigService
-            .getSearchConfigInfos({ page: pageName })
+            .getSearchConfigInfos({
+              getSearchConfigInfosRequest: {
+                appId: currentMfe.appId,
+                page: pageName,
+                productName: currentMfe.productName
+              }
+            })
             .pipe(map((response) => response.configs))
         })
       )
       .subscribe(this.searchConfigs$)
+
+    this.searchConfigsWithColumns$ = this.searchConfigs$
+      .asObservable()
+      .pipe(map((configs) => configs.filter((config) => config.columns.length > 0)))
   }
 
   @Input() set ocxRemoteComponentConfig(config: RemoteComponentConfig) {
@@ -156,19 +195,17 @@ export class OneCXColumnGroupSelectionComponent implements ocxRemoteComponent, o
   }
 
   ngOnInit() {
-    this.allGroupKeys$ = combineLatest([this.columns$, this.selectedGroupKey$, this.searchConfigs$]).pipe(
-      tap(([c, s, configs]) => console.log(c, s, configs)),
+    this.allGroupKeys$ = combineLatest([this.columns$, this.selectedGroupKey$, this.searchConfigsWithColumns$]).pipe(
       map(([columns, selectedGroupKey, configs]) =>
         columns
           .map((keys) => keys.predefinedGroupKeys || [])
           .flat()
           .concat([this.defaultGroupKey])
           .concat([selectedGroupKey])
-          .concat(configs.map((config) => config.name))
+          .concat(configs.map((config) => config.name ?? ''))
           .filter((value) => !!value)
           .filter((value, index, self) => self.indexOf(value) === index && value != null)
-      ),
-      tap((v) => console.log(v))
+      )
     )
   }
 
@@ -183,15 +220,8 @@ export class OneCXColumnGroupSelectionComponent implements ocxRemoteComponent, o
       return
     }
 
-    this.searchConfigService
-      .getSearchConfig({
-        id: searchConfig.id
-        // TODO: Fix openAPI
-      })
-      .subscribe((config: any) => {
-        const activeColumns = this.columns.filter((c) => config.columns.includes(c.id))
-        this.groupSelectionChanged.emit({ activeColumns, groupKey: event.value })
-      })
+    const activeColumns = this.columns.filter((c) => searchConfig.columns.includes(c.id))
+    this.groupSelectionChanged.emit({ activeColumns, groupKey: event.value })
   }
 
   clearGroupSelection() {
@@ -200,5 +230,9 @@ export class OneCXColumnGroupSelectionComponent implements ocxRemoteComponent, o
       activeColumns = this.columns.filter((column) => column.predefinedGroupKeys?.includes(this.defaultGroupKey))
     }
     this.groupSelectionChanged.emit({ activeColumns, groupKey: this.defaultGroupKey })
+  }
+
+  private isSearchConfigSelected() {
+    return this.searchConfigs$.getValue().find((c) => c.name === this.selectedGroupKey)
   }
 }

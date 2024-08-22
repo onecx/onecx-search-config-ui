@@ -1,7 +1,7 @@
 <div class="flex gap-2 justify-content-end align-content-center align-items-center">
   <div *ngIf="formGroup">
     <form [formGroup]="formGroup">
-      <div *ngIf="searchConfigs$ | async as searchConfigs">
+      <div *ngIf="searchConfigsWithInputs$ | async as searchConfigs">
         <p-dropdown
           id="searchConfigDropdown"
           formControlName="searchConfig"
@@ -12,23 +12,28 @@
           appendTo="body"
         >
           <ng-template let-config pTemplate="selectedItem">
-            <div class="flex align-items-center gap-2" *ngIf="!config.id">
+            <div class="flex align-items-center gap-2" *ngIf="config.id === addSearchConfigOption.id">
               {{ 'SEARCH_CONFIG.PLACEHOLDER' | translate }}
             </div>
-            <div class="flex align-items-center gap-2" *ngIf="config.id">{{ config.name }}</div>
+            <div class="flex align-items-center gap-2" *ngIf="config.id !== addSearchConfigOption.id">
+              {{ config.name }}
+            </div>
           </ng-template>
           <ng-template let-config pTemplate="item">
-            <div class="flex align-items-center gap-2" *ngIf="!config.id">
+            <div class="flex align-items-center gap-2" *ngIf="config.id === addSearchConfigOption.id">
               <i class="{{ plusIcon }}"></i> {{ 'SEARCH_CONFIG.CREATE' | translate }}
             </div>
-            <div class="flex align-items-center gap-2 justify-content-between" *ngIf="config.id">
+            <div
+              class="flex align-items-center gap-2 justify-content-between h-2rem"
+              *ngIf="config.id !== addSearchConfigOption.id"
+            >
               <div>{{ config.name }}</div>
-              <div>
+              <div *ngIf="!config.isReadonly">
                 <button
                   pButton
                   type="button"
                   class="p-button-rounded font-medium p-button-text p-button-icon-only"
-                  (click)="editSearchConfig($event, config)"
+                  (click)="onSearchConfigEdit($event, config)"
                 >
                   <span class="{{ editIcon }}"></span>
                 </button>
@@ -36,7 +41,7 @@
                   pButton
                   type="button"
                   class="p-button-rounded font-medium p-button-text p-button-icon-only"
-                  (click)="deleteSearchConfig($event, config)"
+                  (click)="onSearchConfigDelete($event, config)"
                 >
                   <span class="{{ deleteIcon }}"></span>
                 </button>

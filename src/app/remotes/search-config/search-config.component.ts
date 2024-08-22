@@ -2,8 +2,9 @@ import { CommonModule, Location } from '@angular/common'
 import { HttpClient } from '@angular/common/http'
 import { Component, EventEmitter, Inject, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core'
 import { TranslateLoader, TranslateModule, TranslateService } from '@ngx-translate/core'
-import { DataTableColumn, createRemoteComponentTranslateLoader } from '@onecx/angular-accelerator'
+import { createRemoteComponentTranslateLoader } from '@onecx/angular-accelerator'
 import {
+  AppStateService,
   PortalCoreModule,
   PortalDialogService,
   PortalMessageService,
@@ -18,7 +19,18 @@ import {
   ocxRemoteWebcomponent,
   provideTranslateServiceForRoot
 } from '@onecx/angular-remote-components'
-import { BehaviorSubject, ReplaySubject, catchError, combineLatest, filter, map, mergeMap, of } from 'rxjs'
+import {
+  BehaviorSubject,
+  Observable,
+  ReplaySubject,
+  catchError,
+  combineLatest,
+  filter,
+  map,
+  mergeMap,
+  of,
+  withLatestFrom
+} from 'rxjs'
 import {
   Configuration,
   CreateSearchConfigRequest,
@@ -37,7 +49,7 @@ import {
 } from './create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component'
 import { DropdownModule } from 'primeng/dropdown'
 import { PrimeIcons } from 'primeng/api'
-import { EventsTopic } from '@onecx/integration-interface'
+import { EventsTopic, MfeInfo } from '@onecx/integration-interface'
 
 @Component({
   selector: 'app-ocx-search-config',
@@ -84,22 +96,22 @@ export class OneCXSearchConfigComponent implements ocxRemoteComponent, ocxRemote
     this._pageName.next(value)
   }
   @Input() currentInputFieldValues: { [key: string]: unknown } = {}
-  @Input() displayedColumns: DataTableColumn[] = []
+  @Input() displayedColumns: string[] = []
   @Input() searchConfigSelected: EventEmitter<{
     inputValues: { [key: string]: unknown }
     displayedColumns: string[]
   }> = new EventEmitter()
-  configSelected = false
 
-  addSearchConfigOption = {
-    id: '',
-    name: ''
+  searchConfigs$: BehaviorSubject<SearchConfigInfo[]> = new BehaviorSubject<SearchConfigInfo[]>([])
+  searchConfigsWithInputs$: Observable<SearchConfigInfo[]>
+  formGroup: FormGroup | undefined
+
+  addSearchConfigOption: any = {
+    id: 'ocx-add-search-config-option'
   }
   plusIcon = PrimeIcons.PLUS
   editIcon = PrimeIcons.PENCIL
   deleteIcon = PrimeIcons.TRASH
-  searchConfigs$: BehaviorSubject<SearchConfigInfo[]> = new BehaviorSubject<SearchConfigInfo[]>([])
-  formGroup: FormGroup | undefined
 
   constructor(
     @Inject(BASE_URL) private baseUrl: ReplaySubject<string>,
@@ -107,20 +119,33 @@ export class OneCXSearchConfigComponent implements ocxRemoteComponent, ocxRemote
     private translateService: TranslateService,
     private searchConfigService: SearchConfigAPIService,
     private portalDialogService: PortalDialogService,
-    private portalMessageService: PortalMessageService
+    private portalMessageService: PortalMessageService,
+    private appStateService: AppStateService
   ) {
     this.userService.lang$.subscribe((lang) => this.translateService.use(lang))
 
-    combineLatest([this.baseUrl, this._pageName])
+    combineLatest([this.baseUrl, this._pageName, this.appStateService.currentMfe$.asObservable()])
       .pipe(
-        filter(([_, pageName]) => pageName.length > 0),
-        mergeMap(([_, pageName]) => {
+        filter(([_, pageName, currentMfe]) => pageName.length > 0),
+        mergeMap(([_, pageName, currentMfe]) => {
           return this.searchConfigService
-            .getSearchConfigInfos({ page: pageName })
+            .getSearchConfigInfos({
+              getSearchConfigInfosRequest: {
+                appId: currentMfe.appId,
+                page: pageName,
+                productName: currentMfe.productName
+              }
+            })
             .pipe(map((response) => response.configs))
         })
       )
       .subscribe(this.searchConfigs$)
+
+    this.searchConfigsWithInputs$ = this.searchConfigs$.asObservable().pipe(
+      map((configs) => {
+        return configs.filter((config) => Object.keys(config.values).length > 0)
+      })
+    )
   }
 
   ngOnInit(): void {
@@ -142,53 +167,36 @@ export class OneCXSearchConfigComponent implements ocxRemoteComponent, ocxRemote
 
   ngOnChanges(changes: SimpleChanges): void {
     console.log(changes)
-
-    if (this.configSelected) this.configSelected = false
-    else if (this.hasInputsChanged(changes) || this.hasColumnsChanged(changes)) {
-      this.changeSearchConfig(undefined)
-      this.setSearchConfig(null)
+    if (this.hasInputsChanged(changes) || this.hasColumnsChanged(changes)) {
+      this.searchConfigSelected.emit(undefined)
+      this.setSearchConfigControl(undefined)
+      this.eventsTopic$.publish({
+        type: 'searchConfig#configChange',
+        payload: {
+          config: null
+        }
+      })
     }
   }
 
   onSearchConfigChange(event: { originalEvent: Event; value: SearchConfigInfo }) {
-    if (!event.value.id) {
-      this.saveSearchConfig()
+    if (event.value.id === this.addSearchConfigOption.id) {
+      return this.onSearchConfigSave()
     }
 
-    this.searchConfigService
-      .getSearchConfig({
-        id: event.value.id
-      })
-      .subscribe(
-        // TODO: Fix openAPI
-        (config: any) => {
-          this.configSelected = true
-          this.changeSearchConfig(config)
-        }
-      )
-  }
-
-  changeSearchConfig(config: SearchConfig | SearchConfigInfo | undefined) {
-    if (!config) {
-      this.searchConfigSelected.emit(undefined)
-      return
-    }
-
-    if ('values' in config && 'columns' in config) {
-      this.searchConfigSelected.emit({
-        inputValues: config.values,
-        displayedColumns: config.columns
-      })
-    }
+    this.searchConfigSelected.emit({
+      inputValues: event.value.values,
+      displayedColumns: event.value.columns
+    })
     this.eventsTopic$.publish({
       type: 'searchConfig#configChange',
       payload: {
-        name: config.name
+        config: event.value
       }
     })
   }
 
-  saveSearchConfig() {
+  onSearchConfigSave() {
     this.portalDialogService
       .openDialog<CreateOrEditSearchDialogContent>(
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_HEADER',
@@ -197,169 +205,193 @@ export class OneCXSearchConfigComponent implements ocxRemoteComponent, ocxRemote
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CANCEL'
       )
       .pipe(
-        mergeMap((dialogResult) => {
+        withLatestFrom(this.appStateService.currentMfe$.asObservable()),
+        mergeMap(([dialogResult, currentMfe]) => {
           if (dialogResult?.button !== 'primary') {
             return of(undefined)
           }
-
-          const request: CreateSearchConfigRequest = {
-            page: this._pageName.getValue(),
-            fieldListVersion: 0,
-            name: dialogResult.result?.searchConfigName ?? '',
-            // TODO
-            isReadonly: false,
-            // TODO
-            isAdvanced: false,
-            columns: dialogResult.result?.saveColumns ? this.displayedColumns.map((column) => column.id) : [],
-            values: dialogResult.result?.saveInputValues
-              ? Object.fromEntries(
-                  Object.entries(this.currentInputFieldValues).map(([name, value]) => [name, String(value)])
-                )
-              : {}
-          }
-          return this.searchConfigService.createSearchConfig({ createSearchConfigRequest: request }).pipe(
-            map((response) => {
-              this.portalMessageService.info({
-                summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_SUCCESS'
-              })
-              return {
-                configs: response.configs,
-                newConfigName: dialogResult.result?.searchConfigName
-              }
-            }),
-            catchError((error) => {
-              console.error(error)
-              this.portalMessageService.error({
-                summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_FAILURE'
-              })
-              return of(undefined)
-            })
-          )
+          return this.saveSearchConfig(dialogResult.result, currentMfe)
         })
       )
-      .subscribe((result) => {
-        if (result) {
-          this.searchConfigs$.next(result.configs)
-          const searchConfig = this.searchConfigs$.getValue().find((config) => config.name === result.newConfigName)
-          this.setSearchConfig(searchConfig)
-          this.changeSearchConfig(searchConfig)
+      .subscribe((response) => {
+        if (response) {
+          this.portalMessageService.info({
+            summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_SUCCESS'
+          })
+          debugger
+          this.searchConfigs$.next(response.configs)
+          const config = response.configs.find((config) => config.id === response.id)
+          this.eventsTopic$.publish({
+            type: 'searchConfig#configCreate',
+            payload: {
+              config: config
+            }
+          })
+          this.setSearchConfigControl(config)
         }
       })
   }
 
-  editSearchConfig(event: Event, searchConfigInfo: SearchConfigInfo) {
-    event.stopPropagation()
-
-    this.searchConfigService
-      .getSearchConfig({
-        id: searchConfigInfo.id
-      })
-      .pipe(
-        // TODO: fix openAPI
-        mergeMap((config: any) => {
-          const searchConfig = config
-          return this.portalDialogService
-            .openDialog<CreateOrEditSearchDialogContent>(
-              'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_HEADER',
-              {
-                type: CreateOrEditSearchConfigDialogComponent,
-                inputs: {
-                  searchConfigName: searchConfig.name,
-                  saveInputValues: Object.keys(searchConfig.values ?? {}).length > 0,
-                  saveColumns: (searchConfig.columns ?? []).length > 0
-                }
-              },
-              'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
-              'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CANCEL'
-            )
-            .pipe(
-              mergeMap((dialogResult) => {
-                if (dialogResult.button !== 'primary') {
-                  return of(undefined)
-                }
-
-                const request: UpdateSearchConfigRequest = {
-                  searchConfig: {
-                    id: searchConfig.id,
-                    page: searchConfig.page,
-                    fieldListVersion: 0,
-                    name: dialogResult.result?.searchConfigName ?? searchConfig.name ?? '',
-                    modificationCount: searchConfig.modificationCount + 1,
-                    // TODO
-                    isReadonly: false,
-                    // TODO
-                    isAdvanced: false,
-                    columns: dialogResult.result?.saveColumns ? this.displayedColumns.map((column) => column.id) : [],
-                    values: dialogResult.result?.saveInputValues
-                      ? Object.fromEntries(
-                          Object.entries(this.currentInputFieldValues).map(([name, value]) => [name, String(value)])
-                        )
-                      : {}
-                  }
-                }
-                return this.searchConfigService
-                  .updateSearchConfig({ configId: searchConfigInfo.id, updateSearchConfigRequest: request })
-                  .pipe(
-                    map((response) => {
-                      this.portalMessageService.info({
-                        summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_SUCCESS'
-                      })
-                      return {
-                        configs: response.configs,
-                        updatedConfigName: dialogResult.result?.searchConfigName
-                      }
-                    }),
-                    catchError((error) => {
-                      console.error(error)
-                      this.portalMessageService.error({
-                        summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_FAILURE'
-                      })
-                      return of(undefined)
-                    })
-                  )
-              })
-            )
+  private saveSearchConfig(configData: CreateOrEditSearchDialogContent | undefined, currentMfe: MfeInfo) {
+    const request: CreateSearchConfigRequest = {
+      appId: currentMfe.appId,
+      productName: currentMfe.productName,
+      page: this._pageName.getValue(),
+      fieldListVersion: 0,
+      name: configData?.searchConfigName ?? '',
+      isReadonly: false,
+      // TODO
+      isAdvanced: false,
+      columns: configData?.saveColumns ? this.displayedColumns : [],
+      values: configData?.saveInputValues
+        ? Object.fromEntries(Object.entries(this.currentInputFieldValues).map(([name, value]) => [name, String(value)]))
+        : {}
+    }
+    return this.searchConfigService.createSearchConfig({ createSearchConfigRequest: request }).pipe(
+      catchError((error) => {
+        console.error(error)
+        this.portalMessageService.error({
+          summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_FAILURE'
         })
-      )
-      .subscribe(() => {})
+        return of(undefined)
+      })
+    )
   }
 
-  deleteSearchConfig(event: Event, searchConfigInfo: SearchConfigInfo) {
+  onSearchConfigEdit(event: Event, searchConfig: SearchConfigInfo) {
     event.stopPropagation()
 
-    this.searchConfigService
-      .deleteSearchConfig({ configId: searchConfigInfo.id })
+    this.portalDialogService
+      .openDialog<CreateOrEditSearchDialogContent>(
+        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_HEADER',
+        {
+          type: CreateOrEditSearchConfigDialogComponent,
+          inputs: {
+            searchConfigName: searchConfig.name,
+            saveInputValues: Object.keys(searchConfig.values ?? {}).length > 0,
+            saveColumns: (searchConfig.columns ?? []).length > 0
+          }
+        },
+        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
+        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CANCEL'
+      )
       .pipe(
-        catchError((error) => {
-          console.error(error)
-          this.portalMessageService.error({
-            summaryKey: 'SEARCH_CONFIG.DELETE_FAILURE'
-          })
-          return of(undefined)
+        mergeMap((dialogResult) => {
+          return this.getSearchConfig(searchConfig).pipe(
+            map((response) => {
+              return {
+                config: response?.config,
+                result: dialogResult
+              }
+            })
+          )
+        }),
+        mergeMap(({ config, result }) => {
+          if (!config) {
+            return of(undefined)
+          }
+          if (result.button !== 'primary') {
+            return of(undefined)
+          }
+
+          return this.editSearchConfig(config, result.result)
         })
       )
-      .subscribe((result) => {
-        if (result !== undefined) {
+      .subscribe((response) => {
+        if (response) {
           this.portalMessageService.info({
-            summaryKey: 'SEARCH_CONFIG.DELETE_SUCCESS'
+            summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_SUCCESS'
           })
-          this.searchConfigs$.next(this.searchConfigs$.getValue().filter((config) => config.id !== searchConfigInfo.id))
+          this.searchConfigs$.next(response.configs)
+          const config = response.configs.find((c) => c.id === searchConfig.id)
           this.eventsTopic$.publish({
-            type: 'searchConfig#configDelete',
+            type: 'searchConfig#configUpdate',
             payload: {
-              name: searchConfigInfo.id
+              config: config
             }
           })
         }
       })
   }
 
+  private getSearchConfig(searchConfig: SearchConfigInfo) {
+    return this.searchConfigService
+      .getSearchConfig({
+        id: searchConfig.id
+      })
+      .pipe(
+        catchError((error) => {
+          console.error(error)
+          this.portalMessageService.error({
+            summaryKey: 'SEARCH_CONFIG.FETCH_FAILURE'
+          })
+          return of(undefined)
+        })
+      )
+  }
+
+  private editSearchConfig(config: SearchConfig, configData: CreateOrEditSearchDialogContent | undefined) {
+    const request: UpdateSearchConfigRequest = {
+      searchConfig: {
+        ...config,
+        name: configData?.searchConfigName ?? config.name ?? '',
+        columns: configData?.saveColumns ? this.displayedColumns : [],
+        values: configData?.saveInputValues
+          ? Object.fromEntries(
+              Object.entries(this.currentInputFieldValues).map(([name, value]) => [name, String(value)])
+            )
+          : {}
+      }
+    }
+    return this.searchConfigService.updateSearchConfig({ id: config.id, updateSearchConfigRequest: request }).pipe(
+      catchError((error) => {
+        console.error(error)
+        this.portalMessageService.error({
+          summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_FAILURE'
+        })
+        return of(undefined)
+      })
+    )
+  }
+
+  onSearchConfigDelete(event: Event, searchConfig: SearchConfigInfo) {
+    event.stopPropagation()
+
+    this.deleteSearchConfig(searchConfig.id).subscribe((result) => {
+      if (result !== undefined) {
+        this.portalMessageService.info({
+          summaryKey: 'SEARCH_CONFIG.DELETE_SUCCESS'
+        })
+        this.searchConfigs$.next(this.searchConfigs$.getValue().filter((config) => config.id !== searchConfig.id))
+        this.eventsTopic$.publish({
+          type: 'searchConfig#configDelete',
+          payload: {
+            id: searchConfig.id
+          }
+        })
+      }
+    })
+  }
+
+  private deleteSearchConfig(id: string) {
+    return this.searchConfigService.deleteSearchConfig({ id: id }).pipe(
+      catchError((error) => {
+        console.error(error)
+        this.portalMessageService.error({
+          summaryKey: 'SEARCH_CONFIG.DELETE_FAILURE'
+        })
+        return of(undefined)
+      })
+    )
+  }
+
   private hasInputsChanged(changes: SimpleChanges): boolean {
     return (
       changes['currentInputFieldValues'] &&
       !changes['currentInputFieldValues'].firstChange &&
-      JSON.stringify(changes['currentInputFieldValues'].currentValue) !==
-        JSON.stringify(changes['currentInputFieldValues'].previousValue)
+      !Object.entries(this.getCurrentSearchConfig().values).every(([key, value]) => {
+        return value === changes['currentInputFieldValues'].currentValue[key]
+      })
     )
   }
 
@@ -367,12 +399,21 @@ export class OneCXSearchConfigComponent implements ocxRemoteComponent, ocxRemote
     return (
       changes['displayedColumns'] &&
       !changes['displayedColumns'].firstChange &&
-      changes['displayedColumns'].currentValue.map((column: DataTableColumn) => column.id) !==
-        changes['displayedColumns'].previousValue.map((column: DataTableColumn) => column.id)
+      !(
+        (changes['displayedColumns'].currentValue as string[]).length ===
+          this.getCurrentSearchConfig().columns.length &&
+        this.getCurrentSearchConfig().columns.every((column) =>
+          (changes['displayedColumns'].currentValue as string[]).includes(column)
+        )
+      )
     )
   }
 
-  private setSearchConfig(value: SearchConfigInfo | undefined | null) {
+  private setSearchConfigControl(value: SearchConfigInfo | undefined | null) {
     this.formGroup?.get('searchConfig')?.setValue(value)
+  }
+
+  private getCurrentSearchConfig(): SearchConfigInfo {
+    return this.formGroup?.get('searchConfig')?.value
   }
 }

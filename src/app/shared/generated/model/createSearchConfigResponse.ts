@@ -13,10 +13,7 @@ import { SearchConfigInfo } from './searchConfigInfo';
 
 
 export interface CreateSearchConfigResponse { 
-    /**
-     * The total elements in the resource.
-     */
-    totalElements: number;
+    id: string;
     configs: Array<SearchConfigInfo>;
 }
 

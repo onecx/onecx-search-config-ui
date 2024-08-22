@@ -10,6 +10,7 @@ git_push.sh
 index.ts
 model/createSearchConfigRequest.ts
 model/createSearchConfigResponse.ts
+model/getSearchConfigInfosRequest.ts
 model/getSearchConfigInfosResponse.ts
 model/getSearchConfigResponse.ts
 model/models.ts

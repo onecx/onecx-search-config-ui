@@ -8,17 +8,17 @@ tags:
   - name: SearchConfig
     description: Execute Search Config CRUD operations
 paths:
-  /searchConfig/{configId}:
+  /searchConfig/{id}:
     put:
       tags:
         - SearchConfig
-      summary: Updates the search config specified by the configId
+      summary: Updates the search config specified by the id
       description: Updates the search config and returns the updated list of search configs  by page
       operationId: updateSearchConfig
       parameters:
-        - name: configId
+        - name: id
           in: path
-          description: ConfigId for the search config to be updated
+          description: Id for the search config to be updated
           required: true
           schema:
             type: string
@@ -55,15 +55,15 @@ paths:
       description: Deletes the search config
       operationId: deleteSearchConfig
       parameters:
-        - name: configId
+        - name: id
           in: path
-          description: ConfigId for the searchConfig to be deleted
+          description: Id for the searchConfig to be deleted
           required: true
           schema:
             type: string
       responses:
-        '200':
-          description: OK
+        '204':
+          description: Config deleted
         '400':
           description: Bad request
           content:
@@ -76,44 +76,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetailResponse'
-  /searchConfig/infos/{page}:
     get:
       tags:
         - SearchConfig
-      summary: Gets the search config infos for the specified page.
-      description: The search config for the page is returned.
-      operationId: getSearchConfigInfos
-      parameters:
-        - name: page
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetSearchConfigInfosResponse'
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetailResponse'
-        '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetailResponse'
-  /searchConfig/{id}:
-    get:
-      tags:
-        - SearchConfig
-      summary: Gets the search config infos for the specified page.
-      description: The search config for the page is returned.
+      summary: Gets the search config info by its id.
+      description: The search config for specified id is returned.
       operationId: getSearchConfig
       parameters:
         - name: id
@@ -130,6 +97,38 @@ paths:
                 $ref: '#/components/schemas/GetSearchConfigResponse'
         '404':
           description: Not found
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetailResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetailResponse'
+  /searchConfig/infos/:
+    post:
+      tags:
+        - SearchConfig
+      summary: Finds the search config infos for the specified page.
+      description: The search configs for the page, product and app are returned.
+      operationId: getSearchConfigInfos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetSearchConfigInfosRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSearchConfigInfosResponse'
         '400':
           description: Bad request
           content:
@@ -182,41 +181,15 @@ components:
       required:
         - id
         - name
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-    SearchConfig:
-      allOf:
-        - $ref: '#/components/schemas/SearchConfigInfo'
-      type: object
-      required:
-        - page
-        - modificationCount
-        - fieldListVersion
-        - isReadonly
-        - isAdvanced
         - columns
         - values
+        - isReadonly
+        - isAdvanced
       properties:
         id:
           type: string
-        page:
-          type: string
         name:
           type: string
-        modificationCount:
-          type: integer
-        fieldListVersion:
-          type: integer
-          description: Version increment of the fields in the UI which you should use when you are making incompatible changes to those fields.
-        isReadonly:
-          type: boolean
-          description: Defines whether this config can be changed in the UI
-        isAdvanced:
-          type: boolean
-          description: Indicates whether the advanced mode should be displayed
         columns:
           type: array
           items:
@@ -225,8 +198,55 @@ components:
           type: object
           additionalProperties:
             type: string
+        isReadonly:
+          type: boolean
+          description: Defines whether this config can be changed in the UI
+        isAdvanced:
+          type: boolean
+          description: Indicates whether the advanced mode should be displayed
 
-    GetSearchConfigInfosResponse:
+    SearchConfig:
+      allOf:
+        - $ref: '#/components/schemas/SearchConfigInfo'
+      type: object
+      required:
+        - appId
+        - productName
+        - page
+        - modificationCount
+        - fieldListVersion
+      properties:
+        appId:
+          type: string
+        productName:
+          type: string
+        page:
+          type: string
+        modificationCount:
+          type: integer
+        fieldListVersion:
+          type: integer
+          description: Version increment of the fields in the UI which you should use when you are making incompatible changes to those fields.
+
+    SearchConfigInfoList:
+      type: object
+      required:
+        - configs
+      properties:
+        configs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchConfigInfo'
+
+    UpdateSearchConfigRequest:
+      type: object
+      required:
+        - searchConfig
+      properties:
+        searchConfig:
+          $ref: '#/components/schemas/SearchConfig'
+
+    UpdateSearchConfigResponse:
       allOf:
         - $ref: '#/components/schemas/SearchConfigInfoList'
 
@@ -238,17 +258,41 @@ components:
         config:
           $ref: '#/components/schemas/SearchConfig'
 
+    GetSearchConfigInfosRequest:
+      type: object
+      required:
+        - productName
+        - appId
+        - page
+      properties:
+        productName:
+          type: string
+        appId:
+          type: string
+        page:
+          type: string
+
+    GetSearchConfigInfosResponse:
+      allOf:
+        - $ref: '#/components/schemas/SearchConfigInfoList'
+
     CreateSearchConfigRequest:
       type: object
       required:
-        - 'page'
-        - 'name'
-        - 'fieldListVersion'
-        - 'isReadonly'
-        - 'isAdvanced'
-        - 'columns'
-        - 'values'
+        - productName
+        - appId
+        - page
+        - name
+        - fieldListVersion
+        - isReadonly
+        - isAdvanced
+        - columns
+        - values
       properties:
+        productName:
+          type: string
+        appId:
+          type: string
         page:
           type: string
         name:
@@ -274,33 +318,12 @@ components:
     CreateSearchConfigResponse:
       allOf:
         - $ref: '#/components/schemas/SearchConfigInfoList'
-
-    UpdateSearchConfigRequest:
       type: object
       required:
-        - searchConfig
+        - id
       properties:
-        searchConfig:
-          $ref: '#/components/schemas/SearchConfig'
-
-    UpdateSearchConfigResponse:
-      allOf:
-        - $ref: '#/components/schemas/SearchConfigInfoList'
-
-    SearchConfigInfoList:
-      type: object
-      required:
-        - totalElements
-        - configs
-      properties:
-        totalElements:
-          format: int64
-          description: The total elements in the resource.
-          type: integer
-        configs:
-          type: array
-          items:
-            $ref: '#/components/schemas/SearchConfigInfo'
+        id:
+          type: string
 
     ProblemDetailResponse:
       type: object

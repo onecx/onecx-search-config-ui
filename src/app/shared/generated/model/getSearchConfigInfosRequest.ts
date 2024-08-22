@@ -11,18 +11,9 @@
  */
 
 
-export interface SearchConfigInfo { 
-    id: string;
-    name: string;
-    columns: Array<string>;
-    values: { [key: string]: string; };
-    /**
-     * Defines whether this config can be changed in the UI
-     */
-    isReadonly: boolean;
-    /**
-     * Indicates whether the advanced mode should be displayed
-     */
-    isAdvanced: boolean;
+export interface GetSearchConfigInfosRequest { 
+    productName: string;
+    appId: string;
+    page: string;
 }
 

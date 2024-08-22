@@ -12,14 +12,18 @@
 
 
 export interface SearchConfig { 
-    id?: string;
+    appId: string;
+    productName: string;
     page: string;
-    name?: string;
     modificationCount: number;
     /**
      * Version increment of the fields in the UI which you should use when you are making incompatible changes to those fields.
      */
     fieldListVersion: number;
+    id: string;
+    name: string;
+    columns: Array<string>;
+    values: { [key: string]: string; };
     /**
      * Defines whether this config can be changed in the UI
      */
@@ -28,7 +32,5 @@ export interface SearchConfig {
      * Indicates whether the advanced mode should be displayed
      */
     isAdvanced: boolean;
-    columns: Array<string>;
-    values: { [key: string]: string; };
 }
 

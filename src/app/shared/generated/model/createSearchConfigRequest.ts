@@ -12,6 +12,8 @@
 
 
 export interface CreateSearchConfigRequest { 
+    productName: string;
+    appId: string;
     page: string;
     name: string;
     /**

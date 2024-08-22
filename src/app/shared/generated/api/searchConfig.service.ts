@@ -23,6 +23,8 @@ import { CreateSearchConfigRequest } from '../model/createSearchConfigRequest';
 // @ts-ignore
 import { CreateSearchConfigResponse } from '../model/createSearchConfigResponse';
 // @ts-ignore
+import { GetSearchConfigInfosRequest } from '../model/getSearchConfigInfosRequest';
+// @ts-ignore
 import { GetSearchConfigInfosResponse } from '../model/getSearchConfigInfosResponse';
 // @ts-ignore
 import { GetSearchConfigResponse } from '../model/getSearchConfigResponse';
@@ -44,8 +46,8 @@ export interface CreateSearchConfigRequestParams {
 }
 
 export interface DeleteSearchConfigRequestParams {
-    /** ConfigId for the searchConfig to be deleted */
-    configId: string;
+    /** Id for the searchConfig to be deleted */
+    id: string;
 }
 
 export interface GetSearchConfigRequestParams {
@@ -53,12 +55,12 @@ export interface GetSearchConfigRequestParams {
 }
 
 export interface GetSearchConfigInfosRequestParams {
-    page: string;
+    getSearchConfigInfosRequest: GetSearchConfigInfosRequest;
 }
 
 export interface UpdateSearchConfigRequestParams {
-    /** ConfigId for the search config to be updated */
-    configId: string;
+    /** Id for the search config to be updated */
+    id: string;
     /** Updated values for the specified search config */
     updateSearchConfigRequest: UpdateSearchConfigRequest;
 }
@@ -209,9 +211,9 @@ export class SearchConfigAPIService {
     public deleteSearchConfig(requestParameters: DeleteSearchConfigRequestParams, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpResponse<any>>;
     public deleteSearchConfig(requestParameters: DeleteSearchConfigRequestParams, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpEvent<any>>;
     public deleteSearchConfig(requestParameters: DeleteSearchConfigRequestParams, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<any> {
-        const configId = requestParameters.configId;
-        if (configId === null || configId === undefined) {
-            throw new Error('Required parameter configId was null or undefined when calling deleteSearchConfig.');
+        const id = requestParameters.id;
+        if (id === null || id === undefined) {
+            throw new Error('Required parameter id was null or undefined when calling deleteSearchConfig.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -245,7 +247,7 @@ export class SearchConfigAPIService {
             }
         }
 
-        let localVarPath = `/searchConfig/${this.configuration.encodeParam({name: "configId", value: configId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: undefined})}`;
+        let localVarPath = `/searchConfig/${this.configuration.encodeParam({name: "id", value: id, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: undefined})}`;
         return this.httpClient.request<any>('delete', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
@@ -259,8 +261,8 @@ export class SearchConfigAPIService {
     }
 
     /**
-     * Gets the search config infos for the specified page.
-     * The search config for the page is returned.
+     * Gets the search config info by its id.
+     * The search config for specified id is returned.
      * @param requestParameters
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
@@ -319,8 +321,8 @@ export class SearchConfigAPIService {
     }
 
     /**
-     * Gets the search config infos for the specified page.
-     * The search config for the page is returned.
+     * Finds the search config infos for the specified page.
+     * The search configs for the page, product and app are returned.
      * @param requestParameters
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.
@@ -329,9 +331,9 @@ export class SearchConfigAPIService {
     public getSearchConfigInfos(requestParameters: GetSearchConfigInfosRequestParams, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpResponse<GetSearchConfigInfosResponse>>;
     public getSearchConfigInfos(requestParameters: GetSearchConfigInfosRequestParams, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpEvent<GetSearchConfigInfosResponse>>;
     public getSearchConfigInfos(requestParameters: GetSearchConfigInfosRequestParams, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<any> {
-        const page = requestParameters.page;
-        if (page === null || page === undefined) {
-            throw new Error('Required parameter page was null or undefined when calling getSearchConfigInfos.');
+        const getSearchConfigInfosRequest = requestParameters.getSearchConfigInfosRequest;
+        if (getSearchConfigInfosRequest === null || getSearchConfigInfosRequest === undefined) {
+            throw new Error('Required parameter getSearchConfigInfosRequest was null or undefined when calling getSearchConfigInfos.');
         }
 
         let localVarHeaders = this.defaultHeaders;
@@ -354,6 +356,15 @@ export class SearchConfigAPIService {
         }
 
 
+        // to determine the Content-Type header
+        const consumes: string[] = [
+            'application/json'
+        ];
+        const httpContentTypeSelected: string | undefined = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Content-Type', httpContentTypeSelected);
+        }
+
         let responseType_: 'text' | 'json' | 'blob' = 'json';
         if (localVarHttpHeaderAcceptSelected) {
             if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
@@ -365,10 +376,11 @@ export class SearchConfigAPIService {
             }
         }
 
-        let localVarPath = `/searchConfig/infos/${this.configuration.encodeParam({name: "page", value: page, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: undefined})}`;
-        return this.httpClient.request<GetSearchConfigInfosResponse>('get', `${this.configuration.basePath}${localVarPath}`,
+        let localVarPath = `/searchConfig/infos/`;
+        return this.httpClient.request<GetSearchConfigInfosResponse>('post', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
+                body: getSearchConfigInfosRequest,
                 responseType: <any>responseType_,
                 withCredentials: this.configuration.withCredentials,
                 headers: localVarHeaders,
@@ -379,7 +391,7 @@ export class SearchConfigAPIService {
     }
 
     /**
-     * Updates the search config specified by the configId
+     * Updates the search config specified by the id
      * Updates the search config and returns the updated list of search configs  by page
      * @param requestParameters
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
@@ -389,9 +401,9 @@ export class SearchConfigAPIService {
     public updateSearchConfig(requestParameters: UpdateSearchConfigRequestParams, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpResponse<UpdateSearchConfigResponse>>;
     public updateSearchConfig(requestParameters: UpdateSearchConfigRequestParams, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<HttpEvent<UpdateSearchConfigResponse>>;
     public updateSearchConfig(requestParameters: UpdateSearchConfigRequestParams, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext}): Observable<any> {
-        const configId = requestParameters.configId;
-        if (configId === null || configId === undefined) {
-            throw new Error('Required parameter configId was null or undefined when calling updateSearchConfig.');
+        const id = requestParameters.id;
+        if (id === null || id === undefined) {
+            throw new Error('Required parameter id was null or undefined when calling updateSearchConfig.');
         }
         const updateSearchConfigRequest = requestParameters.updateSearchConfigRequest;
         if (updateSearchConfigRequest === null || updateSearchConfigRequest === undefined) {
@@ -438,7 +450,7 @@ export class SearchConfigAPIService {
             }
         }
 
-        let localVarPath = `/searchConfig/${this.configuration.encodeParam({name: "configId", value: configId, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: undefined})}`;
+        let localVarPath = `/searchConfig/${this.configuration.encodeParam({name: "id", value: id, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: undefined})}`;
         return this.httpClient.request<UpdateSearchConfigResponse>('put', `${this.configuration.basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,

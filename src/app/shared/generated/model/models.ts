@@ -1,5 +1,6 @@
 export * from './createSearchConfigRequest';
 export * from './createSearchConfigResponse';
+export * from './getSearchConfigInfosRequest';
 export * from './getSearchConfigInfosResponse';
 export * from './getSearchConfigResponse';
 export * from './problemDetailInvalidParam';
