@@ -11,14 +11,14 @@ app:
     microfrontend:
       enabled: true
       specs:
-        main:
-          exposedModule: './OnecxSearchConfigModule'
-          description: 'OneCX OnecxSearchConfig Module'
-          note: 'OneCX OnecxSearchConfig UI module auto import via MF operator'
-          type: MODULE
+        search-config:
+          exposedModule: "./OneCXSearchConfigComponent"
+          description: "Search config component"
+          type: COMPONENT
           technology: WEBCOMPONENTMODULE
           remoteName: onecx-search-config
-          tagName: onecx-search-config-webcomponent
+          tagName: ocx-search-config-component
+        # TODO: ADD column group component
     # Permission
     permission:
       enabled: true

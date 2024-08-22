@@ -3,7 +3,8 @@ export default {
   displayName: 'onecx-search-config',
   preset: './jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
-  coverageDirectory: './coverage/onecx-search-config',
+  coverageDirectory: './reports/coverage/',
+  coveragePathIgnorePatterns: ['src/app/shared/generated'],
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [
       'jest-preset-angular',
@@ -24,5 +25,16 @@ export default {
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.[jt]s?(x)',
     '<rootDir>/src/**/*(*.)@(spec|test).[jt]s?(x)',
+  ],
+  reporters: [
+    'default',
+    [
+      'jest-sonar',
+      {
+        outputDirectory: './reports/',
+        outputName: 'sonarqube_report.xml',
+        reportedFilePath: 'absolute',
+      },
+    ],
   ],
 };

@@ -9,7 +9,9 @@ const config = withModuleFederationPlugin({
   name: 'onecx-search-config-app',
   filename: 'remoteEntry.js',
   exposes: {
-    './OnecxSearchConfigModule': './src/bootstrap.ts',
+    './OneCXSearchConfigComponent': 'src/app/remotes/search-config/search-config.component.bootstrap.ts',
+    './OneCXColumnGroupSelectionComponent':
+      'src/app/remotes/column-group-selection/column-group-selection.component.bootstrap.ts'
   },
   shared: share({
     '@angular/core': {
@@ -39,6 +41,7 @@ const config = withModuleFederationPlugin({
       requiredVersion: 'auto',
       includeSecondaries: true,
     },
+    primeng: { requiredVersion: 'auto', includeSecondaries: true },
     '@onecx/portal-integration-angular': {
       requiredVersion: 'auto',
       includeSecondaries: true,
@@ -55,8 +58,11 @@ const config = withModuleFederationPlugin({
       requiredVersion: 'auto',
       includeSecondaries: true,
     },
+    '@onecx/angular-remote-components': {
+      requiredVersion: 'auto',
+      includeSecondaries: true
+    },
     '@ngx-translate/core': {
-      singleton: true,
       strictVersion: false,
       requiredVersion: '^14.0.0',
     },

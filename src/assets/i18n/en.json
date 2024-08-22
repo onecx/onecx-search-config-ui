@@ -1,1 +1,64 @@
-{}
+{
+    "VALIDATION": {
+      "ERRORS": {
+        "EMPTY_REQUIRED_FIELD": "This field is required.",
+        "MAXIMUM_LENGTH": "Only {{chars}} characters are allowed.",
+        "MINIMUM_LENGTH": "At least {{chars}} characters are required.",
+        "PATTERN_ERROR": "The input does not match the required pattern"
+      }
+    },
+    "SEARCH_CONFIG": {
+      "CREATE": "Add search config",
+      "PLACEHOLDER": "Choose search config",
+      "CREATE_EDIT_PLACEHOLDER": "Please enter the name of the search configuration",
+      "SAVE_COLUMNS_OPTION": "Do you want to save the shown columns?",
+      "SAVE_INPUT_FIELDS_OPTION": "Do you want to save the input values from the input fields?",
+      "CREATE_EDIT_DIALOG": {
+        "CREATE_HEADER": "Create search config",
+        "EDIT_HEADER": "Edit search config",
+        "CONFIRM": "Confirm",
+        "CANCEL": "Cancel",
+        "CREATE_SUCCESS": "Successfully added search config",
+        "CREATE_FAILURE": "Failed to add search config",
+        "EDIT_SUCCESS": "Successfully edited search config",
+        "EDIT_FAILURE": "Failed to edit search config"
+      },
+      "DELETE_SUCCESS": "Successfully deleted search config",
+      "DELETE_FAILURE": "Failed to delete search config",
+      "FETCH_FAILURE": "Failed to load search config"
+    },
+    "OCX_CUSTOM_GROUP_COLUMN_SELECTOR": {
+      "DROPDOWN_LABEL": "Column group",
+      "OPEN_BUTTON_DETAIL": "Open custom group selection dialog",
+      "ACTIVE_COLUMNS_LABEL": "Active columns",
+      "INACTIVE_COLUMNS_LABEL": "Inactive columns",
+      "SAVE_BUTTON_LABEL": "Save",
+      "CANCEL_BUTTON_LABEL": "Cancel",
+      "DIALOG_TITLE": "Custom group column selection",
+      "CONFIGURE_ACTION_COLUMN": {
+        "TITLE": "Configure action column",
+        "FREEZE": "Always show action column",
+        "POSITION": "Position of action column",
+        "YES": "Yes",
+        "NO": "No",
+        "LEFT": "Left",
+        "RIGHT": "Right"
+      },
+      "ARIA_LABELS": {
+        "UP": "Move column up",
+        "TOP": "Move column to the top",
+        "DOWN": "Move column down",
+        "BOTTOM": "Move column to the bottom",
+        "RIGHT": "Set column as inactive",
+        "ALL_RIGHT": "Set all columns as inactive",
+        "LEFT": "Set column as active",
+        "ALL_LEFT": "Set all columns as active",
+        "CLOSE": "Close dialog"
+      },
+      "PREDEFINED_GROUP": {
+        "DEFAULT": "Default",
+        "EXTENDED": "Extended",
+        "FULL": "Full"
+      }
+    }
+  }
