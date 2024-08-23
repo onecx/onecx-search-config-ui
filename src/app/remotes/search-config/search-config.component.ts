@@ -1,14 +1,6 @@
 import { CommonModule, Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import {
-  Component,
-  EventEmitter,
-  Inject,
-  Input,
-  OnChanges,
-  OnInit,
-  SimpleChanges,
-} from '@angular/core';
+import { Component, EventEmitter, Inject, Input, OnInit } from '@angular/core';
 import {
   TranslateLoader,
   TranslateModule,
@@ -32,8 +24,6 @@ import {
   provideTranslateServiceForRoot,
 } from '@onecx/angular-remote-components';
 import {
-  BehaviorSubject,
-  Observable,
   ReplaySubject,
   catchError,
   combineLatest,
@@ -65,8 +55,9 @@ import {
   CreateOrEditSearchDialogContent,
 } from './create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
 import { DropdownModule } from 'primeng/dropdown';
+import { MfeInfo } from '@onecx/integration-interface';
+import { ConfigData, SearchConfigStore } from './search-config.store';
 import { PrimeIcons } from 'primeng/api';
-import { EventsTopic, MfeInfo } from '@onecx/integration-interface';
 
 @Component({
   selector: 'app-ocx-search-config',
@@ -100,32 +91,30 @@ import { EventsTopic, MfeInfo } from '@onecx/integration-interface';
       },
     }),
     providePortalDialogService(),
+    SearchConfigStore,
   ],
 })
 export class OneCXSearchConfigComponent
-  implements ocxRemoteComponent, ocxRemoteWebcomponent, OnChanges, OnInit
+  implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit
 {
-  private eventsTopic$ = new EventsTopic();
+  @Input() set pageName(value: string) {
+    this.searchConfigStore.setPageName(value);
+  }
+  @Input() set currentInputFieldValues(value: { [key: string]: unknown }) {
+    this.searchConfigStore.setFieldValues(value);
+  }
+  @Input() set displayedColumns(value: string[]) {
+    this.searchConfigStore.setDisplayedColumns(value);
+  }
 
-  private _pageName = new BehaviorSubject<string>('');
-  @Input() get pageName(): string {
-    return this._pageName.getValue();
-  }
-  set pageName(value: string) {
-    this._pageName.next(value);
-  }
-  @Input() currentInputFieldValues: { [key: string]: unknown } = {};
-  @Input() displayedColumns: string[] = [];
   @Input() searchConfigSelected: EventEmitter<{
     inputValues: { [key: string]: unknown };
     displayedColumns: string[];
   }> = new EventEmitter();
 
-  searchConfigs$: BehaviorSubject<SearchConfigInfo[]> = new BehaviorSubject<
-    SearchConfigInfo[]
-  >([]);
-  searchConfigsWithInputs$: Observable<SearchConfigInfo[]>;
   formGroup: FormGroup | undefined;
+
+  readonly vm$ = this.searchConfigStore.searchConfigVm$;
 
   addSearchConfigOption: any = {
     id: 'ocx-add-search-config-option',
@@ -142,12 +131,13 @@ export class OneCXSearchConfigComponent
     private portalDialogService: PortalDialogService,
     private portalMessageService: PortalMessageService,
     private appStateService: AppStateService,
+    private searchConfigStore: SearchConfigStore,
   ) {
     this.userService.lang$.subscribe((lang) => this.translateService.use(lang));
 
     combineLatest([
       this.baseUrl,
-      this._pageName,
+      this.searchConfigStore.pageName$,
       this.appStateService.currentMfe$.asObservable(),
     ])
       .pipe(
@@ -162,15 +152,16 @@ export class OneCXSearchConfigComponent
             .pipe(map((response) => response.configs));
         }),
       )
-      .subscribe(this.searchConfigs$);
+      .subscribe((searchConfigs) => {
+        this.searchConfigStore.setSearchConfigs(searchConfigs);
+      });
 
-    this.searchConfigsWithInputs$ = this.searchConfigs$.asObservable().pipe(
-      map((configs) => {
-        return configs.filter(
-          (config) => Object.keys(config.values).length > 0,
-        );
-      }),
-    );
+    this.searchConfigStore.configUnselected$.subscribe((unselect) => {
+      if (unselect) {
+        this.searchConfigSelected.emit(undefined);
+        this.setSearchConfigControl(null);
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -190,20 +181,6 @@ export class OneCXSearchConfigComponent
     this.baseUrl.next(config.baseUrl);
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
-    console.log(changes);
-    if (this.hasInputsChanged(changes) || this.hasColumnsChanged(changes)) {
-      this.searchConfigSelected.emit(undefined);
-      this.setSearchConfigControl(undefined);
-      this.eventsTopic$.publish({
-        type: 'searchConfig#configChange',
-        payload: {
-          config: null,
-        },
-      });
-    }
-  }
-
   onSearchConfigChange(event: {
     originalEvent: Event;
     value: SearchConfigInfo;
@@ -212,15 +189,11 @@ export class OneCXSearchConfigComponent
       return this.onSearchConfigSave();
     }
 
+    this.searchConfigStore.setCurrentConfig(event.value);
+
     this.searchConfigSelected.emit({
       inputValues: event.value.values,
       displayedColumns: event.value.columns,
-    });
-    this.eventsTopic$.publish({
-      type: 'searchConfig#configChange',
-      payload: {
-        config: event.value,
-      },
     });
   }
 
@@ -233,31 +206,30 @@ export class OneCXSearchConfigComponent
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CANCEL',
       )
       .pipe(
-        withLatestFrom(this.appStateService.currentMfe$.asObservable()),
-        mergeMap(([dialogResult, currentMfe]) => {
+        withLatestFrom(
+          this.appStateService.currentMfe$.asObservable(),
+          this.searchConfigStore.currentData$,
+        ),
+        mergeMap(([dialogResult, currentMfe, data]) => {
           if (dialogResult?.button !== 'primary') {
             return of(undefined);
           }
-          return this.saveSearchConfig(dialogResult.result, currentMfe);
+          return this.saveSearchConfig(dialogResult.result, currentMfe, data);
         }),
       )
       .subscribe((response) => {
-        if (response) {
+        if (response && response.id) {
           this.portalMessageService.info({
             summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_SUCCESS',
           });
-          debugger;
-          this.searchConfigs$.next(response.configs);
           const config = response.configs.find(
             (config) => config.id === response.id,
           );
-          this.eventsTopic$.publish({
-            type: 'searchConfig#configCreate',
-            payload: {
-              config: config,
-            },
-          });
-          this.setSearchConfigControl(config);
+          config && this.setSearchConfigControl(config);
+          config && this.searchConfigStore.addSearchConfig(config);
+          config && this.searchConfigStore.setCurrentConfig(config);
+        } else {
+          this.setSearchConfigControl(null);
         }
       });
   }
@@ -265,22 +237,24 @@ export class OneCXSearchConfigComponent
   private saveSearchConfig(
     configData: CreateOrEditSearchDialogContent | undefined,
     currentMfe: MfeInfo,
+    data: ConfigData,
   ) {
     const request: CreateSearchConfigRequest = {
       appId: currentMfe.appId,
       productName: currentMfe.productName,
-      page: this._pageName.getValue(),
+      page: data.pageName,
       fieldListVersion: 0,
       name: configData?.searchConfigName ?? '',
       isReadonly: false,
       // TODO
       isAdvanced: false,
-      columns: configData?.saveColumns ? this.displayedColumns : [],
+      columns: configData?.saveColumns ? data.columns : [],
       values: configData?.saveInputValues
         ? Object.fromEntries(
-            Object.entries(this.currentInputFieldValues).map(
-              ([name, value]) => [name, String(value)],
-            ),
+            Object.entries(data.values).map(([name, value]) => [
+              name,
+              String(value),
+            ]),
           )
         : {},
     };
@@ -323,7 +297,8 @@ export class OneCXSearchConfigComponent
             }),
           );
         }),
-        mergeMap(({ config, result }) => {
+        withLatestFrom(this.searchConfigStore.currentData$),
+        mergeMap(([{ config, result }, data]) => {
           if (!config) {
             return of(undefined);
           }
@@ -331,7 +306,7 @@ export class OneCXSearchConfigComponent
             return of(undefined);
           }
 
-          return this.editSearchConfig(config, result.result);
+          return this.editSearchConfig(config, result.result, data);
         }),
       )
       .subscribe((response) => {
@@ -339,14 +314,8 @@ export class OneCXSearchConfigComponent
           this.portalMessageService.info({
             summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_SUCCESS',
           });
-          this.searchConfigs$.next(response.configs);
           const config = response.configs.find((c) => c.id === searchConfig.id);
-          this.eventsTopic$.publish({
-            type: 'searchConfig#configUpdate',
-            payload: {
-              config: config,
-            },
-          });
+          config && this.searchConfigStore.editSearchConfig(config);
         }
       });
   }
@@ -366,17 +335,19 @@ export class OneCXSearchConfigComponent
   private editSearchConfig(
     config: SearchConfig,
     configData: CreateOrEditSearchDialogContent | undefined,
+    data: ConfigData,
   ) {
     const request: UpdateSearchConfigRequest = {
       searchConfig: {
         ...config,
         name: configData?.searchConfigName ?? config.name ?? '',
-        columns: configData?.saveColumns ? this.displayedColumns : [],
+        columns: configData?.saveColumns ? data.columns : [],
         values: configData?.saveInputValues
           ? Object.fromEntries(
-              Object.entries(this.currentInputFieldValues).map(
-                ([name, value]) => [name, String(value)],
-              ),
+              Object.entries(data.values).map(([name, value]) => [
+                name,
+                String(value),
+              ]),
             )
           : {},
       },
@@ -400,17 +371,10 @@ export class OneCXSearchConfigComponent
         this.portalMessageService.info({
           summaryKey: 'SEARCH_CONFIG.DELETE_SUCCESS',
         });
-        this.searchConfigs$.next(
-          this.searchConfigs$
-            .getValue()
-            .filter((config) => config.id !== searchConfig.id),
-        );
-        this.eventsTopic$.publish({
-          type: 'searchConfig#configDelete',
-          payload: {
-            id: searchConfig.id,
-          },
-        });
+        this.searchConfigStore.deleteSearchConfig(searchConfig);
+        if (this.getSearchConfigControl() === searchConfig) {
+          this.setSearchConfigControl(null);
+        }
       }
     });
   }
@@ -427,39 +391,11 @@ export class OneCXSearchConfigComponent
     );
   }
 
-  private hasInputsChanged(changes: SimpleChanges): boolean {
-    return (
-      changes['currentInputFieldValues'] &&
-      !changes['currentInputFieldValues'].firstChange &&
-      !Object.entries(this.getCurrentSearchConfig().values).every(
-        ([key, value]) => {
-          return value === changes['currentInputFieldValues'].currentValue[key];
-        },
-      )
-    );
-  }
-
-  private hasColumnsChanged(changes: SimpleChanges): boolean {
-    return (
-      changes['displayedColumns'] &&
-      !changes['displayedColumns'].firstChange &&
-      !(
-        (changes['displayedColumns'].currentValue as string[]).length ===
-          this.getCurrentSearchConfig().columns.length &&
-        this.getCurrentSearchConfig().columns.every((column) =>
-          (changes['displayedColumns'].currentValue as string[]).includes(
-            column,
-          ),
-        )
-      )
-    );
-  }
-
   private setSearchConfigControl(value: SearchConfigInfo | undefined | null) {
     this.formGroup?.get('searchConfig')?.setValue(value);
   }
 
-  private getCurrentSearchConfig(): SearchConfigInfo {
+  private getSearchConfigControl(): SearchConfigInfo {
     return this.formGroup?.get('searchConfig')?.value;
   }
 }
