@@ -122,6 +122,8 @@ export class OneCXSearchConfigComponent
   plusIcon = PrimeIcons.PLUS;
   editIcon = PrimeIcons.PENCIL;
   deleteIcon = PrimeIcons.TRASH;
+  stopIcon = PrimeIcons.TIMES;
+  saveIcon = PrimeIcons.CHECK;
 
   constructor(
     @Inject(BASE_URL) private baseUrl: ReplaySubject<string>,
@@ -156,11 +158,29 @@ export class OneCXSearchConfigComponent
         this.searchConfigStore.setSearchConfigs(searchConfigs);
       });
 
-    this.searchConfigStore.configUnselected$.subscribe((unselect) => {
-      if (unselect) {
-        this.searchConfigSelected.emit(undefined);
-        this.setSearchConfigControl(null);
-      }
+    this.searchConfigStore.currentRevertConfig$.subscribe((config) => {
+      this.searchConfigSelected.emit(
+        config
+          ? {
+              inputValues: config?.values,
+              displayedColumns: config?.columns,
+            }
+          : undefined,
+      );
+      this.setSearchConfigControl(null);
+    });
+
+    this.searchConfigStore.currentConfig$.subscribe((config) => {
+      console.log('config', config);
+      this.searchConfigSelected.emit(
+        config
+          ? {
+              inputValues: config?.values,
+              displayedColumns: config?.columns,
+            }
+          : undefined,
+      );
+      this.setSearchConfigControl(config ?? null);
     });
   }
 
@@ -190,11 +210,6 @@ export class OneCXSearchConfigComponent
     }
 
     this.searchConfigStore.setCurrentConfig(event.value);
-
-    this.searchConfigSelected.emit({
-      inputValues: event.value.values,
-      displayedColumns: event.value.columns,
-    });
   }
 
   onSearchConfigSave() {
@@ -272,6 +287,15 @@ export class OneCXSearchConfigComponent
   onSearchConfigEdit(event: Event, searchConfig: SearchConfigInfo) {
     event.stopPropagation();
 
+    this.searchConfigStore.setEditMode();
+    this.searchConfigStore.setCurrentConfig(searchConfig);
+  }
+
+  onSearchConfigSaveEdit(event: Event) {
+    event.stopPropagation();
+
+    const searchConfig = this.getSearchConfigControl();
+
     this.portalDialogService
       .openDialog<CreateOrEditSearchDialogContent>(
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_HEADER',
@@ -315,9 +339,17 @@ export class OneCXSearchConfigComponent
             summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_SUCCESS',
           });
           const config = response.configs.find((c) => c.id === searchConfig.id);
+          config && this.setSearchConfigControl(config);
           config && this.searchConfigStore.editSearchConfig(config);
+        } else {
+          this.setSearchConfigControl(null);
         }
+        this.searchConfigStore.saveEdit();
       });
+  }
+
+  onSearchConfigCancelEdit(event: Event) {
+    this.searchConfigStore.cancelEdit();
   }
 
   private getSearchConfig(searchConfig: SearchConfigInfo) {

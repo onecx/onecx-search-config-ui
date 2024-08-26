@@ -10,6 +10,9 @@
     "SEARCH_CONFIG": {
       "CREATE": "Add search config",
       "PLACEHOLDER": "Choose search config",
+      "EDITING": "Editing search config",
+      "SAVE_EDIT": "Save search config",
+      "CANCEL_EDIT": "Cancel search config",
       "CREATE_EDIT_PLACEHOLDER": "Please enter the name of the search configuration",
       "SAVE_COLUMNS_OPTION": "Do you want to save the shown columns?",
       "SAVE_INPUT_FIELDS_OPTION": "Do you want to save the input values from the input fields?",

@@ -10,6 +10,9 @@
     "SEARCH_CONFIG": {
       "CREATE": "DE: Add search config",
       "PLACEHOLDER": "DE: Choose search config",
+      "EDITING": "DE: Editing search config",
+      "SAVE_EDIT": "DE: Save search config",
+      "CANCEL_EDIT": "DE: Cancel search config",
       "CREATE_EDIT_PLACEHOLDER": "Bitte geben Sie den Namen der Suchkonfiguration an.",
       "SAVE_COLUMNS_OPTION": "Möchten Sie die angezeigten Spalten speichern?",
       "SAVE_INPUT_FIELDS_OPTION": "Möchten Sie die Werte aus den Suchfeldern speichern?",

@@ -46,7 +46,6 @@ import {
   SearchConfigInfo,
 } from 'src/app/shared/generated';
 import { environment } from 'src/environments/environment';
-import { EventsTopic } from '@onecx/integration-interface';
 
 // TODO: its giving injection error
 // export function createTranslateLoader(
@@ -106,9 +105,7 @@ import { EventsTopic } from '@onecx/integration-interface';
 export class OneCXColumnGroupSelectionComponent
   implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit
 {
-  private eventsTopic$ = new EventsTopic();
-
-  private _pageName = new BehaviorSubject<string>('');
+  private _pageName = new BehaviorSubject<string>(''); //TODO: Make sure its equal to search configs
   @Input() get pageName(): string {
     return this._pageName.getValue();
   }
