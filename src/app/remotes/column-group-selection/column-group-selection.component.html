@@ -1,19 +1,24 @@
 <span class="p-float-label">
+  <ng-container *ngIf="vm$ | async as vm">
     <p-dropdown
       id="columnGroupSelectionDropdown"
-      *ngIf="(allGroupKeys$ | async)?.length"
       (onClear)="clearGroupSelection()"
       (onChange)="changeGroupSelection($event)"
-      [options]="(allGroupKeys$ | async) || []"
+      [options]="vm.allGroupKeys"
       [placeholder]="placeholderKey | translate"
-      [showClear]="selectedGroupKey !== defaultGroupKey"
-      [(ngModel)]="selectedGroupKey"
+      [showClear]="vm.selectedGroupKey !== defaultGroupKey"
+      [(ngModel)]="vm.selectedGroupKey"
       appendTo="body"
     >
-      <ng-template let-item pTemplate="item"> {{ item ? (item | translate) : '' }} </ng-template>
-      <ng-template let-item pTemplate="selectedItem"> {{ item ? (item | translate) : '' }} </ng-template>
+      <ng-template let-item pTemplate="item">
+        {{ item ? (item | translate) : '' }}
+      </ng-template>
+      <ng-template let-item pTemplate="selectedItem">
+        {{ item ? (item | translate) : '' }}
+      </ng-template>
     </p-dropdown>
-    <label *ngIf="(allGroupKeys$ | async)?.length" for="columnGroupSelectionDropdown">
+    <label *ngIf="vm.allGroupKeys.length" for="columnGroupSelectionDropdown">
       {{ 'OCX_CUSTOM_GROUP_COLUMN_SELECTOR.DROPDOWN_LABEL' | translate }}
     </label>
-  </span>
+  </ng-container>
+</span>

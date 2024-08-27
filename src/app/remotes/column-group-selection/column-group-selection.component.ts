@@ -46,6 +46,7 @@ import {
   SearchConfigInfo,
 } from 'src/app/shared/generated';
 import { environment } from 'src/environments/environment';
+import { SearchConfigStore } from '../../shared/search-config.store';
 
 // TODO: its giving injection error
 // export function createTranslateLoader(
@@ -100,26 +101,20 @@ import { environment } from 'src/environments/environment';
         deps: [HttpClient, BASE_URL, TranslationCacheService, AppStateService],
       },
     }),
+    SearchConfigStore,
   ],
 })
 export class OneCXColumnGroupSelectionComponent
   implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit
 {
-  private _pageName = new BehaviorSubject<string>(''); //TODO: Make sure its equal to search configs
-  @Input() get pageName(): string {
-    return this._pageName.getValue();
+  @Input() set pageName(value: string) {
+    this.searchConfigStore.setPageName(value);
   }
-  set pageName(value: string) {
-    this._pageName.next(value);
+
+  @Input() set selectedGroupKey(value: string) {
+    this.searchConfigStore.setSelectedGroupKey(value);
   }
-  selectedGroupKey$ = new BehaviorSubject<string>('');
-  @Input()
-  get selectedGroupKey(): string {
-    return this.selectedGroupKey$.getValue();
-  }
-  set selectedGroupKey(value: string) {
-    this.selectedGroupKey$.next(value);
-  }
+
   columns$ = new BehaviorSubject<DataTableColumn[]>([]);
   @Input()
   get columns(): DataTableColumn[] {
@@ -138,11 +133,9 @@ export class OneCXColumnGroupSelectionComponent
     groupKey: string;
   }> = new EventEmitter();
 
-  allGroupKeys$: Observable<string[]> | undefined;
-  searchConfigs$: BehaviorSubject<SearchConfigInfo[]> = new BehaviorSubject<
-    SearchConfigInfo[]
-  >([]);
-  searchConfigsWithColumns$: Observable<SearchConfigInfo[]>;
+  storeName = 'ocx-column-group-selection-component-store';
+
+  readonly vm$ = this.searchConfigStore.columnSelectionVm$;
 
   constructor(
     @Inject(BASE_URL) private baseUrl: ReplaySubject<string>,
@@ -150,56 +143,77 @@ export class OneCXColumnGroupSelectionComponent
     private translateService: TranslateService,
     private searchConfigService: SearchConfigAPIService,
     private appStateService: AppStateService,
+    private searchConfigStore: SearchConfigStore,
   ) {
     this.userService.lang$.subscribe((lang) => this.translateService.use(lang));
 
-    this.eventsTopic$
-      .pipe(filter((e) => e.type === 'searchConfig#configChange'))
-      .subscribe((e) => {
-        console.log(e);
-        const payload: any = e.payload;
-        const config: SearchConfigInfo = payload.config;
+    this.searchConfigStore.setStoreName(this.storeName);
 
-        if (config && config.columns.length > 0) {
-          this.selectedGroupKey = config.name;
-          this.changeGroupSelection({ value: config.name });
-        } else {
-          if (this.isSearchConfigSelected()) {
-            this.selectedGroupKey = this.customGroupKey;
-            this.changeGroupSelection({ value: this.customGroupKey });
+    this.searchConfigStore.currentColumnsData$.subscribe(
+      ({
+        currentSearchConfig,
+        selectedGroupKey,
+        groupKeys,
+        searchConfigsWithOnlyColumns,
+      }) => {
+        if (
+          selectedGroupKey === '' ||
+          groupKeys.length <= 0 ||
+          searchConfigsWithOnlyColumns.length <= 0
+        ) {
+          return;
+        }
+
+        // if we already have correct combo just leave it
+        if (currentSearchConfig?.name === selectedGroupKey) return;
+        else if (currentSearchConfig === undefined) {
+          // search config will reset and we have only columns set
+          // or will reset and we have a input + columns config
+          if (
+            selectedGroupKey !== '' &&
+            (searchConfigsWithOnlyColumns
+              .map((config) => config.id)
+              .includes(selectedGroupKey) ||
+              !groupKeys.includes(selectedGroupKey))
+          ) {
+            this.searchConfigStore.setSelectedGroupKey(this.customGroupKey);
+          }
+          // rest we leave what was selected
+        } else if (currentSearchConfig.columns.length > 0) {
+          const activeColumns = this.columns.filter((c) =>
+            currentSearchConfig.columns.includes(c.id),
+          );
+          this.groupSelectionChanged.emit({
+            activeColumns,
+            groupKey: currentSearchConfig.name,
+          });
+          this.searchConfigStore.setSelectedGroupKey(currentSearchConfig.name);
+        } else if (currentSearchConfig.columns.length <= 0) {
+          if (
+            selectedGroupKey !== '' &&
+            (searchConfigsWithOnlyColumns
+              .map((config) => config.id)
+              .includes(selectedGroupKey) ||
+              !groupKeys.includes(selectedGroupKey))
+          ) {
+            this.searchConfigStore.setSelectedGroupKey(this.customGroupKey);
           }
         }
-      });
-
-    this.eventsTopic$
-      .pipe(filter((e) => e.type === 'searchConfig#configCreate'))
-      .subscribe((e) => {
-        // const payload: any = e.payload
-        // const config: SearchConfigInfo = payload.config
-      });
-
-    this.eventsTopic$
-      .pipe(filter((e) => e.type === 'searchConfig#configUpdate'))
-      .subscribe((e) => {
-        // const payload: any = e.payload
-        // const config: SearchConfigInfo = payload.config
-      });
-
-    this.eventsTopic$
-      .pipe(filter((e) => e.type === 'searchConfig#configDelete'))
-      .subscribe((e) => {
-        // const payload: any = e.payload
-        // const config: SearchConfigInfo = payload.config
-      });
+      },
+    );
 
     combineLatest([
       this.baseUrl,
-      this._pageName,
+      this.searchConfigStore.searchConfigs$,
+      this.searchConfigStore.pageName$,
       this.appStateService.currentMfe$.asObservable(),
     ])
       .pipe(
-        filter(([_, pageName, currentMfe]) => pageName.length > 0),
-        mergeMap(([_, pageName, currentMfe]) => {
+        filter(
+          ([_, configs, pageName, __]) =>
+            pageName.length > 0 && configs.length <= 0,
+        ),
+        mergeMap(([_, __, pageName, currentMfe]) => {
           return this.searchConfigService
             .getSearchConfigInfos({
               appId: currentMfe.appId,
@@ -209,13 +223,11 @@ export class OneCXColumnGroupSelectionComponent
             .pipe(map((response) => response.configs));
         }),
       )
-      .subscribe(this.searchConfigs$);
-
-    this.searchConfigsWithColumns$ = this.searchConfigs$
-      .asObservable()
-      .pipe(
-        map((configs) => configs.filter((config) => config.columns.length > 0)),
-      );
+      .subscribe((searchConfigs) => {
+        this.searchConfigStore.setSearchConfigs({
+          newSearchConfigs: searchConfigs,
+        });
+      });
   }
 
   @Input() set ocxRemoteComponentConfig(config: RemoteComponentConfig) {
@@ -230,64 +242,30 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   ngOnInit() {
-    this.allGroupKeys$ = combineLatest([
-      this.columns$,
-      this.selectedGroupKey$,
-      this.searchConfigsWithColumns$,
-    ]).pipe(
-      map(([columns, selectedGroupKey, configs]) =>
-        columns
-          .map((keys) => keys.predefinedGroupKeys || [])
-          .flat()
-          .concat([this.defaultGroupKey])
-          .concat([selectedGroupKey])
-          .concat(configs.map((config) => config.name ?? ''))
-          .filter((value) => !!value)
-          .filter(
-            (value, index, self) =>
-              self.indexOf(value) === index && value != null,
-          ),
-      ),
-    );
+    combineLatest([this.columns$])
+      .pipe(
+        map(([columns]) =>
+          columns
+            .map((keys) => keys.predefinedGroupKeys || [])
+            .flat()
+            .concat([this.defaultGroupKey])
+            .filter((value) => !!value)
+            .filter(
+              (value, index, self) =>
+                self.indexOf(value) === index && value != null,
+            ),
+        ),
+      )
+      .subscribe((groupKeys) => {
+        this.searchConfigStore.setGroupKeys(groupKeys);
+      });
   }
 
   changeGroupSelection(event: { value: string }) {
-    if (event.value === this.customGroupKey) {
-      return;
-    }
-    const searchConfig = this.searchConfigs$
-      .getValue()
-      .find((config) => config.name === event.value);
-    if (searchConfig === undefined) {
-      const activeColumns = this.columns.filter((c) =>
-        c.predefinedGroupKeys?.includes(event.value),
-      );
-      this.groupSelectionChanged.emit({ activeColumns, groupKey: event.value });
-      return;
-    }
-
-    const activeColumns = this.columns.filter((c) =>
-      searchConfig.columns.includes(c.id),
-    );
-    this.groupSelectionChanged.emit({ activeColumns, groupKey: event.value });
+    this.searchConfigStore.setSelectedGroupKey(event.value);
   }
 
   clearGroupSelection() {
-    let activeColumns = this.columns;
-    if (this.defaultGroupKey) {
-      activeColumns = this.columns.filter((column) =>
-        column.predefinedGroupKeys?.includes(this.defaultGroupKey),
-      );
-    }
-    this.groupSelectionChanged.emit({
-      activeColumns,
-      groupKey: this.defaultGroupKey,
-    });
-  }
-
-  private isSearchConfigSelected() {
-    return this.searchConfigs$
-      .getValue()
-      .find((c) => c.name === this.selectedGroupKey);
+    this.searchConfigStore.setSelectedGroupKey(this.defaultGroupKey);
   }
 }
