@@ -297,7 +297,7 @@ export class OneCXSearchConfigComponent
         ? Object.fromEntries(
             Object.entries(data.values).map(([name, value]) => [
               name,
-              String(value),
+              String(value) ?? '',
             ]),
           )
         : {},

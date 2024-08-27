@@ -150,9 +150,14 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           newDisplayedColumns,
         );
       searchConfig =
-        areColumnsEqual || state.editMode
+        areColumnsEqual ||
+        state.editMode ||
+        (state.currentSearchConfig &&
+          state.currentSearchConfig?.columns.length <= 0 &&
+          Object.keys(state.currentSearchConfig?.values).length > 0)
           ? state.currentSearchConfig
           : undefined;
+
       const preEditConfig =
         state.editMode || areColumnsEqual
           ? state.preEditConfig
@@ -489,6 +494,19 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           this.setCurrentConfig({
             newCurrentConfig: state.preEditConfig as SearchConfigInfo,
           });
+          if (
+            state.preEditConfig &&
+            state.preEditConfig?.columns.length <= 0 &&
+            Object.keys(state.preEditConfig.values).length > 0
+          ) {
+            this.updateDisplayedColumns({
+              newDisplayedColumns: state.preEditConfig.columns,
+            });
+            'columnGroupKey' in state.preEditConfig &&
+              this.setSelectedGroupKey({
+                groupKey: state.preEditConfig.columnGroupKey,
+              });
+          }
         } else {
           this.setRevertConfig({});
         }
