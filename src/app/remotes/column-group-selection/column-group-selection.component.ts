@@ -26,8 +26,10 @@ import {
 import {
   AppStateService,
   PortalCoreModule,
+  PortalDialogService,
   PortalMessageService,
   UserService,
+  providePortalDialogService,
 } from '@onecx/portal-integration-angular';
 import {
   AngularRemoteComponentsModule,
@@ -52,14 +54,25 @@ import { SharedModule } from 'src/app/shared/shared.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
+import { FloatLabelModule } from 'primeng/floatlabel';
 import {
   Configuration,
+  SearchConfig,
   SearchConfigAPIService,
   SearchConfigInfo,
+  UpdateSearchConfigRequest,
+  UpdateSearchConfigResponse,
 } from 'src/app/shared/generated';
 import { environment } from 'src/environments/environment';
-import { SearchConfigStore } from '../../shared/search-config.store';
+import {
+  ConfigData,
+  SearchConfigStore,
+} from '../../shared/search-config.store';
 import { PrimeIcons } from 'primeng/api';
+import {
+  CreateOrEditSearchConfigDialogComponent,
+  CreateOrEditSearchDialogContent,
+} from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
 
 export function createTranslateLoader(
   httpClient: HttpClient,
@@ -102,6 +115,7 @@ export function createTranslateLoader(
     ReactiveFormsModule,
     ButtonModule,
     DropdownModule,
+    FloatLabelModule,
   ],
   providers: [
     PortalMessageService,
@@ -109,6 +123,7 @@ export function createTranslateLoader(
       provide: BASE_URL,
       useValue: new ReplaySubject<string>(1),
     },
+    providePortalDialogService(),
     provideTranslateServiceForRoot({
       isolate: true,
       loader: {
@@ -128,7 +143,7 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   @Input() set selectedGroupKey(value: string) {
-    this.searchConfigStore.setSelectedGroupKey(value);
+    this.searchConfigStore.setSelectedGroupKey({ groupKey: value });
   }
 
   columns$ = new BehaviorSubject<DataTableColumn[]>([]);
@@ -152,6 +167,8 @@ export class OneCXColumnGroupSelectionComponent
   storeName = 'ocx-column-group-selection-component-store';
   editIcon = PrimeIcons.PENCIL;
   deleteIcon = PrimeIcons.TRASH;
+  stopIcon = PrimeIcons.TIMES;
+  saveIcon = PrimeIcons.CHECK;
 
   readonly vm$ = this.searchConfigStore.columnSelectionVm$;
 
@@ -162,11 +179,19 @@ export class OneCXColumnGroupSelectionComponent
     private searchConfigService: SearchConfigAPIService,
     private appStateService: AppStateService,
     private searchConfigStore: SearchConfigStore,
+    private portalDialogService: PortalDialogService,
     private portalMessageService: PortalMessageService,
   ) {
     this.userService.lang$.subscribe((lang) => this.translateService.use(lang));
 
     this.searchConfigStore.setStoreName(this.storeName);
+
+    this.searchConfigStore.currentRevertConfig$.subscribe((config) => {
+      config &&
+        this.searchConfigStore.setSelectedGroupKey({
+          groupKey: config.columnGroupKey,
+        });
+    });
 
     this.searchConfigStore.currentConfig$
       .pipe(
@@ -197,7 +222,9 @@ export class OneCXColumnGroupSelectionComponent
           config.columns.length > 0 &&
           Object.keys(config.values).length > 0
         ) {
-          this.searchConfigStore.setSelectedGroupKey(config?.name);
+          this.searchConfigStore.setSelectedGroupKey({
+            groupKey: config?.name,
+          });
           return;
         } else if (
           groupKeys.includes(selectedGroupKey) ||
@@ -205,7 +232,9 @@ export class OneCXColumnGroupSelectionComponent
         ) {
           return;
         } else {
-          this.searchConfigStore.setSelectedGroupKey(this.customGroupKey);
+          this.searchConfigStore.setSelectedGroupKey({
+            groupKey: this.customGroupKey,
+          });
           return;
         }
       });
@@ -317,8 +346,131 @@ export class OneCXColumnGroupSelectionComponent
         ),
       )
       .subscribe((groupKeys) => {
-        this.searchConfigStore.setGroupKeys(groupKeys);
+        this.searchConfigStore.setGroupKeys({ groupKeys: groupKeys });
       });
+  }
+
+  onSearchConfigEdit(event: Event, searchConfig: SearchConfigInfo | undefined) {
+    event.stopPropagation();
+
+    if (searchConfig === undefined) {
+      return;
+    }
+
+    this.searchConfigStore.setEditMode({});
+    this.searchConfigStore.setCurrentConfig({
+      newCurrentConfig: searchConfig,
+    });
+  }
+
+  onSearchConfigSaveEdit(event: Event, config: SearchConfigInfo | undefined) {
+    event.stopPropagation();
+
+    if (config === undefined) {
+      return;
+    }
+
+    this.portalDialogService
+      .openDialog<CreateOrEditSearchDialogContent>(
+        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_HEADER',
+        {
+          type: CreateOrEditSearchConfigDialogComponent,
+          inputs: {
+            searchConfigName: config?.name,
+            saveInputValues: Object.keys(config?.values ?? {}).length > 0,
+            saveColumns: (config?.columns ?? []).length > 0,
+          },
+        },
+        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
+        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CANCEL',
+      )
+      .pipe(
+        mergeMap((dialogResult) => {
+          return this.getSearchConfig(config).pipe(
+            map((response) => {
+              return {
+                config: response?.config,
+                result: dialogResult,
+              };
+            }),
+          );
+        }),
+        withLatestFrom(this.searchConfigStore.state$),
+        mergeMap(([{ config, result }, state]) => {
+          if (!config) {
+            return of(undefined);
+          }
+          if (result.button !== 'primary') {
+            return of(undefined);
+          }
+          return this.editSearchConfig(config, result.result, {
+            values: state.fieldValues,
+            columns: state.displayedColumns,
+            pageName: state.pageName,
+            columnGroupKey: state.selectedGroupKey,
+          });
+        }),
+      )
+      .subscribe((response: UpdateSearchConfigResponse | undefined) => {
+        if (response) {
+          this.portalMessageService.info({
+            summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_SUCCESS',
+          });
+          const searchConfig = response.configs.find((c) => c.id === config.id);
+          searchConfig &&
+            this.searchConfigStore.editSearchConfig({
+              searchConfig: searchConfig,
+            });
+        }
+        this.searchConfigStore.saveEdit();
+      });
+  }
+
+  private editSearchConfig(
+    config: SearchConfig,
+    configData: CreateOrEditSearchDialogContent | undefined,
+    data: ConfigData,
+  ) {
+    const request: UpdateSearchConfigRequest = {
+      searchConfig: {
+        ...config,
+        name: configData?.searchConfigName ?? config.name ?? '',
+        columns: configData?.saveColumns ? data.columns : [],
+        values: configData?.saveInputValues
+          ? Object.fromEntries(
+              Object.entries(data.values).map(([name, value]) => [
+                name,
+                String(value),
+              ]),
+            )
+          : {},
+      },
+    };
+    return this.searchConfigService.updateSearchConfig(config.id, request).pipe(
+      catchError((error) => {
+        console.error(error);
+        this.portalMessageService.error({
+          summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_FAILURE',
+        });
+        return of(undefined);
+      }),
+    );
+  }
+
+  private getSearchConfig(searchConfig: SearchConfigInfo) {
+    return this.searchConfigService.getSearchConfig(searchConfig.id).pipe(
+      catchError((error) => {
+        console.error(error);
+        this.portalMessageService.error({
+          summaryKey: 'SEARCH_CONFIG.FETCH_FAILURE',
+        });
+        return of(undefined);
+      }),
+    );
+  }
+
+  onSearchConfigCancelEdit(event: Event) {
+    this.searchConfigStore.cancelEdit();
   }
 
   onSearchConfigDelete(
@@ -356,11 +508,13 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   changeGroupSelection(event: { value: string }) {
-    this.searchConfigStore.setSelectedGroupKey(event.value);
+    this.searchConfigStore.setSelectedGroupKey({ groupKey: event.value });
   }
 
   clearGroupSelection() {
-    this.searchConfigStore.setSelectedGroupKey(this.defaultGroupKey);
+    this.searchConfigStore.setSelectedGroupKey({
+      groupKey: this.defaultGroupKey,
+    });
   }
 
   hasConfig(configs: SearchConfigInfo[], name: string): boolean {

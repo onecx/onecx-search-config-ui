@@ -1,68 +1,96 @@
-<span class="p-float-label">
-  <ng-container *ngIf="vm$ | async as vm">
-    <p-dropdown
-      id="columnGroupSelectionDropdown"
-      (onClear)="clearGroupSelection()"
-      (onChange)="changeGroupSelection($event)"
-      [options]="vm.allGroupKeys"
-      [placeholder]="placeholderKey | translate"
-      [showClear]="vm.selectedGroupKey !== defaultGroupKey"
-      [(ngModel)]="vm.selectedGroupKey"
-      appendTo="body"
-    >
-      <ng-template let-item pTemplate="item">
-        <div
-          class="flex align-items-center gap-2 justify-content-between h-2rem"
-        >
+<div
+  class="flex gap-2 justify-content-end align-content-center align-items-center"
+>
+  <div
+    class="flex gap-2 align-content-center align-items-center"
+    *ngIf="vm$ | async as vm"
+  >
+    <button
+      *ngIf="vm.editMode && vm.editStoreName === storeName"
+      [label]="'SEARCH_CONFIG.SAVE_EDIT' | translate"
+      icon="{{ saveIcon }}"
+      pButton
+      type="button"
+      (click)="onSearchConfigSaveEdit($event, vm.currentConfig)"
+    ></button>
+    <button
+      *ngIf="vm.editMode && vm.editStoreName === storeName"
+      [label]="'SEARCH_CONFIG.CANCEL_EDIT' | translate"
+      icon="{{ stopIcon }}"
+      pButton
+      type="button"
+      (click)="onSearchConfigCancelEdit($event)"
+    ></button>
+    <p-floatLabel>
+      <p-dropdown
+        id="columnGroupSelectionDropdown"
+        (onClear)="clearGroupSelection()"
+        (onChange)="changeGroupSelection($event)"
+        [options]="vm.allGroupKeys"
+        [placeholder]="placeholderKey | translate"
+        [showClear]="vm.selectedGroupKey !== defaultGroupKey"
+        [(ngModel)]="vm.selectedGroupKey"
+        appendTo="body"
+      >
+        <ng-template let-item pTemplate="item">
           <div
-            *ngIf="
-              vm.groupKeys.includes(item) ||
-              item === customGroupKey ||
-              (vm.selectedGroupKey === item &&
-                !hasConfig(vm.searchConfigs, item))
-            "
+            class="flex align-items-center gap-2 justify-content-between h-2rem"
           >
-            {{ item ? (item | translate) : '' }}
-          </div>
-          <div *ngIf="hasConfig(vm.searchConfigs, item)">
-            {{ item }}
-          </div>
-          <div
-            *ngIf="
-              hasConfig(vm.searchConfigs, item) &&
-              !isReadonly(vm.searchConfigs, item)
-            "
-          >
-            <!-- <button
-              pButton
-              type="button"
-              class="p-button-rounded font-medium p-button-text p-button-icon-only"
-              (click)="onSearchConfigEdit($event, config)"
-            >
-              <span class="{{ editIcon }}"></span>
-            </button> -->
-            <button
-              pButton
-              type="button"
-              class="p-button-rounded font-medium p-button-text p-button-icon-only"
-              (click)="
-                onSearchConfigDelete(
-                  $event,
-                  getConfigByName(vm.searchConfigs, item)
-                )
+            <div
+              *ngIf="
+                vm.groupKeys.includes(item) ||
+                item === customGroupKey ||
+                (vm.selectedGroupKey === item &&
+                  !hasConfig(vm.searchConfigs, item))
               "
             >
-              <span class="{{ deleteIcon }}"></span>
-            </button>
+              {{ item ? (item | translate) : '' }}
+            </div>
+            <div *ngIf="hasConfig(vm.searchConfigs, item)">
+              {{ item }}
+            </div>
+            <div
+              *ngIf="
+                hasConfig(vm.searchConfigs, item) &&
+                !isReadonly(vm.searchConfigs, item)
+              "
+            >
+              <button
+                pButton
+                type="button"
+                class="p-button-rounded font-medium p-button-text p-button-icon-only"
+                (click)="
+                  onSearchConfigEdit(
+                    $event,
+                    getConfigByName(vm.searchConfigs, item)
+                  )
+                "
+              >
+                <span class="{{ editIcon }}"></span>
+              </button>
+              <button
+                pButton
+                type="button"
+                class="p-button-rounded font-medium p-button-text p-button-icon-only"
+                (click)="
+                  onSearchConfigDelete(
+                    $event,
+                    getConfigByName(vm.searchConfigs, item)
+                  )
+                "
+              >
+                <span class="{{ deleteIcon }}"></span>
+              </button>
+            </div>
           </div>
-        </div>
-      </ng-template>
-      <ng-template let-item pTemplate="selectedItem">
-        {{ item ? (item | translate) : '' }}
-      </ng-template>
-    </p-dropdown>
-    <label *ngIf="vm.allGroupKeys.length" for="columnGroupSelectionDropdown">
-      {{ 'OCX_CUSTOM_GROUP_COLUMN_SELECTOR.DROPDOWN_LABEL' | translate }}
-    </label>
-  </ng-container>
-</span>
+        </ng-template>
+        <ng-template let-item pTemplate="selectedItem">
+          {{ item ? (item | translate) : '' }}
+        </ng-template>
+      </p-dropdown>
+      <label *ngIf="vm.allGroupKeys.length" for="columnGroupSelectionDropdown">
+        {{ 'OCX_CUSTOM_GROUP_COLUMN_SELECTOR.DROPDOWN_LABEL' | translate }}
+      </label>
+    </p-floatLabel>
+  </div>
+</div>

@@ -8,7 +8,7 @@
         *ngIf="vm$ | async as vm"
       >
         <button
-          *ngIf="vm.editMode"
+          *ngIf="vm.editMode && vm.editStoreName === storeName"
           [label]="'SEARCH_CONFIG.SAVE_EDIT' | translate"
           icon="{{ saveIcon }}"
           pButton
@@ -16,7 +16,7 @@
           (click)="onSearchConfigSaveEdit($event)"
         ></button>
         <button
-          *ngIf="vm.editMode"
+          *ngIf="vm.editMode && vm.editStoreName === storeName"
           [label]="'SEARCH_CONFIG.CANCEL_EDIT' | translate"
           icon="{{ stopIcon }}"
           pButton
