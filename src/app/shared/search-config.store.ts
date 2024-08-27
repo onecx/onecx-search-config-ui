@@ -10,12 +10,6 @@ export type ConfigData = {
   values: FieldValues;
   columns: Array<string>;
 };
-export type ColumnsData = {
-  selectedGroupKey: string;
-  groupKeys: string[];
-  searchConfigsWithOnlyColumns: SearchConfigInfo[];
-  currentSearchConfig: SearchConfigInfo | undefined;
-};
 
 export interface SearchConfigState {
   storeName: string;
@@ -70,13 +64,14 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
 
   // *********** Updaters *********** //
 
-  // set name for each store independently
+  /**
+   *  Set name for each store independently
+   */
   readonly setStoreName = this.updater((state, storeName: string) => ({
     ...state,
     storeName: storeName,
   }));
 
-  // TODO: set page name, TODO should be set the same for both components
   readonly setPageName = this.updater((state, newPageName: string) => ({
     ...state,
     pageName: newPageName,
@@ -234,6 +229,10 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         );
       return {
         ...state,
+        currentSearchConfig:
+          state.currentSearchConfig?.id === searchConfig.id
+            ? undefined
+            : state.currentSearchConfig,
         searchConfigs: state.searchConfigs.filter(
           (config) => config.id !== searchConfig.id,
         ),
@@ -374,21 +373,18 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     ({ selectedGroupKey }): string => selectedGroupKey,
   );
 
-  readonly currentColumnsData$ = this.select(
-    this.groupKeys$,
-    this.searchConfigsWithOnlyColumns$,
-    this.selectedGroupKey$,
+  readonly currentConfigWithConfigs$ = this.select(
     this.currentConfig$,
+    this.searchConfigsWithOnlyColumns$,
     (
-      groupKeys,
-      searchConfigsWithOnlyColumns,
-      selectedGroupKey,
-      currentConfig,
-    ): ColumnsData => ({
-      selectedGroupKey: selectedGroupKey,
-      groupKeys: groupKeys,
-      searchConfigsWithOnlyColumns: searchConfigsWithOnlyColumns,
-      currentSearchConfig: currentConfig,
+      config,
+      configs,
+    ): {
+      config: SearchConfigInfo | undefined;
+      configs: SearchConfigInfo[];
+    } => ({
+      config: config,
+      configs: configs,
     }),
   );
 
@@ -401,15 +397,6 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
   readonly pageName$ = this.select(
     this.state$,
     (state): string => state.pageName,
-  );
-
-  readonly currentData$ = this.select(
-    this.state$,
-    (state): ConfigData => ({
-      pageName: state.pageName,
-      values: state.fieldValues,
-      columns: state.displayedColumns,
-    }),
   );
 
   readonly searchConfigVm$ = this.select(
@@ -466,7 +453,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     return this.searchConfigTopic$.pipe(
       withLatestFrom(this.state$),
       filter(([msg, state]) => msg.payload.storeName !== state.storeName),
-      tap(([msg, state]) => {
+      tap(([msg, _]) => {
         if (msg.payload.name === 'searchConfigs') {
           this.setSearchConfigs({
             newSearchConfigs: msg.payload.searchConfigs,

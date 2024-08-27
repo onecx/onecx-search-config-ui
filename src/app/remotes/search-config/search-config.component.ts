@@ -241,13 +241,17 @@ export class OneCXSearchConfigComponent
       .pipe(
         withLatestFrom(
           this.appStateService.currentMfe$.asObservable(),
-          this.searchConfigStore.currentData$,
+          this.searchConfigStore.state$,
         ),
-        mergeMap(([dialogResult, currentMfe, data]) => {
+        mergeMap(([dialogResult, currentMfe, state]) => {
           if (dialogResult?.button !== 'primary') {
             return of(undefined);
           }
-          return this.saveSearchConfig(dialogResult.result, currentMfe, data);
+          return this.saveSearchConfig(dialogResult.result, currentMfe, {
+            pageName: state.pageName,
+            values: state.fieldValues,
+            columns: state.displayedColumns
+          });
         }),
       )
       .subscribe((response) => {
