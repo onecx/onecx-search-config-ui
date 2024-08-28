@@ -73,6 +73,10 @@ import {
   CreateOrEditSearchConfigDialogComponent,
   CreateOrEditSearchDialogContent,
 } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
+import {
+  SEARCH_CONFIG_STORE_TOPIC,
+  SearchConfigTopic,
+} from 'src/app/shared/topics/search-config/v1/search-config.topic';
 
 export function createTranslateLoader(
   httpClient: HttpClient,
@@ -132,6 +136,10 @@ export function createTranslateLoader(
         deps: [HttpClient, BASE_URL, TranslationCacheService, AppStateService],
       },
     }),
+    {
+      provide: SEARCH_CONFIG_STORE_TOPIC,
+      useClass: SearchConfigTopic,
+    },
     SearchConfigStore,
   ],
 })

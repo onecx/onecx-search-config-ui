@@ -61,6 +61,7 @@ import {
   CreateOrEditSearchConfigDialogComponent,
   CreateOrEditSearchDialogContent,
 } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
+import { SEARCH_CONFIG_STORE_TOPIC, SearchConfigTopic } from 'src/app/shared/topics/search-config/v1/search-config.topic';
 
 @Component({
   selector: 'app-ocx-search-config',
@@ -94,7 +95,11 @@ import {
       },
     }),
     providePortalDialogService(),
-    SearchConfigStore,
+    {
+      provide: SEARCH_CONFIG_STORE_TOPIC,
+      useClass: SearchConfigTopic
+    },
+    SearchConfigStore
   ],
 })
 export class OneCXSearchConfigComponent

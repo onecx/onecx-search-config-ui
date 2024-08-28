@@ -1,8 +1,11 @@
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
 import { filter, tap, withLatestFrom } from 'rxjs';
 import { SearchConfigInfo } from 'src/app/shared/generated';
-import { SearchConfigTopic } from './topics/search-config/v1/search-config.topic';
+import {
+  SEARCH_CONFIG_STORE_TOPIC,
+  SearchConfigTopic,
+} from './topics/search-config/v1/search-config.topic';
 
 export type FieldValues = { [key: string]: unknown };
 export type ConfigData = {
@@ -48,9 +51,10 @@ export interface ColumnSelectionViewModel {
 
 @Injectable()
 export class SearchConfigStore extends ComponentStore<SearchConfigState> {
-  private searchConfigTopic$ = new SearchConfigTopic();
-
-  constructor() {
+  constructor(
+    @Inject(SEARCH_CONFIG_STORE_TOPIC)
+    public searchConfigTopic$: SearchConfigTopic,
+  ) {
     super({
       storeName: '',
       currentSearchConfig: undefined,
@@ -419,13 +423,13 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
 
   // *********** Selectors *********** //
 
+  readonly searchConfigs$ = this.select(
+    ({ searchConfigs }): SearchConfigInfo[] => searchConfigs,
+  );
+
   readonly isSearchConfigSaved$ = this.select(
     ({ preEditConfig }): boolean | undefined =>
       preEditConfig && 'id' in preEditConfig,
-  );
-
-  readonly searchConfigs$ = this.select(
-    ({ searchConfigs }): SearchConfigInfo[] => searchConfigs,
   );
 
   readonly currentConfig$ = this.select(
