@@ -7,7 +7,7 @@
         class="flex gap-2 align-content-center align-items-center"
         *ngIf="vm$ | async as vm"
       >
-        <button
+        <!-- <button
           *ngIf="vm.editMode && vm.editStoreName === storeName"
           [label]="'SEARCH_CONFIG.SAVE_EDIT' | translate"
           icon="{{ saveIcon }}"
@@ -22,7 +22,7 @@
           pButton
           type="button"
           (click)="onSearchConfigCancelEdit($event)"
-        ></button>
+        ></button> -->
         <p-dropdown
           id="searchConfigDropdown"
           formControlName="searchConfig"
@@ -30,9 +30,9 @@
           optionLabel="name"
           [placeholder]="'SEARCH_CONFIG.PLACEHOLDER' | translate"
           (onChange)="onSearchConfigChange($event)"
-          [disabled]="vm.editMode"
           appendTo="body"
         >
+          <!-- [disabled]="vm.editMode" -->
           <ng-template let-config pTemplate="selectedItem">
             <div
               class="flex align-items-center gap-2"
@@ -44,16 +44,16 @@
               class="flex align-items-center gap-2"
               *ngIf="config.id !== addSearchConfigOption.id"
             >
-              <ng-container *ngIf="vm.editMode">
+              <!-- <ng-container *ngIf="vm.editMode">
                 <div>
                   {{ 'SEARCH_CONFIG.EDITING' | translate }} {{ config.name }}
                 </div>
-              </ng-container>
-              <ng-container *ngIf="!vm.editMode">
-                <div>
-                  {{ config.name }}
-                </div>
-              </ng-container>
+              </ng-container> -->
+              <!-- <ng-container *ngIf="!vm.editMode"> -->
+              <div>
+                {{ config.name }}
+              </div>
+              <!-- </ng-container> -->
             </div>
           </ng-template>
           <ng-template let-config pTemplate="item">

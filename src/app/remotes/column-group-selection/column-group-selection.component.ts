@@ -64,10 +64,7 @@ import {
   UpdateSearchConfigResponse,
 } from 'src/app/shared/generated';
 import { environment } from 'src/environments/environment';
-import {
-  ConfigData,
-  SearchConfigStore,
-} from '../../shared/search-config.store';
+import { PageData, SearchConfigStore } from '../../shared/search-config.store';
 import { PrimeIcons } from 'primeng/api';
 import {
   CreateOrEditSearchConfigDialogComponent,
@@ -77,6 +74,7 @@ import {
   SEARCH_CONFIG_STORE_TOPIC,
   SearchConfigTopic,
 } from 'src/app/shared/topics/search-config/v1/search-config.topic';
+import { advancedViewMode } from 'src/app/shared/constants';
 
 export function createTranslateLoader(
   httpClient: HttpClient,
@@ -146,12 +144,14 @@ export function createTranslateLoader(
 export class OneCXColumnGroupSelectionComponent
   implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit
 {
-  @Input() set pageName(value: string) {
-    this.searchConfigStore.setPageName(value);
+  @Input() set pageName(pageName: string) {
+    this.searchConfigStore.setPageName(pageName);
   }
 
-  @Input() set selectedGroupKey(value: string) {
-    this.searchConfigStore.setSelectedGroupKey({ groupKey: value });
+  @Input() set selectedGroupKey(selectedGroupKey: string) {
+    this.searchConfigStore.setSelectedGroupKey({
+      selectedGroupKey: selectedGroupKey,
+    });
   }
 
   columns$ = new BehaviorSubject<DataTableColumn[]>([]);
@@ -164,7 +164,9 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   @Input() defaultGroupKey = '';
-  @Input() customGroupKey = '';
+  @Input() set customGroupKey(key: string) {
+    this.searchConfigStore.setCustomGroupKey(key);
+  }
   @Input() placeholderKey = '';
 
   @Input() groupSelectionChanged: EventEmitter<{
@@ -194,75 +196,30 @@ export class OneCXColumnGroupSelectionComponent
 
     this.searchConfigStore.setStoreName(this.storeName);
 
-    this.searchConfigStore.currentRevertConfig$.subscribe((config) => {
-      config &&
-        this.searchConfigStore.setSelectedGroupKey({
-          groupKey: config.columnGroupKey,
-        });
-    });
-
-    this.searchConfigStore.currentConfig$
-      .pipe(
-        withLatestFrom(
-          this.searchConfigStore.selectedGroupKey$,
-          this.searchConfigStore.groupKeys$,
-          this.searchConfigStore.searchConfigsWithOnlyColumns$,
-        ),
-      )
-      .subscribe(([config, selectedGroupKey, groupKeys, searchConfigs]) => {
-        if (
-          config &&
-          config.columns.length > 0 &&
-          Object.keys(config.values).length <= 0
-        ) {
-          if (selectedGroupKey !== config.name) {
-            const activeColumns = this.columns.filter((c) =>
-              config.columns.includes(c.id),
-            );
-            this.groupSelectionChanged.emit({
-              activeColumns,
-              groupKey: config.name,
-            });
-          }
-          return;
-        } else if (
-          config &&
-          config.columns.length > 0 &&
-          Object.keys(config.values).length > 0
-        ) {
-          this.searchConfigStore.setSelectedGroupKey({
-            groupKey: config?.name,
-          });
-          return;
-        } else if (
-          groupKeys.includes(selectedGroupKey) ||
-          selectedGroupKey === this.customGroupKey
-        ) {
-          return;
-        } else {
-          this.searchConfigStore.setSelectedGroupKey({
-            groupKey: this.customGroupKey,
-          });
-          return;
-        }
-      });
+    // this.searchConfigStore.currentRevertConfig$.subscribe((config) => {
+    //   config &&
+    //     this.searchConfigStore.setSelectedGroupKey({
+    //       groupKey: config.columnGroupKey,
+    //     });
+    // });
 
     this.searchConfigStore.selectedGroupKey$
-      .pipe(
-        withLatestFrom(
-          this.searchConfigStore.currentConfig$,
-          this.searchConfigStore.groupKeys$,
-          this.searchConfigStore.searchConfigsWithOnlyColumns$,
-        ),
-      )
-      .subscribe(([selectedGroupKey, config, groupKeys, searchConfigs]) => {
-        if (selectedGroupKey === '') {
+      .pipe(withLatestFrom(this.vm$))
+      .subscribe(([selectedGroupKey, vm]) => {
+        const configWithColumns = vm.searchConfigsWithColumns.find(
+          (c) => c.name === selectedGroupKey,
+        );
+        if (configWithColumns) {
+          const activeColumns = this.columns.filter((c) =>
+            configWithColumns.columns.includes(c.id),
+          );
+          this.groupSelectionChanged.emit({
+            activeColumns,
+            groupKey: selectedGroupKey,
+          });
+        } else if (selectedGroupKey === vm.customGroupKey) {
           return;
-        } else if (selectedGroupKey === this.customGroupKey) {
-          return;
-        }
-
-        if (groupKeys.includes(selectedGroupKey)) {
+        } else if (vm.nonSearchConfigGroupKeys.includes(selectedGroupKey)) {
           const activeColumns = this.columns.filter((c) =>
             c.predefinedGroupKeys?.includes(selectedGroupKey),
           );
@@ -270,60 +227,7 @@ export class OneCXColumnGroupSelectionComponent
             activeColumns,
             groupKey: selectedGroupKey,
           });
-        } else if (
-          searchConfigs.map((c) => c.name).includes(selectedGroupKey)
-        ) {
-          const searchConfig = searchConfigs.find(
-            (c) => c.name === selectedGroupKey,
-          );
-          searchConfig &&
-            this.searchConfigStore.setCurrentConfig({
-              newCurrentConfig: searchConfig,
-            });
-          const activeColumns = this.columns.filter((c) =>
-            searchConfig?.columns.includes(c.id),
-          );
-          searchConfig &&
-            this.groupSelectionChanged.emit({
-              activeColumns,
-              groupKey: selectedGroupKey,
-            });
-        } else {
-          const activeColumns = this.columns.filter((c) =>
-            config?.columns.includes(c.id),
-          );
-          this.groupSelectionChanged.emit({
-            activeColumns,
-            groupKey: selectedGroupKey,
-          });
         }
-      });
-
-    combineLatest([
-      this.baseUrl,
-      this.searchConfigStore.searchConfigs$,
-      this.searchConfigStore.pageName$,
-      this.appStateService.currentMfe$.asObservable(),
-    ])
-      .pipe(
-        filter(
-          ([_, configs, pageName, __]) =>
-            pageName.length > 0 && configs.length <= 0,
-        ),
-        mergeMap(([_, __, pageName, currentMfe]) => {
-          return this.searchConfigService
-            .getSearchConfigInfos({
-              appId: currentMfe.appId,
-              page: pageName,
-              productName: currentMfe.productName,
-            })
-            .pipe(map((response) => response.configs));
-        }),
-      )
-      .subscribe((searchConfigs) => {
-        this.searchConfigStore.setSearchConfigs({
-          newSearchConfigs: searchConfigs,
-        });
       });
   }
 
@@ -339,9 +243,9 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   ngOnInit() {
-    combineLatest([this.columns$])
+    this.columns$
       .pipe(
-        map(([columns]) =>
+        map((columns) =>
           columns
             .map((keys) => keys.predefinedGroupKeys || [])
             .flat()
@@ -354,7 +258,9 @@ export class OneCXColumnGroupSelectionComponent
         ),
       )
       .subscribe((groupKeys) => {
-        this.searchConfigStore.setGroupKeys({ groupKeys: groupKeys });
+        this.searchConfigStore.setNonSearchConfigGroupKeys({
+          nonSearchConfigGroupKeys: groupKeys,
+        });
       });
   }
 
@@ -365,104 +271,108 @@ export class OneCXColumnGroupSelectionComponent
       return;
     }
 
-    this.searchConfigStore.setEditMode({});
+    // this.searchConfigStore.setEditMode({});
     this.searchConfigStore.setCurrentConfig({
-      newCurrentConfig: searchConfig,
+      config: searchConfig,
     });
   }
 
   onSearchConfigSaveEdit(event: Event, config: SearchConfigInfo | undefined) {
     event.stopPropagation();
 
-    if (config === undefined) {
-      return;
-    }
+    // if (config === undefined) {
+    //   return;
+    // }
 
-    this.portalDialogService
-      .openDialog<CreateOrEditSearchDialogContent>(
-        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_HEADER',
-        {
-          type: CreateOrEditSearchConfigDialogComponent,
-          inputs: {
-            searchConfigName: config?.name,
-            saveInputValues: Object.keys(config?.values ?? {}).length > 0,
-            saveColumns: (config?.columns ?? []).length > 0,
-          },
-        },
-        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
-        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CANCEL',
-      )
-      .pipe(
-        mergeMap((dialogResult) => {
-          return this.getSearchConfig(config).pipe(
-            map((response) => {
-              return {
-                config: response?.config,
-                result: dialogResult,
-              };
-            }),
-          );
-        }),
-        withLatestFrom(this.searchConfigStore.state$),
-        mergeMap(([{ config, result }, state]) => {
-          if (!config) {
-            return of(undefined);
-          }
-          if (result.button !== 'primary') {
-            return of(undefined);
-          }
-          return this.editSearchConfig(config, result.result, {
-            values: state.fieldValues,
-            columns: state.displayedColumns,
-            pageName: state.pageName,
-            columnGroupKey: state.selectedGroupKey,
-          });
-        }),
-      )
-      .subscribe((response: UpdateSearchConfigResponse | undefined) => {
-        if (response) {
-          this.portalMessageService.info({
-            summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_SUCCESS',
-          });
-          const searchConfig = response.configs.find((c) => c.id === config.id);
-          searchConfig &&
-            this.searchConfigStore.editSearchConfig({
-              searchConfig: searchConfig,
-            });
-        }
-        this.searchConfigStore.saveEdit();
-      });
+    // this.portalDialogService
+    //   .openDialog<CreateOrEditSearchDialogContent>(
+    //     'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_HEADER',
+    //     {
+    //       type: CreateOrEditSearchConfigDialogComponent,
+    //       inputs: {
+    //         searchConfigName: config?.name,
+    //         saveInputValues: Object.keys(config?.values ?? {}).length > 0,
+    //         saveColumns: (config?.columns ?? []).length > 0,
+    //       },
+    //     },
+    //     'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
+    //     'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CANCEL',
+    //   )
+    //   .pipe(
+    //     mergeMap((dialogResult) => {
+    //       return this.getSearchConfig(config).pipe(
+    //         map((response) => {
+    //           return {
+    //             config: response?.config,
+    //             result: dialogResult,
+    //           };
+    //         }),
+    //       );
+    //     }),
+    //     withLatestFrom(this.searchConfigStore.state$),
+    //     mergeMap(([{ config, result }, state]) => {
+    //       if (!config) {
+    //         return of(undefined);
+    //       }
+    //       if (result.button !== 'primary') {
+    //         return of(undefined);
+    //       }
+    //       return this.editSearchConfig(config, result.result, {
+    //         fieldValues: state.fieldValues,
+    //         displayedColumIds: state.displayedColumns,
+    //         pageName: state.pageName,
+    //         columnGroupKey: state.selectedGroupKey,
+    //         viewMode: state.viewMode,
+    //       });
+    //     }),
+    //   )
+    //   .subscribe((response: UpdateSearchConfigResponse | undefined) => {
+    //     if (response) {
+    //       this.portalMessageService.info({
+    //         summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_SUCCESS',
+    //       });
+    //       const searchConfig = response.configs.find((c) => c.id === config.id);
+    //       searchConfig &&
+    //         this.searchConfigStore.editSearchConfig({
+    //           searchConfig: searchConfig,
+    //         });
+    //     }
+    //     this.searchConfigStore.saveEdit();
+    //   });
   }
 
   private editSearchConfig(
     config: SearchConfig,
     configData: CreateOrEditSearchDialogContent | undefined,
-    data: ConfigData,
+    data: PageData,
   ) {
-    const request: UpdateSearchConfigRequest = {
-      searchConfig: {
-        ...config,
-        name: configData?.searchConfigName ?? config.name ?? '',
-        columns: configData?.saveColumns ? data.columns : [],
-        values: configData?.saveInputValues
-          ? Object.fromEntries(
-              Object.entries(data.values).map(([name, value]) => [
-                name,
-                String(value),
-              ]),
-            )
-          : {},
-      },
-    };
-    return this.searchConfigService.updateSearchConfig(config.id, request).pipe(
-      catchError((error) => {
-        console.error(error);
-        this.portalMessageService.error({
-          summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_FAILURE',
-        });
-        return of(undefined);
-      }),
-    );
+    // const request: UpdateSearchConfigRequest = {
+    //   searchConfig: {
+    //     ...config,
+    //     name: configData?.searchConfigName ?? config.name ?? '',
+    //     columns: configData?.saveColumns ? data.displayedColumIds : [],
+    //     values: configData?.saveInputValues
+    //       ? Object.fromEntries(
+    //           Object.entries(data.fieldValues)
+    //             .filter(([_, value]) => value !== null)
+    //             .map(([name, value]) => [
+    //               name,
+    //               value === undefined ? '' : String(value),
+    //             ]),
+    //         )
+    //       : {},
+    //     isAdvanced: data.viewMode === advancedViewMode,
+    //   },
+    // };
+    // return this.searchConfigService.updateSearchConfig(config.id, request).pipe(
+    //   catchError((error) => {
+    //     console.error(error);
+    //     this.portalMessageService.error({
+    //       summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_FAILURE',
+    //     });
+    //     return of(undefined);
+    //   }),
+    // );
   }
 
   private getSearchConfig(searchConfig: SearchConfigInfo) {
@@ -478,7 +388,7 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   onSearchConfigCancelEdit(event: Event) {
-    this.searchConfigStore.cancelEdit();
+    // this.searchConfigStore.cancelEdit();
   }
 
   onSearchConfigDelete(
@@ -516,17 +426,27 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   changeGroupSelection(event: { value: string }) {
-    this.searchConfigStore.setSelectedGroupKey({ groupKey: event.value });
+    this.searchConfigStore.setSelectedGroupKey({
+      selectedGroupKey: event.value,
+    });
   }
 
   clearGroupSelection() {
     this.searchConfigStore.setSelectedGroupKey({
-      groupKey: this.defaultGroupKey,
+      selectedGroupKey: this.defaultGroupKey,
     });
   }
 
-  hasConfig(configs: SearchConfigInfo[], name: string): boolean {
-    return configs.find((c) => c.name === name) !== undefined;
+  isSearchConfig(
+    name: string,
+    configs: SearchConfigInfo[],
+    nonSearchConfigGroupKeys: string[],
+    customGroupKey: string,
+  ): boolean {
+    if (name === customGroupKey || nonSearchConfigGroupKeys.includes(name))
+      return false;
+    else if (configs.find((c) => c.name === name)) return true;
+    return true;
   }
 
   isReadonly(configs: SearchConfigInfo[], name: string): boolean {

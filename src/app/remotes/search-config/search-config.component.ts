@@ -53,7 +53,8 @@ import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { MfeInfo } from '@onecx/integration-interface';
 import {
-  ConfigData,
+  FieldValues,
+  PageData,
   SearchConfigStore,
 } from '../../shared/search-config.store';
 import { PrimeIcons } from 'primeng/api';
@@ -61,7 +62,11 @@ import {
   CreateOrEditSearchConfigDialogComponent,
   CreateOrEditSearchDialogContent,
 } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
-import { SEARCH_CONFIG_STORE_TOPIC, SearchConfigTopic } from 'src/app/shared/topics/search-config/v1/search-config.topic';
+import {
+  SEARCH_CONFIG_STORE_TOPIC,
+  SearchConfigTopic,
+} from 'src/app/shared/topics/search-config/v1/search-config.topic';
+import { advancedViewMode, basicViewMode } from 'src/app/shared/constants';
 
 @Component({
   selector: 'app-ocx-search-config',
@@ -97,31 +102,37 @@ import { SEARCH_CONFIG_STORE_TOPIC, SearchConfigTopic } from 'src/app/shared/top
     providePortalDialogService(),
     {
       provide: SEARCH_CONFIG_STORE_TOPIC,
-      useClass: SearchConfigTopic
+      useClass: SearchConfigTopic,
     },
-    SearchConfigStore
+    SearchConfigStore,
   ],
 })
 export class OneCXSearchConfigComponent
   implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit
 {
-  @Input() set pageName(value: string) {
-    this.searchConfigStore.setPageName(value);
+  @Input() set pageName(pageName: string) {
+    this.searchConfigStore.setPageName(pageName);
   }
-  @Input() set currentInputFieldValues(value: { [key: string]: unknown }) {
+  @Input() set currentInputFieldValues(values: { [key: string]: unknown }) {
     this.searchConfigStore.updateFieldValues({
-      values: value,
+      values: values,
     });
   }
-  @Input() set displayedColumns(value: string[]) {
+  @Input() set displayedColumns(columns: string[]) {
     this.searchConfigStore.updateDisplayedColumns({
-      newDisplayedColumns: value,
+      displayedColumns: columns,
+    });
+  }
+  @Input() set viewMode(viewMode: 'basic' | 'advanced') {
+    this.searchConfigStore.updateViewMode({
+      viewMode: viewMode,
     });
   }
 
   @Input() searchConfigSelected: EventEmitter<{
     inputValues: { [key: string]: unknown };
     displayedColumns: string[];
+    viewMode: string;
   }> = new EventEmitter();
 
   formGroup: FormGroup | undefined;
@@ -154,16 +165,12 @@ export class OneCXSearchConfigComponent
 
     combineLatest([
       this.baseUrl,
-      this.searchConfigStore.searchConfigs$,
       this.searchConfigStore.pageName$,
       this.appStateService.currentMfe$.asObservable(),
     ])
       .pipe(
-        filter(
-          ([_, configs, pageName, currentMfe]) =>
-            pageName.length > 0 && configs.length <= 0,
-        ),
-        mergeMap(([_, __, pageName, currentMfe]) => {
+        filter(([_, pageName, currentMfe]) => pageName.length > 0),
+        mergeMap(([_, pageName, currentMfe]) => {
           return this.searchConfigService
             .getSearchConfigInfos({
               appId: currentMfe.appId,
@@ -175,34 +182,50 @@ export class OneCXSearchConfigComponent
       )
       .subscribe((searchConfigs) => {
         this.searchConfigStore.setSearchConfigs({
-          newSearchConfigs: searchConfigs,
+          searchConfigs: searchConfigs,
         });
       });
 
-    this.searchConfigStore.currentRevertConfig$.subscribe((config) => {
-      this.searchConfigSelected.emit(
-        config
-          ? {
-              inputValues: config?.values,
-              displayedColumns: config?.columns,
-            }
-          : undefined,
-      );
-      this.setSearchConfigControl(null);
-    });
+    // this.searchConfigStore.currentRevertConfig$.subscribe((config) => {
+    //   this.searchConfigSelected.emit(
+    //     config
+    //       ? {
+    //           inputValues: config?.fieldValues,
+    //           displayedColumns: config?.displayedColumIds,
+    //           viewMode: config.viewMode,
+    //         }
+    //       : undefined,
+    //   );
+    //   this.setSearchConfigControl(null);
+    // });
 
-    this.searchConfigStore.currentConfig$.subscribe((config) => {
-      console.log('config', config);
-      this.searchConfigSelected.emit(
-        config
-          ? {
-              inputValues: config?.values,
-              displayedColumns: config?.columns,
-            }
-          : undefined,
-      );
-      this.setSearchConfigControl(config ?? null);
-    });
+    this.searchConfigStore.currentConfig$
+      .pipe(withLatestFrom(this.searchConfigStore.pageData$))
+      .subscribe(([config, pageData]) => {
+        this.searchConfigSelected.emit(
+          config
+            ? {
+                inputValues:
+                  Object.keys(config?.values).length > 0
+                    ? config.values
+                    : pageData.fieldValues,
+                displayedColumns:
+                  config?.columns.length > 0
+                    ? config.columns
+                    : pageData.displayedColumIds,
+                viewMode:
+                  Object.keys(config?.values).length > 0
+                    ? config.isAdvanced
+                      ? advancedViewMode
+                      : basicViewMode
+                    : pageData.viewMode,
+              }
+            : undefined,
+        );
+        this.setSearchConfigControl(
+          config && Object.keys(config?.values).length > 0 ? config : null,
+        );
+      });
   }
 
   ngOnInit(): void {
@@ -231,7 +254,7 @@ export class OneCXSearchConfigComponent
     }
 
     this.searchConfigStore.setCurrentConfig({
-      newCurrentConfig: event.value,
+      config: event.value,
     });
   }
 
@@ -246,18 +269,20 @@ export class OneCXSearchConfigComponent
       .pipe(
         withLatestFrom(
           this.appStateService.currentMfe$.asObservable(),
-          this.searchConfigStore.state$,
+          this.searchConfigStore.pageData$,
         ),
-        mergeMap(([dialogResult, currentMfe, state]) => {
-          if (dialogResult?.button !== 'primary') {
+        mergeMap(([dialogResult, currentMfe, pageData]) => {
+          if (!dialogResult || !dialogResult.result) {
             return of(undefined);
           }
-          return this.saveSearchConfig(dialogResult.result, currentMfe, {
-            pageName: state.pageName,
-            values: state.fieldValues,
-            columns: state.displayedColumns,
-            columnGroupKey: state.selectedGroupKey,
-          });
+          if (dialogResult.button !== 'primary') {
+            return of(undefined);
+          }
+          return this.saveSearchConfig(
+            dialogResult.result,
+            currentMfe,
+            pageData,
+          );
         }),
       )
       .subscribe((response) => {
@@ -271,11 +296,11 @@ export class OneCXSearchConfigComponent
           config && this.setSearchConfigControl(config);
           config &&
             this.searchConfigStore.addSearchConfig({
-              newSearchConfig: config,
+              searchConfig: config,
             });
           config &&
             this.searchConfigStore.setCurrentConfig({
-              newCurrentConfig: config,
+              config: config,
             });
         } else {
           this.setSearchConfigControl(null);
@@ -283,154 +308,77 @@ export class OneCXSearchConfigComponent
       });
   }
 
-  private saveSearchConfig(
-    configData: CreateOrEditSearchDialogContent | undefined,
-    currentMfe: MfeInfo,
-    data: ConfigData,
-  ) {
-    const request: CreateSearchConfigRequest = {
-      appId: currentMfe.appId,
-      productName: currentMfe.productName,
-      page: data.pageName,
-      fieldListVersion: 0,
-      name: configData?.searchConfigName ?? '',
-      isReadonly: false,
-      // TODO
-      isAdvanced: false,
-      columns: configData?.saveColumns ? data.columns : [],
-      values: configData?.saveInputValues
-        ? Object.fromEntries(
-            Object.entries(data.values).map(([name, value]) => [
-              name,
-              String(value) ?? '',
-            ]),
-          )
-        : {},
-    };
-    return this.searchConfigService.createSearchConfig(request).pipe(
-      catchError((error) => {
-        console.error(error);
-        this.portalMessageService.error({
-          summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_FAILURE',
-        });
-        return of(undefined);
-      }),
-    );
-  }
-
   onSearchConfigEdit(event: Event, searchConfig: SearchConfigInfo) {
     event.stopPropagation();
-    this.searchConfigStore.setEditMode({});
+    // this.searchConfigStore.setEditMode({});
     this.searchConfigStore.setCurrentConfig({
-      newCurrentConfig: searchConfig,
+      config: searchConfig,
     });
   }
 
   onSearchConfigSaveEdit(event: Event) {
     event.stopPropagation();
-    const searchConfig = this.getSearchConfigControl();
-    this.portalDialogService
-      .openDialog<CreateOrEditSearchDialogContent>(
-        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_HEADER',
-        {
-          type: CreateOrEditSearchConfigDialogComponent,
-          inputs: {
-            searchConfigName: searchConfig.name,
-            saveInputValues: Object.keys(searchConfig.values ?? {}).length > 0,
-            saveColumns: (searchConfig.columns ?? []).length > 0,
-          },
-        },
-        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
-        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CANCEL',
-      )
-      .pipe(
-        mergeMap((dialogResult) => {
-          return this.getSearchConfig(searchConfig).pipe(
-            map((response) => {
-              return {
-                config: response?.config,
-                result: dialogResult,
-              };
-            }),
-          );
-        }),
-        withLatestFrom(this.searchConfigStore.state$),
-        mergeMap(([{ config, result }, state]) => {
-          if (!config) {
-            return of(undefined);
-          }
-          if (result.button !== 'primary') {
-            return of(undefined);
-          }
-          return this.editSearchConfig(config, result.result, {
-            values: state.fieldValues,
-            columns: state.displayedColumns,
-            pageName: state.pageName,
-            columnGroupKey: state.selectedGroupKey,
-          });
-        }),
-      )
-      .subscribe((response) => {
-        if (response) {
-          this.portalMessageService.info({
-            summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_SUCCESS',
-          });
-          const config = response.configs.find((c) => c.id === searchConfig.id);
-          config && this.setSearchConfigControl(config);
-          config &&
-            this.searchConfigStore.editSearchConfig({ searchConfig: config });
-        } else {
-          this.setSearchConfigControl(null);
-        }
-        this.searchConfigStore.saveEdit();
-      });
+    // const searchConfig = this.getSearchConfigControl();
+    // this.portalDialogService
+    //   .openDialog<CreateOrEditSearchDialogContent>(
+    //     'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_HEADER',
+    //     {
+    //       type: CreateOrEditSearchConfigDialogComponent,
+    //       inputs: {
+    //         searchConfigName: searchConfig.name,
+    //         saveInputValues: Object.keys(searchConfig.values ?? {}).length > 0,
+    //         saveColumns: (searchConfig.columns ?? []).length > 0,
+    //       },
+    //     },
+    //     'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
+    //     'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CANCEL',
+    //   )
+    //   .pipe(
+    //     mergeMap((dialogResult) => {
+    //       return this.getSearchConfig(searchConfig).pipe(
+    //         map((response) => {
+    //           return {
+    //             config: response?.config,
+    //             result: dialogResult,
+    //           };
+    //         }),
+    //       );
+    //     }),
+    //     withLatestFrom(this.searchConfigStore.state$),
+    //     mergeMap(([{ config, result }, state]) => {
+    //       if (!config) {
+    //         return of(undefined);
+    //       }
+    //       if (result.button !== 'primary') {
+    //         return of(undefined);
+    //       }
+    //       return this.editSearchConfig(config, result.result, {
+    //         fieldValues: state.fieldValues,
+    //         displayedColumIds: state.displayedColumns,
+    //         pageName: state.pageName,
+    //         columnGroupKey: state.selectedGroupKey,
+    //         viewMode: state.viewMode,
+    //       });
+    //     }),
+    //   )
+    //   .subscribe((response) => {
+    //     if (response) {
+    //       this.portalMessageService.info({
+    //         summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_SUCCESS',
+    //       });
+    //       const config = response.configs.find((c) => c.id === searchConfig.id);
+    //       config && this.setSearchConfigControl(config);
+    //       config &&
+    //         this.searchConfigStore.editSearchConfig({ searchConfig: config });
+    //     } else {
+    //       this.setSearchConfigControl(null);
+    //     }
+    //     this.searchConfigStore.saveEdit();
+    //   });
   }
 
   onSearchConfigCancelEdit(event: Event) {
-    this.searchConfigStore.cancelEdit();
-  }
-
-  private getSearchConfig(searchConfig: SearchConfigInfo) {
-    return this.searchConfigService.getSearchConfig(searchConfig.id).pipe(
-      catchError((error) => {
-        console.error(error);
-        this.portalMessageService.error({
-          summaryKey: 'SEARCH_CONFIG.FETCH_FAILURE',
-        });
-        return of(undefined);
-      }),
-    );
-  }
-
-  private editSearchConfig(
-    config: SearchConfig,
-    configData: CreateOrEditSearchDialogContent | undefined,
-    data: ConfigData,
-  ) {
-    const request: UpdateSearchConfigRequest = {
-      searchConfig: {
-        ...config,
-        name: configData?.searchConfigName ?? config.name ?? '',
-        columns: configData?.saveColumns ? data.columns : [],
-        values: configData?.saveInputValues
-          ? Object.fromEntries(
-              Object.entries(data.values).map(([name, value]) => [
-                name,
-                String(value),
-              ]),
-            )
-          : {},
-      },
-    };
-    return this.searchConfigService.updateSearchConfig(config.id, request).pipe(
-      catchError((error) => {
-        console.error(error);
-        this.portalMessageService.error({
-          summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_FAILURE',
-        });
-        return of(undefined);
-      }),
-    );
+    // this.searchConfigStore.cancelEdit();
   }
 
   onSearchConfigDelete(event: Event, searchConfig: SearchConfigInfo) {
@@ -463,11 +411,93 @@ export class OneCXSearchConfigComponent
     );
   }
 
+  private saveSearchConfig(
+    configData: CreateOrEditSearchDialogContent,
+    currentMfe: MfeInfo,
+    data: PageData,
+  ) {
+    const request: CreateSearchConfigRequest = {
+      appId: currentMfe.appId,
+      productName: currentMfe.productName,
+      fieldListVersion: 0,
+      isReadonly: false,
+      page: data.pageName,
+      name: configData.searchConfigName ?? '',
+      isAdvanced: configData.saveInputValues
+        ? data.viewMode === advancedViewMode
+        : false,
+      columns: configData.saveColumns ? data.displayedColumIds : [],
+      values: configData.saveInputValues
+        ? this.parseFieldValues(data.fieldValues)
+        : {},
+    };
+    return this.searchConfigService.createSearchConfig(request).pipe(
+      catchError((error) => {
+        console.error(error);
+        this.portalMessageService.error({
+          summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_FAILURE',
+        });
+        return of(undefined);
+      }),
+    );
+  }
+
+  private getSearchConfig(searchConfig: SearchConfigInfo) {
+    return this.searchConfigService.getSearchConfig(searchConfig.id).pipe(
+      catchError((error) => {
+        console.error(error);
+        this.portalMessageService.error({
+          summaryKey: 'SEARCH_CONFIG.FETCH_FAILURE',
+        });
+        return of(undefined);
+      }),
+    );
+  }
+
+  private editSearchConfig(
+    config: SearchConfig,
+    configData: CreateOrEditSearchDialogContent | undefined,
+    data: PageData,
+  ) {
+    // const request: UpdateSearchConfigRequest = {
+    //   searchConfig: {
+    //     ...config,
+    //     name: configData?.searchConfigName ?? config.name ?? '',
+    //     columns: configData?.saveColumns ? data.displayedColumIds : [],
+    //     values: configData?.saveInputValues
+    //       ? Object.fromEntries(
+    //           Object.entries(data.fieldValues)
+    //             .filter(([_, value]) => value)
+    //             .map(([name, value]) => [name, String(value)]),
+    //         )
+    //       : {},
+    //     isAdvanced: data.viewMode === advancedViewMode,
+    //   },
+    // };
+    // return this.searchConfigService.updateSearchConfig(config.id, request).pipe(
+    //   catchError((error) => {
+    //     console.error(error);
+    //     this.portalMessageService.error({
+    //       summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_FAILURE',
+    //     });
+    //     return of(undefined);
+    //   }),
+    // );
+  }
+
   private setSearchConfigControl(value: SearchConfigInfo | undefined | null) {
     this.formGroup?.get('searchConfig')?.setValue(value);
   }
 
   private getSearchConfigControl(): SearchConfigInfo {
     return this.formGroup?.get('searchConfig')?.value;
+  }
+
+  private parseFieldValues(values: FieldValues): { [key: string]: string } {
+    return Object.fromEntries(
+      Object.entries(values)
+        .filter(([_, value]) => values !== null)
+        .map(([name, value]) => [name, value ? String(value) : '']),
+    );
   }
 }
