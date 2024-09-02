@@ -8,9 +8,10 @@
       }
     },
     "SEARCH_CONFIG": {
+      "DROPDOWN_LABEL": "Search config",
       "CREATE": "Add search config",
       "PLACEHOLDER": "Choose search config",
-      "EDITING": "Editing search config",
+      "EDITING": "Editing search config {{config}}",
       "SAVE_EDIT": "Save search config",
       "CANCEL_EDIT": "Cancel search config",
       "CREATE_EDIT_PLACEHOLDER": "Please enter the name of the search configuration",

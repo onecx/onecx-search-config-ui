@@ -64,7 +64,11 @@ import {
   UpdateSearchConfigResponse,
 } from 'src/app/shared/generated';
 import { environment } from 'src/environments/environment';
-import { PageData, SearchConfigStore } from '../../shared/search-config.store';
+import {
+  PageData,
+  SEARCH_CONFIG_STORE_NAME,
+  SearchConfigStore,
+} from '../../shared/search-config.store';
 import { PrimeIcons } from 'primeng/api';
 import {
   CreateOrEditSearchConfigDialogComponent,
@@ -74,7 +78,11 @@ import {
   SEARCH_CONFIG_STORE_TOPIC,
   SearchConfigTopic,
 } from 'src/app/shared/topics/search-config/v1/search-config.topic';
-import { advancedViewModeType } from 'src/app/shared/constants';
+import {
+  advancedViewMode,
+  advancedViewModeType,
+} from 'src/app/shared/constants';
+import { parseFieldValues } from 'src/app/shared/search-config.utils';
 
 export function createTranslateLoader(
   httpClient: HttpClient,
@@ -138,6 +146,10 @@ export function createTranslateLoader(
       provide: SEARCH_CONFIG_STORE_TOPIC,
       useClass: SearchConfigTopic,
     },
+    {
+      provide: SEARCH_CONFIG_STORE_NAME,
+      useValue: 'ocx-column-group-selection-component-store',
+    },
     SearchConfigStore,
   ],
 })
@@ -174,7 +186,6 @@ export class OneCXColumnGroupSelectionComponent
     groupKey: string;
   }> = new EventEmitter();
 
-  storeName = 'ocx-column-group-selection-component-store';
   editIcon = PrimeIcons.PENCIL;
   deleteIcon = PrimeIcons.TRASH;
   stopIcon = PrimeIcons.TIMES;
@@ -193,8 +204,6 @@ export class OneCXColumnGroupSelectionComponent
     private portalMessageService: PortalMessageService,
   ) {
     this.userService.lang$.subscribe((lang) => this.translateService.use(lang));
-
-    this.searchConfigStore.setStoreName(this.storeName);
 
     // this.searchConfigStore.currentRevertConfig$.subscribe((config) => {
     //   config &&
@@ -271,74 +280,63 @@ export class OneCXColumnGroupSelectionComponent
       return;
     }
 
-    // this.searchConfigStore.setEditMode({});
-    this.searchConfigStore.setCurrentConfig({
-      config: searchConfig,
-    });
+    this.searchConfigStore.enterEditMode(searchConfig);
   }
 
   onSearchConfigSaveEdit(event: Event, config: SearchConfigInfo | undefined) {
     event.stopPropagation();
 
-    // if (config === undefined) {
-    //   return;
-    // }
+    if (config === undefined) {
+      return;
+    }
 
-    // this.portalDialogService
-    //   .openDialog<CreateOrEditSearchDialogContent>(
-    //     'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_HEADER',
-    //     {
-    //       type: CreateOrEditSearchConfigDialogComponent,
-    //       inputs: {
-    //         searchConfigName: config?.name,
-    //         saveInputValues: Object.keys(config?.values ?? {}).length > 0,
-    //         saveColumns: (config?.columns ?? []).length > 0,
-    //       },
-    //     },
-    //     'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
-    //     'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CANCEL',
-    //   )
-    //   .pipe(
-    //     mergeMap((dialogResult) => {
-    //       return this.getSearchConfig(config).pipe(
-    //         map((response) => {
-    //           return {
-    //             config: response?.config,
-    //             result: dialogResult,
-    //           };
-    //         }),
-    //       );
-    //     }),
-    //     withLatestFrom(this.searchConfigStore.state$),
-    //     mergeMap(([{ config, result }, state]) => {
-    //       if (!config) {
-    //         return of(undefined);
-    //       }
-    //       if (result.button !== 'primary') {
-    //         return of(undefined);
-    //       }
-    //       return this.editSearchConfig(config, result.result, {
-    //         fieldValues: state.fieldValues,
-    //         displayedColumIds: state.displayedColumns,
-    //         pageName: state.pageName,
-    //         columnGroupKey: state.selectedGroupKey,
-    //         viewMode: state.viewMode,
-    //       });
-    //     }),
-    //   )
-    //   .subscribe((response: UpdateSearchConfigResponse | undefined) => {
-    //     if (response) {
-    //       this.portalMessageService.info({
-    //         summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_SUCCESS',
-    //       });
-    //       const searchConfig = response.configs.find((c) => c.id === config.id);
-    //       searchConfig &&
-    //         this.searchConfigStore.editSearchConfig({
-    //           searchConfig: searchConfig,
-    //         });
-    //     }
-    //     this.searchConfigStore.saveEdit();
-    //   });
+    this.portalDialogService
+      .openDialog<CreateOrEditSearchDialogContent>(
+        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_HEADER',
+        {
+          type: CreateOrEditSearchConfigDialogComponent,
+          inputs: {
+            searchConfigName: config?.name,
+            saveInputValues: Object.keys(config?.values ?? {}).length > 0,
+            saveColumns: (config?.columns ?? []).length > 0,
+          },
+        },
+        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
+        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CANCEL',
+      )
+      .pipe(
+        mergeMap((dialogResult) => {
+          return this.getSearchConfig(config).pipe(
+            map((response) => {
+              return {
+                config: response?.config,
+                result: dialogResult,
+              };
+            }),
+          );
+        }),
+        withLatestFrom(this.searchConfigStore.pageData$),
+        mergeMap(([{ config, result }, pageData]) => {
+          if (!config) {
+            return of(undefined);
+          }
+          if (result.button !== 'primary') {
+            return of(undefined);
+          }
+          return this.editSearchConfig(config, result.result, pageData);
+        }),
+      )
+      .subscribe((response: UpdateSearchConfigResponse | undefined) => {
+        const searchConfig = response?.configs.find((c) => c.id === config.id);
+        if (response && searchConfig) {
+          this.portalMessageService.info({
+            summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_SUCCESS',
+          });
+          this.searchConfigStore.saveEdit(searchConfig);
+        } else {
+          this.searchConfigStore.cancelEdit();
+        }
+      });
   }
 
   private editSearchConfig(
@@ -346,33 +344,26 @@ export class OneCXColumnGroupSelectionComponent
     configData: CreateOrEditSearchDialogContent | undefined,
     data: PageData,
   ) {
-    // const request: UpdateSearchConfigRequest = {
-    //   searchConfig: {
-    //     ...config,
-    //     name: configData?.searchConfigName ?? config.name ?? '',
-    //     columns: configData?.saveColumns ? data.displayedColumIds : [],
-    //     values: configData?.saveInputValues
-    //       ? Object.fromEntries(
-    //           Object.entries(data.fieldValues)
-    //             .filter(([_, value]) => value !== null)
-    //             .map(([name, value]) => [
-    //               name,
-    //               value === undefined ? '' : String(value),
-    //             ]),
-    //         )
-    //       : {},
-    //     isAdvanced: data.viewMode === advancedViewMode,
-    //   },
-    // };
-    // return this.searchConfigService.updateSearchConfig(config.id, request).pipe(
-    //   catchError((error) => {
-    //     console.error(error);
-    //     this.portalMessageService.error({
-    //       summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_FAILURE',
-    //     });
-    //     return of(undefined);
-    //   }),
-    // );
+    const request: UpdateSearchConfigRequest = {
+      searchConfig: {
+        ...config,
+        name: configData?.searchConfigName ?? config.name ?? '',
+        columns: configData?.saveColumns ? data.displayedColumIds : [],
+        values: configData?.saveInputValues
+          ? parseFieldValues(data.fieldValues)
+          : {},
+        isAdvanced: data.viewMode === advancedViewMode,
+      },
+    };
+    return this.searchConfigService.updateSearchConfig(config.id, request).pipe(
+      catchError((error) => {
+        console.error(error);
+        this.portalMessageService.error({
+          summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_FAILURE',
+        });
+        return of(undefined);
+      }),
+    );
   }
 
   private getSearchConfig(searchConfig: SearchConfigInfo) {
@@ -388,7 +379,7 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   onSearchConfigCancelEdit(event: Event) {
-    // this.searchConfigStore.cancelEdit();
+    this.searchConfigStore.cancelEdit();
   }
 
   onSearchConfigDelete(

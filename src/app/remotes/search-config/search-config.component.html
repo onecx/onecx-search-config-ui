@@ -7,8 +7,8 @@
         class="flex gap-2 align-content-center align-items-center"
         *ngIf="vm$ | async as vm"
       >
-        <!-- <button
-          *ngIf="vm.editMode && vm.editStoreName === storeName"
+        <button
+          *ngIf="vm.editMode && vm.isInChargeOfEdit"
           [label]="'SEARCH_CONFIG.SAVE_EDIT' | translate"
           icon="{{ saveIcon }}"
           pButton
@@ -16,56 +16,64 @@
           (click)="onSearchConfigSaveEdit($event)"
         ></button>
         <button
-          *ngIf="vm.editMode && vm.editStoreName === storeName"
+          *ngIf="vm.editMode && vm.isInChargeOfEdit"
           [label]="'SEARCH_CONFIG.CANCEL_EDIT' | translate"
           icon="{{ stopIcon }}"
           pButton
           type="button"
           (click)="onSearchConfigCancelEdit($event)"
-        ></button> -->
+        ></button>
         <p-dropdown
           id="searchConfigDropdown"
           formControlName="searchConfig"
           [options]="[addSearchConfigOption].concat(vm.searchConfigs)"
           optionLabel="name"
-          [placeholder]="'SEARCH_CONFIG.PLACEHOLDER' | translate"
+          [placeholder]="
+            (vm.editMode
+              ? 'SEARCH_CONFIG.EDITING'
+              : 'SEARCH_CONFIG.PLACEHOLDER'
+            ) | translate: { config: vm.currentConfig?.name }
+          "
+          [disabled]="vm.editMode"
           (onChange)="onSearchConfigChange($event)"
           appendTo="body"
         >
-          <!-- [disabled]="vm.editMode" -->
           <ng-template let-config pTemplate="selectedItem">
-            <div
-              class="flex align-items-center gap-2"
-              *ngIf="config.id === addSearchConfigOption.id"
-            >
-              {{ 'SEARCH_CONFIG.PLACEHOLDER' | translate }}
-            </div>
-            <div
-              class="flex align-items-center gap-2"
-              *ngIf="config.id !== addSearchConfigOption.id"
-            >
-              <!-- <ng-container *ngIf="vm.editMode">
-                <div>
-                  {{ 'SEARCH_CONFIG.EDITING' | translate }} {{ config.name }}
-                </div>
-              </ng-container> -->
-              <!-- <ng-container *ngIf="!vm.editMode"> -->
-              <div>
-                {{ config.name }}
+            <ng-container *ngIf="vm.editMode">
+              <div class="flex align-items-center gap-2">
+                {{
+                  'SEARCH_CONFIG.EDITING'
+                    | translate: { config: vm.currentConfig?.name }
+                }}
               </div>
-              <!-- </ng-container> -->
-            </div>
+            </ng-container>
+            <ng-container *ngIf="!vm.editMode">
+              <div
+                class="flex align-items-center gap-2"
+                *ngIf="config.id === addSearchConfigOption.id"
+              >
+                {{ 'SEARCH_CONFIG.PLACEHOLDER' | translate }}
+              </div>
+              <div
+                class="flex align-items-center gap-2"
+                *ngIf="config.id !== addSearchConfigOption.id"
+              >
+                <div>
+                  {{ config.name }}
+                </div>
+              </div>
+            </ng-container>
           </ng-template>
           <ng-template let-config pTemplate="item">
             <div
-              class="flex align-items-center gap-2"
+              class="flex align-items-center gap-2 h-2rem"
               *ngIf="config.id === addSearchConfigOption.id"
             >
               <i class="{{ plusIcon }}"></i>
               {{ 'SEARCH_CONFIG.CREATE' | translate }}
             </div>
             <div
-              class="flex align-items-center gap-2 justify-content-between h-2rem"
+              class="flex align-items-center gap-2 h-2rem justify-content-between"
               *ngIf="config.id !== addSearchConfigOption.id"
             >
               <div>{{ config.name }}</div>
