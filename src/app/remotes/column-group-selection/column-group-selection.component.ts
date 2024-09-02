@@ -74,7 +74,7 @@ import {
   SEARCH_CONFIG_STORE_TOPIC,
   SearchConfigTopic,
 } from 'src/app/shared/topics/search-config/v1/search-config.topic';
-import { advancedViewMode } from 'src/app/shared/constants';
+import { advancedViewModeType } from 'src/app/shared/constants';
 
 export function createTranslateLoader(
   httpClient: HttpClient,
@@ -165,7 +165,7 @@ export class OneCXColumnGroupSelectionComponent
 
   @Input() defaultGroupKey = '';
   @Input() set customGroupKey(key: string) {
-    this.searchConfigStore.setCustomGroupKey(key);
+    this.searchConfigStore.setCustomGroupKey({ customGroupKey: key });
   }
   @Input() placeholderKey = '';
 

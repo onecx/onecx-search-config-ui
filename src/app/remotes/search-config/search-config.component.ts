@@ -66,7 +66,13 @@ import {
   SEARCH_CONFIG_STORE_TOPIC,
   SearchConfigTopic,
 } from 'src/app/shared/topics/search-config/v1/search-config.topic';
-import { advancedViewMode, basicViewMode } from 'src/app/shared/constants';
+import {
+  advancedViewMode,
+  advancedViewModeType,
+  basicViewMode,
+  basicViewModeType,
+} from 'src/app/shared/constants';
+import { parseFieldValues } from 'src/app/shared/search-config.utils';
 
 @Component({
   selector: 'app-ocx-search-config',
@@ -123,7 +129,7 @@ export class OneCXSearchConfigComponent
       displayedColumns: columns,
     });
   }
-  @Input() set viewMode(viewMode: 'basic' | 'advanced') {
+  @Input() set viewMode(viewMode: basicViewModeType | advancedViewModeType) {
     this.searchConfigStore.updateViewMode({
       viewMode: viewMode,
     });
@@ -428,7 +434,7 @@ export class OneCXSearchConfigComponent
         : false,
       columns: configData.saveColumns ? data.displayedColumIds : [],
       values: configData.saveInputValues
-        ? this.parseFieldValues(data.fieldValues)
+        ? parseFieldValues(data.fieldValues)
         : {},
     };
     return this.searchConfigService.createSearchConfig(request).pipe(
@@ -491,13 +497,5 @@ export class OneCXSearchConfigComponent
 
   private getSearchConfigControl(): SearchConfigInfo {
     return this.formGroup?.get('searchConfig')?.value;
-  }
-
-  private parseFieldValues(values: FieldValues): { [key: string]: string } {
-    return Object.fromEntries(
-      Object.entries(values)
-        .filter(([_, value]) => values !== null)
-        .map(([name, value]) => [name, value ? String(value) : '']),
-    );
   }
 }

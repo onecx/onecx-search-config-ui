@@ -6,6 +6,7 @@ import { SearchConfigStore } from './search-config.store';
 import { SearchConfigInfo } from './generated';
 import { SearchConfigTopic } from './topics/search-config/v1/search-config.topic';
 import { SearchConfigMessage } from './topics/search-config/v1/search-config.model';
+import { advancedViewMode, basicViewMode } from './constants';
 
 describe('SearchConfigStore', () => {
   let store: SearchConfigStore;
@@ -135,7 +136,7 @@ describe('SearchConfigStore', () => {
     it('should update columnSelectionVm$ selector on change', (done) => {
       store.patchState({});
 
-      store.setCustomGroupKey('custom-key');
+      store.setCustomGroupKey({ customGroupKey: 'custom-key' });
 
       store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
         expect(vm.customGroupKey).toBe('custom-key');
@@ -148,10 +149,27 @@ describe('SearchConfigStore', () => {
         customGroupKey: 'custom-key',
       });
 
-      store.setCustomGroupKey('custom-key');
+      store.setCustomGroupKey({ customGroupKey: 'custom-key' });
 
       store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
         fail();
+      });
+    });
+
+    it('should send update message', (done) => {
+      store.patchState({
+        storeName: 'store-1',
+      });
+
+      store.setCustomGroupKey({
+        customGroupKey: 'custom-key',
+      });
+
+      mockSearchConfigStoreTopic.subscribe((msg) => {
+        expect(msg.payload.name).toBe('setCustomGroupKey');
+        expect(msg.payload.storeName).toBe('store-1');
+        expect(msg.payload.customGroupKey).toStrictEqual('custom-key');
+        done();
       });
     });
   });
@@ -219,6 +237,26 @@ describe('SearchConfigStore', () => {
         fail();
       });
     });
+
+    it('should send update message', (done) => {
+      store.patchState({
+        storeName: 'store-1',
+      });
+
+      store.setSearchConfigs({
+        searchConfigs: [testConfigBase, testConfigOnlyValues],
+      });
+
+      mockSearchConfigStoreTopic.subscribe((msg) => {
+        expect(msg.payload.name).toBe('setSearchConfigs');
+        expect(msg.payload.storeName).toBe('store-1');
+        expect(msg.payload.searchConfigs).toStrictEqual([
+          testConfigBase,
+          testConfigOnlyValues,
+        ]);
+        done();
+      });
+    });
   });
 
   describe('set non search config group keys', () => {
@@ -247,6 +285,26 @@ describe('SearchConfigStore', () => {
 
       store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
         fail();
+      });
+    });
+
+    it('should send update message', (done) => {
+      store.patchState({
+        storeName: 'store-1',
+      });
+
+      store.setNonSearchConfigGroupKeys({
+        nonSearchConfigGroupKeys: ['default', 'extended'],
+      });
+
+      mockSearchConfigStoreTopic.subscribe((msg) => {
+        expect(msg.payload.name).toBe('setNonSearchConfigGroupKeys');
+        expect(msg.payload.storeName).toBe('store-1');
+        expect(msg.payload.nonSearchConfigGroupKeys).toStrictEqual([
+          'default',
+          'extended',
+        ]);
+        done();
       });
     });
   });
@@ -1382,26 +1440,26 @@ describe('SearchConfigStore', () => {
     describe('pageData$ selector', () => {
       it('should update if view mode changed', (done) => {
         store.patchState({
-          viewMode: 'advanced',
+          viewMode: advancedViewMode,
         });
 
         store.updateViewMode({
-          viewMode: 'basic',
+          viewMode: basicViewMode,
         });
 
         store.pageData$.pipe(take(1)).subscribe((data) => {
-          expect(data.viewMode).toStrictEqual('basic');
+          expect(data.viewMode).toStrictEqual(basicViewMode);
           done();
         });
       });
 
       it('should not update if columns did not change', () => {
         store.patchState({
-          viewMode: 'advanced',
+          viewMode: advancedViewMode,
         });
 
         store.updateViewMode({
-          viewMode: 'advanced',
+          viewMode: advancedViewMode,
         });
 
         store.pageData$.pipe(take(1)).subscribe(() => {
@@ -1413,13 +1471,15 @@ describe('SearchConfigStore', () => {
     describe('currentConfig$ selector', () => {
       it('should not update on edit mode', () => {
         store.patchState({
-          viewMode: testConfigBase.isAdvanced ? 'advanced' : 'basic',
+          viewMode: testConfigBase.isAdvanced
+            ? advancedViewMode
+            : basicViewMode,
           currentSearchConfig: testConfigBase,
           editMode: true,
         });
 
         store.updateViewMode({
-          viewMode: 'advanced',
+          viewMode: advancedViewMode,
         });
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
@@ -1429,12 +1489,12 @@ describe('SearchConfigStore', () => {
 
       it('should not update if current config was undefined', () => {
         store.patchState({
-          viewMode: 'basic',
+          viewMode: basicViewMode,
           currentSearchConfig: undefined,
         });
 
         store.updateViewMode({
-          viewMode: 'advanced',
+          viewMode: advancedViewMode,
         });
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
@@ -1445,15 +1505,15 @@ describe('SearchConfigStore', () => {
       it('should unset config if current config has view mode not equal to new one', (done) => {
         store.patchState({
           viewMode: testConfigValuesAndColumns.isAdvanced
-            ? 'advanced'
-            : 'basic',
+            ? advancedViewMode
+            : basicViewMode,
           currentSearchConfig: testConfigValuesAndColumns,
         });
 
         store.updateViewMode({
           viewMode: testConfigValuesAndColumns.isAdvanced
-            ? 'basic'
-            : 'advanced',
+            ? basicViewMode
+            : advancedViewMode,
         });
 
         store.currentConfig$.pipe(take(1)).subscribe((config) => {
@@ -1465,15 +1525,15 @@ describe('SearchConfigStore', () => {
       it('should not update if current config has values equal to new ones', () => {
         store.patchState({
           viewMode: testConfigValuesAndColumns.isAdvanced
-            ? 'advanced'
-            : 'basic',
+            ? advancedViewMode
+            : basicViewMode,
           currentSearchConfig: testConfigValuesAndColumns,
         });
 
         store.updateViewMode({
           viewMode: testConfigValuesAndColumns.isAdvanced
-            ? 'advanced'
-            : 'basic',
+            ? advancedViewMode
+            : basicViewMode,
         });
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
@@ -1485,14 +1545,18 @@ describe('SearchConfigStore', () => {
     describe('selectedGroupKey$ selector', () => {
       it('should not update in edit mode', () => {
         store.patchState({
-          viewMode: testConfigBase.isAdvanced ? 'advanced' : 'basic',
+          viewMode: testConfigBase.isAdvanced
+            ? advancedViewMode
+            : basicViewMode,
           currentSearchConfig: testConfigBase,
           editMode: true,
           selectedGroupKey: 'deafult-key',
         });
 
         store.updateViewMode({
-          viewMode: testConfigBase.isAdvanced ? 'basic' : 'advanced',
+          viewMode: testConfigBase.isAdvanced
+            ? basicViewMode
+            : advancedViewMode,
         });
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
@@ -1502,13 +1566,13 @@ describe('SearchConfigStore', () => {
 
       it('should not update if current config was undefined', () => {
         store.patchState({
-          viewMode: 'basic',
+          viewMode: basicViewMode,
           currentSearchConfig: undefined,
           selectedGroupKey: 'deafult-key',
         });
 
         store.updateViewMode({
-          viewMode: 'advanced',
+          viewMode: advancedViewMode,
         });
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
@@ -1518,13 +1582,17 @@ describe('SearchConfigStore', () => {
 
       it('should not update if config with only inputs is unset', () => {
         store.patchState({
-          viewMode: testConfigOnlyValues.isAdvanced ? 'advanced' : 'basic',
+          viewMode: testConfigOnlyValues.isAdvanced
+            ? advancedViewMode
+            : basicViewMode,
           currentSearchConfig: testConfigOnlyValues,
           selectedGroupKey: 'default-key',
         });
 
         store.updateViewMode({
-          viewMode: testConfigOnlyValues.isAdvanced ? 'basic' : 'advanced',
+          viewMode: testConfigOnlyValues.isAdvanced
+            ? basicViewMode
+            : advancedViewMode,
         });
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
@@ -1536,8 +1604,8 @@ describe('SearchConfigStore', () => {
         store.patchState({
           searchConfigs: [testConfigValuesAndColumns],
           viewMode: testConfigValuesAndColumns.isAdvanced
-            ? 'advanced'
-            : 'basic',
+            ? advancedViewMode
+            : basicViewMode,
           currentSearchConfig: testConfigValuesAndColumns,
           selectedGroupKey: testConfigValuesAndColumns.name,
           customGroupKey: 'custom-key',
@@ -1545,8 +1613,8 @@ describe('SearchConfigStore', () => {
 
         store.updateViewMode({
           viewMode: testConfigValuesAndColumns.isAdvanced
-            ? 'basic'
-            : 'advanced',
+            ? basicViewMode
+            : advancedViewMode,
         });
 
         store.selectedGroupKey$.pipe(take(1)).subscribe((key) => {
@@ -1557,13 +1625,17 @@ describe('SearchConfigStore', () => {
 
       it('should not update if current config had values equal to new ones', () => {
         store.patchState({
-          viewMode: testConfigOnlyValues.isAdvanced ? 'advanced' : 'basic',
+          viewMode: testConfigOnlyValues.isAdvanced
+            ? advancedViewMode
+            : basicViewMode,
           currentSearchConfig: testConfigOnlyValues,
           selectedGroupKey: 'default-key',
         });
 
         store.updateViewMode({
-          viewMode: testConfigOnlyValues.isAdvanced ? 'advanced' : 'basic',
+          viewMode: testConfigOnlyValues.isAdvanced
+            ? advancedViewMode
+            : basicViewMode,
         });
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
@@ -1575,13 +1647,17 @@ describe('SearchConfigStore', () => {
     describe('columnSelectionVm$ selector', () => {
       it('should not update on edit mode', () => {
         store.patchState({
-          viewMode: testConfigBase.isAdvanced ? 'advanced' : 'basic',
+          viewMode: testConfigBase.isAdvanced
+            ? advancedViewMode
+            : basicViewMode,
           currentSearchConfig: testConfigBase,
           editMode: true,
         });
 
         store.updateViewMode({
-          viewMode: testConfigBase.isAdvanced ? 'basic' : 'advanced',
+          viewMode: testConfigBase.isAdvanced
+            ? basicViewMode
+            : advancedViewMode,
         });
 
         store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
@@ -1591,12 +1667,12 @@ describe('SearchConfigStore', () => {
 
       it('should not update if current config was undefined', () => {
         store.patchState({
-          viewMode: 'basic',
+          viewMode: basicViewMode,
           currentSearchConfig: undefined,
         });
 
         store.updateViewMode({
-          viewMode: 'advanced',
+          viewMode: advancedViewMode,
         });
 
         store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
@@ -1607,15 +1683,15 @@ describe('SearchConfigStore', () => {
       it('should unset config if current config has view mode not equal to new one', (done) => {
         store.patchState({
           viewMode: testConfigValuesAndColumns.isAdvanced
-            ? 'advanced'
-            : 'basic',
+            ? advancedViewMode
+            : basicViewMode,
           currentSearchConfig: testConfigValuesAndColumns,
         });
 
         store.updateViewMode({
           viewMode: testConfigValuesAndColumns.isAdvanced
-            ? 'basic'
-            : 'advanced',
+            ? basicViewMode
+            : advancedViewMode,
         });
 
         store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
@@ -1627,15 +1703,15 @@ describe('SearchConfigStore', () => {
       it('should not update if current config has values equal to new ones', () => {
         store.patchState({
           viewMode: testConfigValuesAndColumns.isAdvanced
-            ? 'advanced'
-            : 'basic',
+            ? advancedViewMode
+            : basicViewMode,
           currentSearchConfig: testConfigValuesAndColumns,
         });
 
         store.updateViewMode({
           viewMode: testConfigValuesAndColumns.isAdvanced
-            ? 'advanced'
-            : 'basic',
+            ? advancedViewMode
+            : basicViewMode,
         });
 
         store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
@@ -1646,18 +1722,18 @@ describe('SearchConfigStore', () => {
 
     it('should send update message', (done) => {
       store.patchState({
-        viewMode: 'basic',
+        viewMode: basicViewMode,
         storeName: 'store-1',
       });
 
       store.updateViewMode({
-        viewMode: 'advanced',
+        viewMode: advancedViewMode,
       });
 
       mockSearchConfigStoreTopic.subscribe((msg) => {
         expect(msg.payload.name).toBe('updateViewMode');
         expect(msg.payload.storeName).toBe('store-1');
-        expect(msg.payload.viewMode).toStrictEqual('advanced');
+        expect(msg.payload.viewMode).toStrictEqual(advancedViewMode);
         done();
       });
     });
@@ -1694,6 +1770,188 @@ describe('SearchConfigStore', () => {
           expect(vm.selectedGroupKey).toBe('2');
           expect(vm.allGroupKeys).toStrictEqual(['2']);
           done();
+        });
+      });
+
+      it('should update if config and selected key for config was set and new key is predefined', (done) => {
+        store.patchState({
+          selectedGroupKey: testConfigValuesAndColumns.name,
+          currentSearchConfig: testConfigValuesAndColumns,
+          nonSearchConfigGroupKeys: ['default'],
+          searchConfigs: [testConfigValuesAndColumns],
+        });
+
+        store.setSelectedGroupKey({
+          selectedGroupKey: 'default',
+        });
+
+        store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
+          expect(vm.currentConfig).toBe(undefined);
+          done();
+        });
+      });
+
+      it('should update if config and selected key for config was set and new key is custom group key', (done) => {
+        store.patchState({
+          selectedGroupKey: testConfigValuesAndColumns.name,
+          currentSearchConfig: testConfigValuesAndColumns,
+          nonSearchConfigGroupKeys: ['default'],
+          searchConfigs: [testConfigValuesAndColumns],
+          customGroupKey: 'custom-key',
+        });
+
+        store.setSelectedGroupKey({
+          selectedGroupKey: 'custom-key',
+        });
+
+        store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
+          expect(vm.currentConfig).toBe(undefined);
+          done();
+        });
+      });
+
+      it('should update if only values config was selected and new key is search config', (done) => {
+        store.patchState({
+          selectedGroupKey: 'default',
+          currentSearchConfig: testConfigOnlyValues,
+          nonSearchConfigGroupKeys: ['default'],
+          searchConfigs: [testConfigOnlyValues, testConfigOnlyColumns],
+        });
+
+        store.setSelectedGroupKey({
+          selectedGroupKey: testConfigOnlyColumns.name,
+        });
+
+        store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
+          expect(vm.currentConfig).toStrictEqual(testConfigOnlyColumns);
+          done();
+        });
+      });
+
+      it('should not update if no config was chosen and new key is predefined', () => {
+        store.patchState({
+          selectedGroupKey: 'default',
+          currentSearchConfig: undefined,
+          nonSearchConfigGroupKeys: ['default', 'extended'],
+          searchConfigs: [testConfigOnlyValues, testConfigOnlyColumns],
+        });
+
+        store.setSelectedGroupKey({
+          selectedGroupKey: 'extended',
+        });
+
+        store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
+          fail();
+        });
+      });
+
+      it('should not update if no config was chosen and new key is custom group key', () => {
+        store.patchState({
+          selectedGroupKey: 'default',
+          currentSearchConfig: undefined,
+          nonSearchConfigGroupKeys: ['default', 'extended'],
+          searchConfigs: [testConfigOnlyValues, testConfigOnlyColumns],
+          customGroupKey: 'custom-key',
+        });
+
+        store.setSelectedGroupKey({
+          selectedGroupKey: 'custom-key',
+        });
+
+        store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
+          fail();
+        });
+      });
+    });
+
+    describe('currentConfig$ selector', () => {
+      it('should update if config and selected key for config was set and new key is predefined', (done) => {
+        store.patchState({
+          selectedGroupKey: testConfigValuesAndColumns.name,
+          currentSearchConfig: testConfigValuesAndColumns,
+          nonSearchConfigGroupKeys: ['default'],
+          searchConfigs: [testConfigValuesAndColumns],
+        });
+
+        store.setSelectedGroupKey({
+          selectedGroupKey: 'default',
+        });
+
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBe(undefined);
+          done();
+        });
+      });
+
+      it('should update if config and selected key for config was set and new key is custom group key', (done) => {
+        store.patchState({
+          selectedGroupKey: testConfigValuesAndColumns.name,
+          currentSearchConfig: testConfigValuesAndColumns,
+          nonSearchConfigGroupKeys: ['default'],
+          searchConfigs: [testConfigValuesAndColumns],
+          customGroupKey: 'custom-key',
+        });
+
+        store.setSelectedGroupKey({
+          selectedGroupKey: 'custom-key',
+        });
+
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBe(undefined);
+          done();
+        });
+      });
+
+      it('should update if only values config was selected and new key is search config', (done) => {
+        store.patchState({
+          selectedGroupKey: 'default',
+          currentSearchConfig: testConfigOnlyValues,
+          nonSearchConfigGroupKeys: ['default'],
+          searchConfigs: [testConfigOnlyValues, testConfigOnlyColumns],
+        });
+
+        store.setSelectedGroupKey({
+          selectedGroupKey: testConfigOnlyColumns.name,
+        });
+
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toStrictEqual(testConfigOnlyColumns);
+          done();
+        });
+      });
+
+      it('should not update if no config was chosen and new key is predefined', () => {
+        store.patchState({
+          selectedGroupKey: 'default',
+          currentSearchConfig: undefined,
+          nonSearchConfigGroupKeys: ['default', 'extended'],
+          searchConfigs: [testConfigOnlyValues, testConfigOnlyColumns],
+        });
+
+        store.setSelectedGroupKey({
+          selectedGroupKey: 'extended',
+        });
+
+        store.currentConfig$.pipe(take(1)).subscribe(() => {
+          fail();
+        });
+      });
+
+      it('should not update if no config was chosen and new key is custom group key', () => {
+        store.patchState({
+          selectedGroupKey: 'default',
+          currentSearchConfig: undefined,
+          nonSearchConfigGroupKeys: ['default', 'extended'],
+          searchConfigs: [testConfigOnlyValues, testConfigOnlyColumns],
+          customGroupKey: 'custom-key',
+        });
+
+        store.setSelectedGroupKey({
+          selectedGroupKey: 'custom-key',
+        });
+
+        store.currentConfig$.pipe(take(1)).subscribe(() => {
+          fail();
         });
       });
     });
