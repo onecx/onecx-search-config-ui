@@ -2,14 +2,22 @@ import { TestBed } from '@angular/core/testing';
 import { skip, take } from 'rxjs';
 import { FakeTopic } from '@onecx/angular-integration-interface/mocks';
 
-import { SearchConfigStore } from './search-config.store';
+import {
+  PageData,
+  SearchConfigState,
+  SearchConfigStore,
+} from './search-config.store';
 import { SearchConfigInfo } from './generated';
-import { SearchConfigTopic } from './topics/search-config/v1/search-config.topic';
-import { SearchConfigMessage } from './topics/search-config/v1/search-config.model';
 import { advancedViewMode, basicViewMode } from './constants';
+import {
+  SearchConfigMessage,
+  SearchConfigTopic,
+} from '@onecx/integration-interface';
 
 describe('SearchConfigStore', () => {
   let store: SearchConfigStore;
+  let secondStore: SearchConfigStore;
+
   const testConfigBase: SearchConfigInfo = {
     id: 'test_id',
     name: 'test_name',
@@ -82,6 +90,11 @@ describe('SearchConfigStore', () => {
     store = new SearchConfigStore(
       mockSearchConfigStoreTopic as any as SearchConfigTopic,
       'store-1',
+    );
+
+    secondStore = new SearchConfigStore(
+      mockSearchConfigStoreTopic as any as SearchConfigTopic,
+      'store-2',
     );
   });
 
@@ -1894,6 +1907,21 @@ describe('SearchConfigStore', () => {
         });
       });
     });
+
+    it('should send update message', (done) => {
+      store.patchState({});
+
+      store.setSelectedGroupKey({
+        selectedGroupKey: '2',
+      });
+
+      mockSearchConfigStoreTopic.subscribe((msg) => {
+        expect(msg.payload.name).toBe('setSelectedGroupKey');
+        expect(msg.payload.storeName).toBe('store-1');
+        expect(msg.payload.selectedGroupKey).toStrictEqual('2');
+        done();
+      });
+    });
   });
 
   describe('edit search config', () => {
@@ -2118,6 +2146,94 @@ describe('SearchConfigStore', () => {
     });
   });
 
+  describe('take snapshot', () => {
+    it('should update preEditStateSnapshot$ selector', (done) => {
+      const state: any = {
+        pageName: 'page-name',
+        desc: 'should-be-SearchConfigState-type',
+      };
+      store.setState(state);
+
+      store.takeSnapshot({});
+
+      store.preEditStateSnapshot$.pipe(take(1)).subscribe((snapshot) => {
+        expect(snapshot).toStrictEqual(state);
+        done();
+      });
+    });
+
+    it('should send update message', (done) => {
+      const state: any = {
+        pageName: 'page-name',
+        desc: 'should-be-SearchConfigState-type',
+      };
+      store.setState(state);
+
+      store.takeSnapshot({});
+
+      mockSearchConfigStoreTopic.subscribe((msg) => {
+        expect(msg.payload.name).toBe('takeSnapshot');
+        expect(msg.payload.storeName).toBe('store-1');
+        done();
+      });
+    });
+  });
+
+  describe('revert page data', () => {
+    it('should update pageDataToRevert$ selector', (done) => {
+      const state: any = {
+        pageName: 'page-name',
+        fieldValues: {
+          key: 'v',
+        },
+        displayedColumns: ['col_1'],
+        viewMode: advancedViewMode,
+        selectedGroupKey: 'def-1',
+      };
+      store.setState({
+        preEditStateSnapshot: state,
+      } as any);
+
+      store.revertPageData({});
+
+      store.pageDataToRevert$.pipe(take(1)).subscribe((data) => {
+        expect(data).toStrictEqual({
+          pageName: 'page-name',
+          fieldValues: {
+            key: 'v',
+          },
+          displayedColumIds: ['col_1'],
+          viewMode: advancedViewMode,
+          columnGroupKey: 'def-1',
+        } satisfies PageData);
+        done();
+      });
+    });
+
+    it('should send update message', (done) => {
+      const state: any = {
+        pageName: 'page-name',
+        fieldValues: {
+          key: 'v',
+        },
+        displayedColumns: ['col_1'],
+        viewMode: advancedViewMode,
+        selectedGroupKey: 'def-1',
+      };
+      store.setState({
+        preEditStateSnapshot: state,
+      } as any);
+
+      store.revertPageData({});
+
+      mockSearchConfigStoreTopic.subscribe((msg) => {
+        expect(msg.payload.name).toBe('revertPageData');
+        expect(msg.payload.storeName).toBe('store-1');
+        done();
+      });
+    });
+  });
+
   describe('columnSelectionVm$ selector', () => {
     it('should contain search configs, selected key and non search config keys in all group keys', (done) => {
       store.patchState({
@@ -2210,6 +2326,363 @@ describe('SearchConfigStore', () => {
           },
         ]);
         expect(vm.editMode).toBe(false);
+        done();
+      });
+    });
+  });
+
+  describe('cancelEdit effect', () => {
+    it('should update currentConfig$ selector if config was set in snapshot', (done) => {
+      store.patchState({
+        currentSearchConfig: testConfigValuesAndColumns,
+        preEditStateSnapshot: {
+          currentSearchConfig: testConfigBase,
+        } as any,
+      });
+
+      store.cancelEdit();
+
+      store.currentConfig$.pipe(take(1)).subscribe((config) => {
+        expect(config).toStrictEqual(testConfigBase);
+        done();
+      });
+    });
+    it('should not update pageDataToRevert$ selector if values + columns config was set in snapshot', () => {
+      store.patchState({
+        currentSearchConfig: testConfigBase,
+        preEditStateSnapshot: {
+          currentSearchConfig: testConfigValuesAndColumns,
+        } as any,
+      });
+
+      store.cancelEdit();
+
+      store.pageDataToRevert$.pipe(take(1)).subscribe(() => {
+        fail();
+      });
+    });
+    it('should update pageDataToRevert$ selector if values only config was set in snapshot', (done) => {
+      store.patchState({
+        currentSearchConfig: testConfigValuesAndColumns,
+        preEditStateSnapshot: {
+          currentSearchConfig: testConfigOnlyValues,
+          pageName: 'page-name',
+          fieldValues: {
+            key: 'v',
+          },
+          displayedColumns: ['col_1'],
+          viewMode: advancedViewMode,
+          selectedGroupKey: 'def-1',
+        } as any,
+      });
+
+      store.cancelEdit();
+
+      store.pageDataToRevert$.pipe(take(1)).subscribe((data) => {
+        expect(data).toStrictEqual({
+          pageName: 'page-name',
+          fieldValues: {
+            key: 'v',
+          },
+          displayedColumIds: ['col_1'],
+          viewMode: advancedViewMode,
+          columnGroupKey: 'def-1',
+        } satisfies PageData);
+        done();
+      });
+    });
+    it('should update pageDataToRevert$ selector if columns only config was set in snapshot', (done) => {
+      store.patchState({
+        currentSearchConfig: testConfigValuesAndColumns,
+        preEditStateSnapshot: {
+          currentSearchConfig: testConfigOnlyColumns,
+          pageName: 'page-name',
+          fieldValues: {
+            key: 'v',
+          },
+          displayedColumns: ['col_1'],
+          viewMode: advancedViewMode,
+          selectedGroupKey: 'def-1',
+        } as any,
+      });
+
+      store.cancelEdit();
+
+      store.pageDataToRevert$.pipe(take(1)).subscribe((data) => {
+        expect(data).toStrictEqual({
+          pageName: 'page-name',
+          fieldValues: {
+            key: 'v',
+          },
+          displayedColumIds: ['col_1'],
+          viewMode: advancedViewMode,
+          columnGroupKey: 'def-1',
+        } satisfies PageData);
+        done();
+      });
+    });
+    it('should update pageDataToRevert$ selector if config was not set in snapshot', (done) => {
+      store.patchState({
+        currentSearchConfig: testConfigValuesAndColumns,
+        preEditStateSnapshot: {
+          currentSearchConfig: undefined,
+          pageName: 'page-name',
+          fieldValues: {
+            key: 'v',
+          },
+          displayedColumns: ['col_1'],
+          viewMode: advancedViewMode,
+          selectedGroupKey: 'def-1',
+        } as any,
+      });
+
+      store.cancelEdit();
+
+      store.pageDataToRevert$.pipe(take(1)).subscribe((data) => {
+        expect(data).toStrictEqual({
+          pageName: 'page-name',
+          fieldValues: {
+            key: 'v',
+          },
+          displayedColumIds: ['col_1'],
+          viewMode: advancedViewMode,
+          columnGroupKey: 'def-1',
+        } satisfies PageData);
+        done();
+      });
+    });
+    it('should not update currentConfig$ selector if config was not set in snapshot', () => {
+      store.patchState({
+        currentSearchConfig: testConfigValuesAndColumns,
+        preEditStateSnapshot: {
+          currentSearchConfig: undefined,
+        } as any,
+      });
+
+      store.cancelEdit();
+
+      store.currentConfig$.pipe(take(1)).subscribe(() => {
+        fail();
+      });
+    });
+  });
+
+  describe('storeUpdate effect', () => {
+    it('should update search configs in other store', (done) => {
+      const spy = jest.spyOn(secondStore, 'setSearchConfigs');
+      store.patchState({});
+
+      store.setSearchConfigs({
+        searchConfigs: [testConfigBase, testConfigOnlyValues],
+      });
+
+      secondStore.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          searchConfigs: [testConfigBase, testConfigOnlyValues],
+          updateStores: false,
+        });
+        done();
+      });
+    });
+
+    // it('should update current search config in other store', (done) => {});
+    it('should delete search config in other store', (done) => {
+      const spy = jest.spyOn(secondStore, 'deleteSearchConfig');
+      store.patchState({});
+
+      store.deleteSearchConfig({
+        searchConfig: testConfigValuesAndColumns,
+      });
+
+      secondStore.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          searchConfig: testConfigValuesAndColumns,
+          updateStores: false,
+        });
+        done();
+      });
+    });
+    it('should add search config in other store', (done) => {
+      const spy = jest.spyOn(secondStore, 'addSearchConfig');
+      store.patchState({});
+
+      store.addSearchConfig({
+        searchConfig: testConfigValuesAndColumns,
+      });
+
+      secondStore.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          searchConfig: testConfigValuesAndColumns,
+          updateStores: false,
+        });
+        done();
+      });
+    });
+    it('should update field values in other store', (done) => {
+      const spy = jest.spyOn(secondStore, 'updateFieldValues');
+      store.patchState({});
+
+      store.updateFieldValues({
+        values: {
+          key: 'val-1',
+        },
+      });
+
+      secondStore.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          values: {
+            key: 'val-1',
+          },
+          updateStores: false,
+        });
+        done();
+      });
+    });
+    it('should update displayed columns in other store', (done) => {
+      const spy = jest.spyOn(secondStore, 'updateDisplayedColumns');
+      store.patchState({});
+
+      store.updateDisplayedColumns({
+        displayedColumns: ['my-col-1'],
+      });
+
+      secondStore.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          displayedColumns: ['my-col-1'],
+          updateStores: false,
+        });
+        done();
+      });
+    });
+    it('should update view mode in other store', (done) => {
+      const spy = jest.spyOn(secondStore, 'updateViewMode');
+      store.patchState({});
+
+      store.updateViewMode({
+        viewMode: advancedViewMode,
+      });
+
+      secondStore.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          viewMode: advancedViewMode,
+          updateStores: false,
+        });
+        done();
+      });
+    });
+    it('should set edit mode in other store', (done) => {
+      const spy = jest.spyOn(secondStore, 'setEditMode');
+      store.patchState({});
+
+      store.setEditMode({});
+
+      secondStore.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          updateStores: false,
+        });
+        done();
+      });
+    });
+    it('should cancel edit mode in other store', (done) => {
+      const spy = jest.spyOn(secondStore, 'cancelEditMode');
+      store.patchState({});
+
+      store.cancelEditMode({});
+
+      secondStore.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          updateStores: false,
+        });
+        done();
+      });
+    });
+    it('should edit search config in other store', (done) => {
+      const spy = jest.spyOn(secondStore, 'editSearchConfig');
+      store.patchState({});
+
+      store.editSearchConfig({
+        searchConfig: testConfigOnlyColumns,
+      });
+
+      secondStore.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          searchConfig: testConfigOnlyColumns,
+          updateStores: false,
+        });
+        done();
+      });
+    });
+    it('should set non search config group keys in other store', (done) => {
+      const spy = jest.spyOn(secondStore, 'setNonSearchConfigGroupKeys');
+      store.patchState({});
+
+      store.setNonSearchConfigGroupKeys({
+        nonSearchConfigGroupKeys: ['default', 'extended'],
+      });
+
+      secondStore.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          nonSearchConfigGroupKeys: ['default', 'extended'],
+          updateStores: false,
+        });
+        done();
+      });
+    });
+    it('should set selected group key in other store', (done) => {
+      const spy = jest.spyOn(secondStore, 'setSelectedGroupKey');
+      store.patchState({});
+
+      store.setSelectedGroupKey({
+        selectedGroupKey: '2',
+      });
+
+      secondStore.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          selectedGroupKey: '2',
+          updateStores: false,
+        });
+        done();
+      });
+    });
+    it('should take snapshot in other store', (done) => {
+      const spy = jest.spyOn(secondStore, 'takeSnapshot');
+      store.patchState({});
+
+      store.takeSnapshot({});
+
+      secondStore.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          updateStores: false,
+        });
+        done();
+      });
+    });
+    it('should set custom group key in other store', (done) => {
+      const spy = jest.spyOn(secondStore, 'setCustomGroupKey');
+      store.patchState({});
+
+      store.setCustomGroupKey({
+        customGroupKey: 'custom-key',
+      });
+
+      secondStore.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          customGroupKey: 'custom-key',
+          updateStores: false,
+        });
+        done();
+      });
+    });
+    it('should revert page data in other store', (done) => {
+      const spy = jest.spyOn(secondStore, 'revertPageData');
+      store.patchState({});
+
+      store.revertPageData({});
+
+      secondStore.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          updateStores: false,
+        });
         done();
       });
     });

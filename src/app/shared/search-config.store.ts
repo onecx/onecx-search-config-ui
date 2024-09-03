@@ -3,10 +3,6 @@ import { ComponentStore } from '@ngrx/component-store';
 import { Observable, filter, tap, withLatestFrom } from 'rxjs';
 import { SearchConfigInfo } from 'src/app/shared/generated';
 import {
-  SEARCH_CONFIG_STORE_TOPIC,
-  SearchConfigTopic,
-} from './topics/search-config/v1/search-config.topic';
-import {
   advancedViewMode,
   advancedViewModeType,
   basicViewMode,
@@ -20,7 +16,10 @@ import {
   hasOnlyValues,
   hasValues,
 } from './search-config.utils';
-import { trigger } from '@angular/animations';
+import {
+  SEARCH_CONFIG_STORE_TOPIC,
+  SearchConfigTopic,
+} from '@onecx/integration-interface';
 
 export type FieldValues = { [key: string]: unknown };
 export type PageData = {
@@ -34,19 +33,20 @@ export type PageData = {
 export interface SearchConfigState {
   pageName: string;
   nonSearchConfigGroupKeys: Array<string>;
+  customGroupKey: string;
 
-  searchConfigs: SearchConfigInfo[];
-  currentSearchConfig: SearchConfigInfo | undefined;
   fieldValues: FieldValues;
   displayedColumns: Array<string>;
   viewMode: basicViewModeType | advancedViewModeType;
+
+  searchConfigs: SearchConfigInfo[];
+  currentSearchConfig: SearchConfigInfo | undefined;
   selectedGroupKey: string;
-  customGroupKey: string;
 
   isInChargeOfEdit: boolean;
   editMode: boolean;
-  preEditConfigOrData: SearchConfigInfo | PageData | undefined;
-  revertConfigData: SearchConfigInfo | PageData | undefined;
+  preEditStateSnapshot: SearchConfigState | undefined;
+  pageDataToRevert: PageData | undefined;
 }
 
 export interface SearchConfigViewModel {
@@ -59,13 +59,15 @@ export interface SearchConfigViewModel {
 }
 
 export interface ColumnSelectionViewModel {
+  nonSearchConfigGroupKeys: Array<string>;
+  customGroupKey: string;
+
+  allGroupKeys: Array<string>;
   searchConfigsOnlyColumns: SearchConfigInfo[];
   searchConfigsWithColumns: SearchConfigInfo[];
-  allGroupKeys: Array<string>;
-  nonSearchConfigGroupKeys: Array<string>;
   selectedGroupKey: string;
   currentConfig: SearchConfigInfo | undefined;
-  customGroupKey: string;
+
   editMode: boolean;
   isInChargeOfEdit: boolean;
 }
@@ -85,20 +87,22 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     super({
       pageName: '',
       nonSearchConfigGroupKeys: [],
+      customGroupKey: '',
 
-      searchConfigs: [],
-      currentSearchConfig: undefined,
       fieldValues: {},
       displayedColumns: [],
       viewMode: basicViewMode,
+
+      searchConfigs: [],
+      currentSearchConfig: undefined,
       selectedGroupKey: '',
-      customGroupKey: '',
 
       isInChargeOfEdit: false,
       editMode: false,
-      preEditConfigOrData: undefined,
-      revertConfigData: undefined,
+      preEditStateSnapshot: undefined,
+      pageDataToRevert: undefined,
     });
+    this.sendUpdateMessage('newStore', {});
   }
 
   // *********** Updaters *********** //
@@ -117,13 +121,9 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       }: { customGroupKey: string; updateStores?: boolean },
     ) => {
       updateStores &&
-        this.sendUpdateMessage(
-          'setCustomGroupKey',
-          {
-            customGroupKey: customGroupKey,
-          },
-          state,
-        );
+        this.sendUpdateMessage('setCustomGroupKey', {
+          customGroupKey: customGroupKey,
+        });
       return { ...state, customGroupKey: customGroupKey };
     },
   );
@@ -137,34 +137,32 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       }: { searchConfigs: SearchConfigInfo[]; updateStores?: boolean },
     ) => {
       updateStores &&
-        this.sendUpdateMessage(
-          'setSearchConfigs',
-          {
-            searchConfigs: searchConfigs,
-          },
-          state,
-        );
+        this.sendUpdateMessage('setSearchConfigs', {
+          searchConfigs: searchConfigs,
+        });
 
-      const searchConfig = state.editMode
-        ? state.currentSearchConfig
-        : searchConfigs.find(
-            (config) => config.name === state.currentSearchConfig?.name,
-          );
-      const selectedKey = state.editMode
-        ? state.selectedGroupKey
-        : state.nonSearchConfigGroupKeys
-              .concat([state.customGroupKey])
-              .includes(state.selectedGroupKey)
-          ? state.selectedGroupKey
+      const searchConfigActive =
+        (state.editMode
+          ? state.currentSearchConfig
           : searchConfigs.find(
-              (config) => config.name === state.selectedGroupKey,
-            );
+              (config) => config.name === state.currentSearchConfig?.name,
+            )) !== undefined;
+      const selectedKeyActive =
+        (state.editMode
+          ? state.selectedGroupKey
+          : state.nonSearchConfigGroupKeys
+                .concat([state.customGroupKey])
+                .includes(state.selectedGroupKey)
+            ? state.selectedGroupKey
+            : searchConfigs.find(
+                (config) => config.name === state.selectedGroupKey,
+              )) !== undefined;
       return {
         ...state,
-        selectedGroupKey: selectedKey
+        selectedGroupKey: selectedKeyActive
           ? state.selectedGroupKey
           : state.customGroupKey,
-        currentSearchConfig: searchConfig
+        currentSearchConfig: searchConfigActive
           ? state.currentSearchConfig
           : undefined,
         searchConfigs: searchConfigs,
@@ -181,13 +179,9 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       }: { nonSearchConfigGroupKeys: Array<string>; updateStores?: boolean },
     ) => {
       updateStores &&
-        this.sendUpdateMessage(
-          'setNonSearchConfigGroupKeys',
-          {
-            nonSearchConfigGroupKeys: nonSearchConfigGroupKeys,
-          },
-          state,
-        );
+        this.sendUpdateMessage('setNonSearchConfigGroupKeys', {
+          nonSearchConfigGroupKeys: nonSearchConfigGroupKeys,
+        });
       return {
         ...state,
         nonSearchConfigGroupKeys: nonSearchConfigGroupKeys,
@@ -204,13 +198,9 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       }: { searchConfig: SearchConfigInfo; updateStores?: boolean },
     ) => {
       updateStores &&
-        this.sendUpdateMessage(
-          'addSearchConfig',
-          {
-            searchConfig: searchConfig,
-          },
-          state,
-        );
+        this.sendUpdateMessage('addSearchConfig', {
+          searchConfig: searchConfig,
+        });
       return {
         ...state,
         searchConfigs: state.searchConfigs.concat(searchConfig),
@@ -227,19 +217,15 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       }: { searchConfig: SearchConfigInfo; updateStores?: boolean },
     ) => {
       updateStores &&
-        this.sendUpdateMessage(
-          'deleteSearchConfig',
-          {
-            searchConfig: searchConfig,
-          },
-          state,
-        );
+        this.sendUpdateMessage('deleteSearchConfig', {
+          searchConfig: searchConfig,
+        });
 
       const currentSearchConfig =
         state.currentSearchConfig?.id === searchConfig.id
           ? undefined
           : state.currentSearchConfig;
-      const selectedGroupKey = this.updateCurrentSelectedGroupKey(
+      const selectedGroupKey = this.updateSelectedGroupKeyByConfig(
         state,
         currentSearchConfig,
       );
@@ -260,21 +246,14 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       {
         config,
         updateStores = true,
-      }: { config: SearchConfigInfo; updateStores?: boolean },
+      }: { config: SearchConfigInfo | undefined; updateStores?: boolean },
     ) => {
       if (state.editMode) return state;
-      // const preEditConfig = state.editMode
-      //   ? state.preEditConfigOrData
-      //   : newCurrentConfig;
       updateStores &&
-        this.sendUpdateMessage(
-          'setCurrentConfig',
-          {
-            config: config,
-          },
-          state,
-        );
-      const selectedGroupKey = this.updateCurrentSelectedGroupKey(
+        this.sendUpdateMessage('setCurrentConfig', {
+          config: config,
+        });
+      const selectedGroupKey = this.updateSelectedGroupKeyByConfig(
         state,
         config,
       );
@@ -282,7 +261,103 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         ...state,
         currentSearchConfig: config,
         selectedGroupKey: selectedGroupKey,
-        // preEditConfigOrData: preEditConfig,
+      };
+    },
+  );
+
+  readonly editSearchConfig = this.updater(
+    (
+      state,
+      {
+        searchConfig,
+        updateStores = true,
+      }: { searchConfig: SearchConfigInfo; updateStores?: boolean },
+    ) => {
+      updateStores &&
+        this.sendUpdateMessage('editSearchConfig', {
+          searchConfig: searchConfig,
+        });
+      return {
+        ...state,
+        searchConfigs: state.searchConfigs.map((config) =>
+          config.id === searchConfig.id ? searchConfig : config,
+        ),
+      };
+    },
+  );
+
+  readonly setSelectedGroupKey = this.updater(
+    (
+      state,
+      {
+        selectedGroupKey,
+        updateStores = true,
+      }: { selectedGroupKey: string; updateStores?: boolean },
+    ) => {
+      if (state.editMode) return state;
+      updateStores &&
+        this.sendUpdateMessage('setSelectedGroupKey', {
+          selectedGroupKey: selectedGroupKey,
+        });
+      const currentConfig = this.updateConfigBySelectedGroupKey(
+        state,
+        selectedGroupKey,
+      );
+
+      return {
+        ...state,
+        currentSearchConfig: currentConfig,
+        selectedGroupKey: selectedGroupKey,
+      };
+    },
+  );
+
+  readonly setEditMode = this.updater(
+    (state, { updateStores = true }: { updateStores?: boolean }) => {
+      updateStores && this.sendUpdateMessage('setEditMode', {});
+      return {
+        ...state,
+        editMode: true,
+        isInChargeOfEdit: updateStores ? true : false,
+      };
+    },
+  );
+
+  readonly cancelEditMode = this.updater(
+    (state, { updateStores = true }: { updateStores?: boolean }) => {
+      updateStores && this.sendUpdateMessage('cancelEditMode', {});
+      return {
+        ...state,
+        editMode: false,
+        isInChargeOfEdit: false,
+      };
+    },
+  );
+
+  readonly takeSnapshot = this.updater(
+    (state, { updateStores = true }: { updateStores?: boolean }) => {
+      updateStores && this.sendUpdateMessage('takeSnapshot', {});
+      return {
+        ...state,
+        preEditStateSnapshot: state,
+      };
+    },
+  );
+
+  readonly revertPageData = this.updater(
+    (state, { updateStores = true }: { updateStores?: boolean }) => {
+      updateStores && this.sendUpdateMessage('revertPageData', {});
+      return {
+        ...state,
+        pageDataToRevert: state.preEditStateSnapshot
+          ? {
+              pageName: state.preEditStateSnapshot?.pageName,
+              fieldValues: state.preEditStateSnapshot?.fieldValues,
+              displayedColumIds: state.preEditStateSnapshot?.displayedColumns,
+              viewMode: state.preEditStateSnapshot?.viewMode,
+              columnGroupKey: state.preEditStateSnapshot?.selectedGroupKey,
+            }
+          : undefined,
       };
     },
   );
@@ -300,30 +375,16 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       }
 
       updateStores &&
-        this.sendUpdateMessage(
-          'updateFieldValues',
-          {
-            values: values,
-          },
-          state,
-        );
+        this.sendUpdateMessage('updateFieldValues', {
+          values: values,
+        });
 
       const searchConfig = this.isCurrentConfigOutdated(state, {
         fieldValues: values,
       })
         ? undefined
         : state.currentSearchConfig;
-      // const preEditConfig =
-      //   state.editMode || areValuesEqual
-      //     ? state.preEditConfigOrData
-      //     : {
-      //         pageName: state.pageName,
-      //         values: values,
-      //         columns: state.displayedColumns,
-      //         columnGroupKey: state.selectedGroupKey,
-      //         viewMode: state.viewMode,
-      //       };
-      const selectedGroupKey = this.updateCurrentSelectedGroupKey(
+      const selectedGroupKey = this.updateSelectedGroupKeyByConfig(
         state,
         searchConfig,
       );
@@ -332,7 +393,6 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         fieldValues: values,
         currentSearchConfig: searchConfig,
         selectedGroupKey: selectedGroupKey,
-        // preEditConfigOrData: preEditConfig,
       };
     },
   );
@@ -349,30 +409,16 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         return { ...state };
       }
       updateStores &&
-        this.sendUpdateMessage(
-          'updateDisplayedColumns',
-          {
-            displayedColumns: displayedColumns,
-          },
-          state,
-        );
+        this.sendUpdateMessage('updateDisplayedColumns', {
+          displayedColumns: displayedColumns,
+        });
 
       const searchConfig = this.isCurrentConfigOutdated(state, {
         displayedColumIds: displayedColumns,
       })
         ? undefined
         : state.currentSearchConfig;
-      // const preEditConfig =
-      //   state.editMode || areColumnsEqual
-      //     ? state.preEditConfigOrData
-      //     : {
-      //         pageName: state.pageName,
-      //         values: state.fieldValues,
-      //         columns: displayedColumns,
-      //         columnGroupKey: state.selectedGroupKey,
-      //         viewMode: state.viewMode,
-      //       };
-      const selectedGroupKey = this.updateCurrentSelectedGroupKey(
+      const selectedGroupKey = this.updateSelectedGroupKeyByConfig(
         state,
         searchConfig,
       );
@@ -382,7 +428,6 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         displayedColumns: displayedColumns,
         currentSearchConfig: searchConfig,
         selectedGroupKey: selectedGroupKey,
-        // preEditConfigOrData: preEditConfig,
       };
     },
   );
@@ -402,155 +447,37 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         return { ...state };
       }
       updateStores &&
-        this.sendUpdateMessage(
-          'updateViewMode',
-          {
-            viewMode: viewMode,
-          },
-          state,
-        );
+        this.sendUpdateMessage('updateViewMode', {
+          viewMode: viewMode,
+        });
       const searchConfig = this.isCurrentConfigOutdated(state, {
         viewMode: viewMode,
       })
         ? undefined
         : state.currentSearchConfig;
-      const selectedGroupKey = this.updateCurrentSelectedGroupKey(
+      const selectedGroupKey = this.updateSelectedGroupKeyByConfig(
         state,
         searchConfig,
       );
-      // const preEditConfig =
-      //   state.editMode || isViewModeEqual
-      //     ? state.preEditConfigOrData
-      //     : {
-      //         pageName: state.pageName,
-      //         values: state.fieldValues,
-      //         columns: state.displayedColumns,
-      //         columnGroupKey: state.selectedGroupKey,
-      //         viewMode: viewMode,
-      //       };
       return {
         ...state,
         viewMode: viewMode,
         currentSearchConfig: searchConfig,
         selectedGroupKey: selectedGroupKey,
-        // preEditConfigOrData: preEditConfig,
       };
     },
   );
-
-  readonly setSelectedGroupKey = this.updater(
-    (
-      state,
-      {
-        selectedGroupKey,
-        updateStores = true,
-      }: { selectedGroupKey: string; updateStores?: boolean },
-    ) => {
-      if (state.editMode) return state;
-      updateStores &&
-        this.sendUpdateMessage(
-          'setSelectedGroupKey',
-          {
-            selectedGroupKey: selectedGroupKey,
-          },
-          state,
-        );
-      const currentConfig = this.updateCurrentConfig(state, selectedGroupKey);
-
-      return {
-        ...state,
-        currentSearchConfig: currentConfig,
-        selectedGroupKey: selectedGroupKey,
-      };
-    },
-  );
-
-  readonly editSearchConfig = this.updater(
-    (
-      state,
-      {
-        searchConfig,
-        updateStores = true,
-      }: { searchConfig: SearchConfigInfo; updateStores?: boolean },
-    ) => {
-      updateStores &&
-        this.sendUpdateMessage(
-          'editSearchConfig',
-          {
-            searchConfig: searchConfig,
-          },
-          state,
-        );
-      return {
-        ...state,
-        searchConfigs: state.searchConfigs.map((config) =>
-          config.id === searchConfig.id ? searchConfig : config,
-        ),
-      };
-    },
-  );
-
-  readonly setEditMode = this.updater(
-    (state, { updateStores = true }: { updateStores?: boolean }) => {
-      updateStores && this.sendUpdateMessage('setEditMode', {}, state);
-      return {
-        ...state,
-        editMode: true,
-        isInChargeOfEdit: updateStores ? true : false,
-      };
-    },
-  );
-
-  readonly cancelEditMode = this.updater(
-    (state, { updateStores = true }: { updateStores?: boolean }) => {
-      updateStores && this.sendUpdateMessage('cancelEditMode', {}, state);
-      return {
-        ...state,
-        editMode: false,
-        isInChargeOfEdit: false,
-      };
-    },
-  );
-
-  // readonly setRevertConfig = this.updater(
-  //   (state, { updateStores = true }: { updateStores?: boolean }) => {
-  //     updateStores && this.sendUpdateMessage('setRevertConfig', {}, state);
-  //     return {
-  //       ...state,
-  //       fieldValues: state.preEditConfigOrData?.fieldValues || {},
-  //       displayedColumns: state.preEditConfigOrData?.columIds || [],
-  //       revertConfigData: {
-  //         fieldValues: state.preEditConfigOrData?.fieldValues || {},
-  //         displayedColumIds: state.preEditConfigOrData?.columIds || [],
-  //         pageName: state.pageName,
-  //         columnGroupKey:
-  //           state.preEditConfigOrData &&
-  //           'columnGroupKey' in state.preEditConfigOrData
-  //             ? state.preEditConfigOrData.columnGroupKey
-  //             : '',
-  //         viewMode:
-  //           state.preEditConfigOrData && 'viewMode' in state.preEditConfigOrData
-  //             ? state.preEditConfigOrData?.viewMode
-  //             : 'basic',
-  //       },
-  //     };
-  //   },
-  // );
 
   // *********** Selectors *********** //
 
-  // readonly isSearchConfigSaved$ = this.select(
-  //   ({ preEditConfigOrData: preEditConfig }): boolean | undefined =>
-  //     preEditConfig && 'id' in preEditConfig,
-  // );
-
-  readonly selectedGroupKey$ = this.select(
-    ({ selectedGroupKey }): string => selectedGroupKey,
+  readonly preEditStateSnapshot$ = this.select(
+    ({ preEditStateSnapshot }): SearchConfigState | undefined =>
+      preEditStateSnapshot,
   );
 
-  // readonly currentRevertConfig$ = this.select(
-  //   ({ revertConfigData: revertConfig }): PageData | undefined => revertConfig,
-  // );
+  readonly pageDataToRevert$ = this.select(
+    ({ pageDataToRevert }): PageData | undefined => pageDataToRevert,
+  );
 
   readonly pageName$ = this.select(
     this.state$,
@@ -566,6 +493,10 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       displayedColumIds: state.displayedColumns,
       columnGroupKey: state.selectedGroupKey,
     }),
+  );
+
+  readonly selectedGroupKey$ = this.select(
+    ({ selectedGroupKey }): string => selectedGroupKey,
   );
 
   readonly currentConfig$ = this.select(
@@ -621,7 +552,9 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
   readonly enterEditMode = this.effect(
     (config$: Observable<SearchConfigInfo>) => {
       return config$.pipe(
-        tap((config) => {
+        withLatestFrom(this.state$),
+        tap(([config, state]) => {
+          this.takeSnapshot({});
           this.setCurrentConfig({ config: config });
           this.setEditMode({});
         }),
@@ -631,31 +564,21 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
 
   readonly cancelEdit = this.effect((trigger$) => {
     return trigger$.pipe(
-      // withLatestFrom(this.state$, this.isSearchConfigSaved$),
-      withLatestFrom(this.state$),
-      // tap(([, state, isSearchConfigSaved]) => {
-      tap(([, state]) => {
+      withLatestFrom(this.preEditStateSnapshot$),
+      tap(([, preEditStateSnapshot]) => {
         this.cancelEditMode({});
-        // if (isSearchConfigSaved) {
-        //   this.setCurrentConfig({
-        //     newCurrentConfig: state.preEditConfigOrData as SearchConfigInfo,
-        //   });
-        //   // if (
-        //   //   state.preEditConfigOrData &&
-        //   //   state.preEditConfigOrData?.columIds.length <= 0 &&
-        //   //   Object.keys(state.preEditConfigOrData.fieldValues).length > 0
-        //   // ) {
-        //   //   this.updateDisplayedColumns({
-        //   //     newDisplayedColumns: state.preEditConfigOrData.columIds,
-        //   //   });
-        //   //   'columnGroupKey' in state.preEditConfigOrData &&
-        //   //     this.setSelectedGroupKey({
-        //   //       groupKey: state.preEditConfigOrData.columnGroupKey,
-        //   //     });
-        //   // }
-        // } else {
-        //   this.setRevertConfig({});
-        // }
+        const savedConfig = preEditStateSnapshot?.currentSearchConfig;
+        if (savedConfig) {
+          if (hasValues(savedConfig) && hasColumns(savedConfig)) {
+            this.setCurrentConfig({ config: savedConfig });
+          } else {
+            this.revertPageData({});
+            this.setCurrentConfig({ config: savedConfig });
+          }
+          return;
+        }
+
+        this.revertPageData({});
       }),
     );
   });
@@ -672,10 +595,54 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
 
   private readonly storeUpdate = this.effect(() => {
     return this.searchConfigTopic$.pipe(
+      filter((msg) => msg.payload.storeName !== this.storeName),
       withLatestFrom(this.state$),
-      filter(([msg, state]) => msg.payload.storeName !== this.storeName),
-      tap(([msg, _]) => {
-        if (msg.payload.name === 'setSearchConfigs') {
+      tap(([msg, state]) => {
+        if (msg.payload.name === 'storeData') {
+          const storeData: SearchConfigState = msg.payload.state;
+          const newState = {
+            ...state,
+            nonSearchConfigGroupKeys:
+              state.nonSearchConfigGroupKeys.length > 0
+                ? state.nonSearchConfigGroupKeys
+                : storeData.nonSearchConfigGroupKeys,
+            customGroupKey:
+              state.customGroupKey === ''
+                ? storeData.customGroupKey
+                : state.customGroupKey,
+            fieldValues:
+              Object.keys(state.fieldValues).length === 0
+                ? storeData.fieldValues
+                : state.fieldValues,
+            displayedColumns:
+              state.displayedColumns.length === 0
+                ? storeData.displayedColumns
+                : state.displayedColumns,
+            viewMode:
+              state.viewMode === basicViewMode
+                ? storeData.viewMode
+                : state.viewMode,
+            searchConfigs:
+              state.searchConfigs.length === 0
+                ? storeData.searchConfigs
+                : state.searchConfigs,
+            currentSearchConfig:
+              state.currentSearchConfig ?? storeData.currentSearchConfig,
+            selectedGroupKey:
+              state.selectedGroupKey === ''
+                ? storeData.selectedGroupKey
+                : state.selectedGroupKey,
+            editMode:
+              state.editMode === false ? storeData.editMode : state.editMode,
+            preEditStateSnapshot:
+              state.preEditStateSnapshot ?? storeData.preEditStateSnapshot,
+          };
+          this.patchState(newState);
+        } else if (msg.payload.name === 'newStore') {
+          this.sendUpdateMessage('storeData', {
+            state: state,
+          });
+        } else if (msg.payload.name === 'setSearchConfigs') {
           this.setSearchConfigs({
             searchConfigs: msg.payload.searchConfigs,
             updateStores: false,
@@ -728,10 +695,8 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
             selectedGroupKey: msg.payload.selectedGroupKey,
             updateStores: false,
           });
-        } else if (msg.payload.name === 'setRevertConfig') {
-          // this.setRevertConfig({
-          //   updateStores: false,
-          // });
+        } else if (msg.payload.name === 'takeSnapshot') {
+          this.takeSnapshot({ updateStores: false });
         } else if (msg.payload.name === 'updateViewMode') {
           this.updateViewMode({
             viewMode: msg.payload.viewMode,
@@ -740,6 +705,10 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         } else if (msg.payload.name === 'setCustomGroupKey') {
           this.setCustomGroupKey({
             customGroupKey: msg.payload.customGroupKey,
+            updateStores: false,
+          });
+        } else if (msg.payload.name === 'revertPageData') {
+          this.revertPageData({
             updateStores: false,
           });
         }
@@ -757,7 +726,6 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       displayedColumIds?: Array<string>;
     },
   ) {
-    // NOTE: we are editing that config
     if (state.editMode) return false;
 
     if (state.currentSearchConfig === undefined) return true;
@@ -794,21 +762,28 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     return false;
   }
 
-  private updateCurrentSelectedGroupKey(
+  /**
+   * update selectedGroupKey using new config
+   */
+  private updateSelectedGroupKeyByConfig(
     state: SearchConfigState,
     config: SearchConfigInfo | undefined,
   ) {
     if (state.editMode) return state.selectedGroupKey;
+
     if (config && config.name === state.selectedGroupKey)
       return state.selectedGroupKey;
+
     if (config && hasColumns(config)) return config.name;
 
     const configForSelectedKey = state.searchConfigs.find(
       (c) => c.name === state.selectedGroupKey,
     );
+
     if (config && hasValues(config) && configForSelectedKey) {
       return state.customGroupKey;
     }
+
     if (
       config === undefined &&
       configForSelectedKey &&
@@ -819,7 +794,10 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     return state.selectedGroupKey;
   }
 
-  private updateCurrentConfig(
+  /**
+   * update currentSearchConfig using new selectedGroupKey
+   */
+  private updateConfigBySelectedGroupKey(
     state: SearchConfigState,
     selectedGroupKey: string,
   ): SearchConfigInfo | undefined {
@@ -828,6 +806,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     const searchConfigForSelectedKey = state.searchConfigs.find(
       (c) => c.name === state.selectedGroupKey,
     );
+
     if (
       (searchConfigForSelectedKey &&
         state.nonSearchConfigGroupKeys.includes(selectedGroupKey)) ||
@@ -847,11 +826,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     return state.currentSearchConfig;
   }
 
-  private sendUpdateMessage(
-    name: string,
-    content: any,
-    state: SearchConfigState,
-  ) {
+  private sendUpdateMessage(name: string, content: any) {
     this.searchConfigTopic$.publish({
       payload: {
         name: name,

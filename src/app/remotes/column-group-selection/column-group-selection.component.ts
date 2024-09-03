@@ -75,14 +75,14 @@ import {
   CreateOrEditSearchDialogContent,
 } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
 import {
-  SEARCH_CONFIG_STORE_TOPIC,
-  SearchConfigTopic,
-} from 'src/app/shared/topics/search-config/v1/search-config.topic';
-import {
   advancedViewMode,
   advancedViewModeType,
 } from 'src/app/shared/constants';
 import { parseFieldValues } from 'src/app/shared/search-config.utils';
+import {
+  SEARCH_CONFIG_STORE_TOPIC,
+  SearchConfigTopic,
+} from '@onecx/integration-interface';
 
 export function createTranslateLoader(
   httpClient: HttpClient,
@@ -205,12 +205,12 @@ export class OneCXColumnGroupSelectionComponent
   ) {
     this.userService.lang$.subscribe((lang) => this.translateService.use(lang));
 
-    // this.searchConfigStore.currentRevertConfig$.subscribe((config) => {
-    //   config &&
-    //     this.searchConfigStore.setSelectedGroupKey({
-    //       groupKey: config.columnGroupKey,
-    //     });
-    // });
+    this.searchConfigStore.pageDataToRevert$.subscribe((pageData) => {
+      pageData &&
+        this.searchConfigStore.setSelectedGroupKey({
+          selectedGroupKey: pageData.columnGroupKey,
+        });
+    });
 
     this.searchConfigStore.selectedGroupKey$
       .pipe(withLatestFrom(this.vm$))

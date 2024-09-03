@@ -52,7 +52,11 @@ import {
 import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { FloatLabelModule } from 'primeng/floatlabel';
-import { MfeInfo } from '@onecx/integration-interface';
+import {
+  MfeInfo,
+  SEARCH_CONFIG_STORE_TOPIC,
+  SearchConfigTopic,
+} from '@onecx/integration-interface';
 import {
   FieldValues,
   PageData,
@@ -64,10 +68,6 @@ import {
   CreateOrEditSearchConfigDialogComponent,
   CreateOrEditSearchDialogContent,
 } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
-import {
-  SEARCH_CONFIG_STORE_TOPIC,
-  SearchConfigTopic,
-} from 'src/app/shared/topics/search-config/v1/search-config.topic';
 import {
   advancedViewMode,
   advancedViewModeType,
@@ -196,18 +196,17 @@ export class OneCXSearchConfigComponent
         });
       });
 
-    // this.searchConfigStore.currentRevertConfig$.subscribe((config) => {
-    //   this.searchConfigSelected.emit(
-    //     config
-    //       ? {
-    //           inputValues: config?.fieldValues,
-    //           displayedColumns: config?.displayedColumIds,
-    //           viewMode: config.viewMode,
-    //         }
-    //       : undefined,
-    //   );
-    //   this.setSearchConfigControl(null);
-    // });
+    this.searchConfigStore.pageDataToRevert$.subscribe((pageData) => {
+      this.searchConfigSelected.emit(
+        pageData
+          ? {
+              inputValues: pageData.fieldValues,
+              displayedColumns: pageData.displayedColumIds,
+              viewMode: pageData.viewMode,
+            }
+          : undefined,
+      );
+    });
 
     this.searchConfigStore.currentConfig$
       .pipe(withLatestFrom(this.searchConfigStore.pageData$))
