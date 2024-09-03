@@ -1,6 +1,13 @@
 import { CommonModule, Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, EventEmitter, Inject, Input, OnInit } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Inject,
+  Input,
+  OnDestroy,
+  OnInit,
+} from '@angular/core';
 import {
   TranslateLoader,
   TranslateModule,
@@ -25,6 +32,7 @@ import {
 } from '@onecx/angular-remote-components';
 import {
   ReplaySubject,
+  Subscription,
   catchError,
   combineLatest,
   filter,
@@ -121,7 +129,7 @@ import { parseFieldValues } from 'src/app/shared/search-config.utils';
   ],
 })
 export class OneCXSearchConfigComponent
-  implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit
+  implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit, OnDestroy
 {
   @Input() set pageName(pageName: string) {
     this.searchConfigStore.setPageName(pageName);
@@ -151,6 +159,9 @@ export class OneCXSearchConfigComponent
   formGroup: FormGroup | undefined;
 
   readonly vm$ = this.searchConfigStore.searchConfigVm$;
+
+  pageDataRevertSub: Subscription | undefined;
+  currentConfigSub: Subscription | undefined;
 
   addSearchConfigOption: any = {
     id: 'ocx-add-search-config-option',
@@ -196,19 +207,21 @@ export class OneCXSearchConfigComponent
         });
       });
 
-    this.searchConfigStore.pageDataToRevert$.subscribe((pageData) => {
-      this.searchConfigSelected.emit(
-        pageData
-          ? {
-              inputValues: pageData.fieldValues,
-              displayedColumns: pageData.displayedColumIds,
-              viewMode: pageData.viewMode,
-            }
-          : undefined,
-      );
-    });
+    this.pageDataRevertSub = this.searchConfigStore.pageDataToRevert$.subscribe(
+      (pageData) => {
+        this.searchConfigSelected.emit(
+          pageData
+            ? {
+                inputValues: pageData.fieldValues,
+                displayedColumns: pageData.displayedColumIds,
+                viewMode: pageData.viewMode,
+              }
+            : undefined,
+        );
+      },
+    );
 
-    this.searchConfigStore.currentConfig$
+    this.currentConfigSub = this.searchConfigStore.currentConfig$
       .pipe(withLatestFrom(this.searchConfigStore.pageData$))
       .subscribe(([config, pageData]) => {
         this.searchConfigSelected.emit(
@@ -235,6 +248,10 @@ export class OneCXSearchConfigComponent
           config && Object.keys(config?.values).length > 0 ? config : null,
         );
       });
+  }
+  ngOnDestroy(): void {
+    this.currentConfigSub?.unsubscribe();
+    this.pageDataRevertSub?.unsubscribe();
   }
 
   ngOnInit(): void {

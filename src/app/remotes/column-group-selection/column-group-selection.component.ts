@@ -6,6 +6,7 @@ import {
   EventEmitter,
   Inject,
   Input,
+  OnDestroy,
   OnInit,
   inject,
   runInInjectionContext,
@@ -42,6 +43,7 @@ import {
 import {
   BehaviorSubject,
   ReplaySubject,
+  Subscription,
   catchError,
   combineLatest,
   filter,
@@ -154,7 +156,7 @@ export function createTranslateLoader(
   ],
 })
 export class OneCXColumnGroupSelectionComponent
-  implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit
+  implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit, OnDestroy
 {
   @Input() set pageName(pageName: string) {
     this.searchConfigStore.setPageName(pageName);
@@ -192,6 +194,8 @@ export class OneCXColumnGroupSelectionComponent
   saveIcon = PrimeIcons.CHECK;
 
   readonly vm$ = this.searchConfigStore.columnSelectionVm$;
+  pageDataRevertSub: Subscription | undefined;
+  selectedGroupKeySub: Subscription | undefined;
 
   constructor(
     @Inject(BASE_URL) private baseUrl: ReplaySubject<string>,
@@ -238,6 +242,10 @@ export class OneCXColumnGroupSelectionComponent
           });
         }
       });
+  }
+  ngOnDestroy(): void {
+    this.pageDataRevertSub?.unsubscribe();
+    this.selectedGroupKeySub?.unsubscribe();
   }
 
   @Input() set ocxRemoteComponentConfig(config: RemoteComponentConfig) {

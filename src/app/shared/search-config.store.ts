@@ -102,6 +102,8 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       preEditStateSnapshot: undefined,
       pageDataToRevert: undefined,
     });
+    // check the topic value -> if value => set state equal to it
+
     this.sendUpdateMessage('newStore', {});
   }
 
