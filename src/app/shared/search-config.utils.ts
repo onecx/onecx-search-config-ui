@@ -17,7 +17,10 @@ export function hasOnlyColumns(config: SearchConfigInfo): boolean {
   return !hasValues(config) && hasColumns(config);
 }
 
-export function areValuesEqual(v1: FieldValues, v2: FieldValues): boolean {
+export function areValuesEqual(
+  v1: FieldValues | { [key: string]: unknown },
+  v2: FieldValues | { [key: string]: unknown },
+): boolean {
   const v1_parsed = parseFieldValues(v1);
   const v2_parsed = parseFieldValues(v2);
   return Object.entries(v1_parsed).every(([key, value]) => {
@@ -25,7 +28,9 @@ export function areValuesEqual(v1: FieldValues, v2: FieldValues): boolean {
   });
 }
 
-export function parseFieldValues(values: FieldValues): {
+export function parseFieldValues(
+  values: FieldValues | { [key: string]: unknown },
+): {
   [key: string]: string;
 } {
   return Object.fromEntries(

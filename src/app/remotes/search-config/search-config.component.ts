@@ -134,14 +134,14 @@ export class OneCXSearchConfigComponent
   @Input() set pageName(pageName: string) {
     this.searchConfigStore.setPageName(pageName);
   }
-  @Input() set currentInputFieldValues(values: { [key: string]: unknown }) {
+  @Input() set currentFieldValues(values: { [key: string]: unknown }) {
     this.searchConfigStore.updateFieldValues({
       values: values,
     });
   }
-  @Input() set displayedColumns(columns: string[]) {
+  @Input() set displayedColumnsIds(columns: string[]) {
     this.searchConfigStore.updateDisplayedColumns({
-      displayedColumns: columns,
+      displayedColumnsIds: columns,
     });
   }
   @Input() set viewMode(viewMode: basicViewModeType | advancedViewModeType) {
@@ -151,9 +151,9 @@ export class OneCXSearchConfigComponent
   }
 
   @Input() searchConfigSelected: EventEmitter<{
-    inputValues: { [key: string]: unknown };
-    displayedColumns: string[];
-    viewMode: string;
+    fieldValues: { [key: string]: string };
+    displayedColumnsIds: string[];
+    viewMode: basicViewModeType | advancedViewModeType;
   }> = new EventEmitter();
 
   formGroup: FormGroup | undefined;
@@ -212,8 +212,8 @@ export class OneCXSearchConfigComponent
         this.searchConfigSelected.emit(
           pageData
             ? {
-                inputValues: pageData.fieldValues,
-                displayedColumns: pageData.displayedColumIds,
+                fieldValues: pageData.fieldValues,
+                displayedColumnsIds: pageData.displayedColumnsIds,
                 viewMode: pageData.viewMode,
               }
             : undefined,
@@ -227,14 +227,14 @@ export class OneCXSearchConfigComponent
         this.searchConfigSelected.emit(
           config
             ? {
-                inputValues:
+                fieldValues:
                   Object.keys(config?.values).length > 0
                     ? config.values
                     : pageData.fieldValues,
-                displayedColumns:
+                displayedColumnsIds:
                   config?.columns.length > 0
                     ? config.columns
-                    : pageData.displayedColumIds,
+                    : pageData.displayedColumnsIds,
                 viewMode:
                   Object.keys(config?.values).length > 0
                     ? config.isAdvanced
@@ -441,7 +441,7 @@ export class OneCXSearchConfigComponent
       isAdvanced: configData.saveInputValues
         ? data.viewMode === advancedViewMode
         : false,
-      columns: configData.saveColumns ? data.displayedColumIds : [],
+      columns: configData.saveColumns ? data.displayedColumnsIds : [],
       values: configData.saveInputValues
         ? parseFieldValues(data.fieldValues)
         : {},
@@ -478,7 +478,7 @@ export class OneCXSearchConfigComponent
       searchConfig: {
         ...config,
         name: configData?.searchConfigName ?? config.name ?? '',
-        columns: configData?.saveColumns ? data.displayedColumIds : [],
+        columns: configData?.saveColumns ? data.displayedColumnsIds : [],
         values: configData?.saveInputValues
           ? parseFieldValues(data.fieldValues)
           : {},

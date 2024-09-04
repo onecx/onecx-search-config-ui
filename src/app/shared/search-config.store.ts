@@ -15,18 +15,19 @@ import {
   hasOnlyColumns,
   hasOnlyValues,
   hasValues,
+  parseFieldValues,
 } from './search-config.utils';
 import {
   SEARCH_CONFIG_STORE_TOPIC,
   SearchConfigTopic,
 } from '@onecx/integration-interface';
 
-export type FieldValues = { [key: string]: unknown };
+export type FieldValues = { [key: string]: string };
 export type PageData = {
   pageName: string;
   fieldValues: FieldValues;
   viewMode: basicViewModeType | advancedViewModeType;
-  displayedColumIds: Array<string>;
+  displayedColumnsIds: Array<string>;
   columnGroupKey: string;
 };
 
@@ -36,7 +37,7 @@ export interface SearchConfigState {
   customGroupKey: string;
 
   fieldValues: FieldValues;
-  displayedColumns: Array<string>;
+  displayedColumnsIds: Array<string>;
   viewMode: basicViewModeType | advancedViewModeType;
 
   searchConfigs: SearchConfigInfo[];
@@ -90,7 +91,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       customGroupKey: '',
 
       fieldValues: {},
-      displayedColumns: [],
+      displayedColumnsIds: [],
       viewMode: basicViewMode,
 
       searchConfigs: [],
@@ -355,7 +356,8 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           ? {
               pageName: state.preEditStateSnapshot?.pageName,
               fieldValues: state.preEditStateSnapshot?.fieldValues,
-              displayedColumIds: state.preEditStateSnapshot?.displayedColumns,
+              displayedColumnsIds:
+                state.preEditStateSnapshot?.displayedColumnsIds,
               viewMode: state.preEditStateSnapshot?.viewMode,
               columnGroupKey: state.preEditStateSnapshot?.selectedGroupKey,
             }
@@ -370,9 +372,9 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       {
         values,
         updateStores = true,
-      }: { values: FieldValues; updateStores?: boolean },
+      }: { values: { [key: string]: unknown }; updateStores?: boolean },
     ) => {
-      if (areValuesEqual(values, state.fieldValues)) {
+      if (!values || areValuesEqual(values, state.fieldValues)) {
         return { ...state };
       }
 
@@ -381,8 +383,9 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           values: values,
         });
 
+      const fieldValues = parseFieldValues(values);
       const searchConfig = this.isCurrentConfigOutdated(state, {
-        fieldValues: values,
+        fieldValues: fieldValues,
       })
         ? undefined
         : state.currentSearchConfig;
@@ -392,7 +395,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       );
       return {
         ...state,
-        fieldValues: values,
+        fieldValues: fieldValues,
         currentSearchConfig: searchConfig,
         selectedGroupKey: selectedGroupKey,
       };
@@ -403,20 +406,20 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     (
       state,
       {
-        displayedColumns,
+        displayedColumnsIds,
         updateStores = true,
-      }: { displayedColumns: string[]; updateStores?: boolean },
+      }: { displayedColumnsIds: string[]; updateStores?: boolean },
     ) => {
-      if (areColumnsEqual(displayedColumns, state.displayedColumns)) {
+      if (areColumnsEqual(displayedColumnsIds, state.displayedColumnsIds)) {
         return { ...state };
       }
       updateStores &&
         this.sendUpdateMessage('updateDisplayedColumns', {
-          displayedColumns: displayedColumns,
+          displayedColumnsIds: displayedColumnsIds,
         });
 
       const searchConfig = this.isCurrentConfigOutdated(state, {
-        displayedColumIds: displayedColumns,
+        displayedColumIds: displayedColumnsIds,
       })
         ? undefined
         : state.currentSearchConfig;
@@ -427,7 +430,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
 
       return {
         ...state,
-        displayedColumns: displayedColumns,
+        displayedColumnsIds: displayedColumnsIds,
         currentSearchConfig: searchConfig,
         selectedGroupKey: selectedGroupKey,
       };
@@ -492,7 +495,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       pageName: state.pageName,
       fieldValues: state.fieldValues,
       viewMode: state.viewMode,
-      displayedColumIds: state.displayedColumns,
+      displayedColumnsIds: state.displayedColumnsIds,
       columnGroupKey: state.selectedGroupKey,
     }),
   );
@@ -616,10 +619,10 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
               Object.keys(state.fieldValues).length === 0
                 ? storeData.fieldValues
                 : state.fieldValues,
-            displayedColumns:
-              state.displayedColumns.length === 0
-                ? storeData.displayedColumns
-                : state.displayedColumns,
+            displayedColumnsIds:
+              state.displayedColumnsIds.length === 0
+                ? storeData.displayedColumnsIds
+                : state.displayedColumnsIds,
             viewMode:
               state.viewMode === basicViewMode
                 ? storeData.viewMode
@@ -671,7 +674,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           });
         } else if (msg.payload.name === 'updateDisplayedColumns') {
           this.updateDisplayedColumns({
-            displayedColumns: msg.payload.displayedColumns,
+            displayedColumnsIds: msg.payload.displayedColumnsIds,
             updateStores: false,
           });
         } else if (msg.payload.name === 'setEditMode') {
@@ -723,7 +726,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
   private isCurrentConfigOutdated(
     state: SearchConfigState,
     change: {
-      fieldValues?: FieldValues;
+      fieldValues?: { [key: string]: unknown };
       viewMode?: basicViewModeType | advancedViewModeType;
       displayedColumIds?: Array<string>;
     },

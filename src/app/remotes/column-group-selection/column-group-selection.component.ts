@@ -356,7 +356,7 @@ export class OneCXColumnGroupSelectionComponent
       searchConfig: {
         ...config,
         name: configData?.searchConfigName ?? config.name ?? '',
-        columns: configData?.saveColumns ? data.displayedColumIds : [],
+        columns: configData?.saveColumns ? data.displayedColumnsIds : [],
         values: configData?.saveInputValues
           ? parseFieldValues(data.fieldValues)
           : {},

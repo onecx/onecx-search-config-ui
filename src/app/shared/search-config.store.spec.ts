@@ -1013,9 +1013,7 @@ describe('SearchConfigStore', () => {
     describe('currentConfig$ selector', () => {
       it('should not update on edit mode', () => {
         store.patchState({
-          fieldValues: {
-            key: testConfigBase.values,
-          },
+          fieldValues: testConfigBase.values,
           currentSearchConfig: testConfigBase,
           editMode: true,
         });
@@ -1224,26 +1222,26 @@ describe('SearchConfigStore', () => {
     describe('pageData$ selector', () => {
       it('should update if new columns are not the same as old ones', (done) => {
         store.patchState({
-          displayedColumns: ['col_1'],
+          displayedColumnsIds: ['col_1'],
         });
 
         store.updateDisplayedColumns({
-          displayedColumns: ['col_2'],
+          displayedColumnsIds: ['col_2'],
         });
 
         store.pageData$.pipe(take(1)).subscribe((data) => {
-          expect(data.displayedColumIds).toStrictEqual(['col_2']);
+          expect(data.displayedColumnsIds).toStrictEqual(['col_2']);
           done();
         });
       });
 
       it('should not update if columns did not change', () => {
         store.patchState({
-          displayedColumns: ['col_1'],
+          displayedColumnsIds: ['col_1'],
         });
 
         store.updateDisplayedColumns({
-          displayedColumns: ['col_1'],
+          displayedColumnsIds: ['col_1'],
         });
 
         store.pageData$.pipe(take(1)).subscribe(() => {
@@ -1255,13 +1253,13 @@ describe('SearchConfigStore', () => {
     describe('currentConfig$ selector', () => {
       it('should not update on edit mode', () => {
         store.patchState({
-          displayedColumns: testConfigBase.columns,
+          displayedColumnsIds: testConfigBase.columns,
           currentSearchConfig: testConfigBase,
           editMode: true,
         });
 
         store.updateDisplayedColumns({
-          displayedColumns: ['col_2'],
+          displayedColumnsIds: ['col_2'],
         });
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
@@ -1271,12 +1269,12 @@ describe('SearchConfigStore', () => {
 
       it('should not update if current config was undefined', () => {
         store.patchState({
-          displayedColumns: ['col_1'],
+          displayedColumnsIds: ['col_1'],
           currentSearchConfig: undefined,
         });
 
         store.updateDisplayedColumns({
-          displayedColumns: ['col_2'],
+          displayedColumnsIds: ['col_2'],
         });
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
@@ -1286,12 +1284,12 @@ describe('SearchConfigStore', () => {
 
       it('should unset config if current config has colums not equal to new ones', (done) => {
         store.patchState({
-          displayedColumns: testConfigValuesAndColumns.columns,
+          displayedColumnsIds: testConfigValuesAndColumns.columns,
           currentSearchConfig: testConfigValuesAndColumns,
         });
 
         store.updateDisplayedColumns({
-          displayedColumns: ['col_2'],
+          displayedColumnsIds: ['col_2'],
         });
 
         store.currentConfig$.pipe(take(1)).subscribe((config) => {
@@ -1302,12 +1300,12 @@ describe('SearchConfigStore', () => {
 
       it('should not update if current config has values equal to new ones', () => {
         store.patchState({
-          displayedColumns: testConfigValuesAndColumns.columns,
+          displayedColumnsIds: testConfigValuesAndColumns.columns,
           currentSearchConfig: testConfigValuesAndColumns,
         });
 
         store.updateDisplayedColumns({
-          displayedColumns: testConfigValuesAndColumns.columns,
+          displayedColumnsIds: testConfigValuesAndColumns.columns,
         });
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
@@ -1319,14 +1317,14 @@ describe('SearchConfigStore', () => {
     describe('selectedGroupKey$ selector', () => {
       it('should not update in edit mode', () => {
         store.patchState({
-          displayedColumns: testConfigBase.columns,
+          displayedColumnsIds: testConfigBase.columns,
           currentSearchConfig: testConfigBase,
           editMode: true,
           selectedGroupKey: 'deafult-key',
         });
 
         store.updateDisplayedColumns({
-          displayedColumns: [...testConfigBase.columns, 'newCol'],
+          displayedColumnsIds: [...testConfigBase.columns, 'newCol'],
         });
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
@@ -1336,13 +1334,13 @@ describe('SearchConfigStore', () => {
 
       it('should not update if current config was undefined', () => {
         store.patchState({
-          displayedColumns: ['col_1'],
+          displayedColumnsIds: ['col_1'],
           currentSearchConfig: undefined,
           selectedGroupKey: 'deafult-key',
         });
 
         store.updateDisplayedColumns({
-          displayedColumns: ['col_2'],
+          displayedColumnsIds: ['col_2'],
         });
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
@@ -1352,13 +1350,13 @@ describe('SearchConfigStore', () => {
 
       it('should not update if config with only inputs is unset', () => {
         store.patchState({
-          displayedColumns: testConfigOnlyValues.columns,
+          displayedColumnsIds: testConfigOnlyValues.columns,
           currentSearchConfig: testConfigOnlyValues,
           selectedGroupKey: 'default-key',
         });
 
         store.updateDisplayedColumns({
-          displayedColumns: [...testConfigBase.columns, 'newCol'],
+          displayedColumnsIds: [...testConfigBase.columns, 'newCol'],
         });
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
@@ -1369,14 +1367,17 @@ describe('SearchConfigStore', () => {
       it('should update if config with both inputs and columns is unset', (done) => {
         store.patchState({
           searchConfigs: [testConfigValuesAndColumns],
-          displayedColumns: testConfigValuesAndColumns.columns,
+          displayedColumnsIds: testConfigValuesAndColumns.columns,
           currentSearchConfig: testConfigValuesAndColumns,
           selectedGroupKey: testConfigValuesAndColumns.name,
           customGroupKey: 'custom-key',
         });
 
         store.updateDisplayedColumns({
-          displayedColumns: [...testConfigValuesAndColumns.columns, 'newCol'],
+          displayedColumnsIds: [
+            ...testConfigValuesAndColumns.columns,
+            'newCol',
+          ],
         });
 
         store.selectedGroupKey$.pipe(take(1)).subscribe((key) => {
@@ -1387,13 +1388,13 @@ describe('SearchConfigStore', () => {
 
       it('should not update if current config had columns equal to new ones', () => {
         store.patchState({
-          displayedColumns: testConfigValuesAndColumns.columns,
+          displayedColumnsIds: testConfigValuesAndColumns.columns,
           currentSearchConfig: testConfigOnlyValues,
           selectedGroupKey: testConfigValuesAndColumns.name,
         });
 
         store.updateDisplayedColumns({
-          displayedColumns: testConfigValuesAndColumns.columns,
+          displayedColumnsIds: testConfigValuesAndColumns.columns,
         });
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
@@ -1404,17 +1405,17 @@ describe('SearchConfigStore', () => {
 
     it('should send update message', (done) => {
       store.patchState({
-        displayedColumns: ['col_1', 'col_2'],
+        displayedColumnsIds: ['col_1', 'col_2'],
       });
 
       store.updateDisplayedColumns({
-        displayedColumns: ['col_2'],
+        displayedColumnsIds: ['col_2'],
       });
 
       mockSearchConfigStoreTopic.subscribe((msg) => {
         expect(msg.payload.name).toBe('updateDisplayedColumns');
         expect(msg.payload.storeName).toBe('store-1');
-        expect(msg.payload.displayedColumns).toStrictEqual(['col_2']);
+        expect(msg.payload.displayedColumnsIds).toStrictEqual(['col_2']);
         done();
       });
     });
@@ -2186,7 +2187,7 @@ describe('SearchConfigStore', () => {
         fieldValues: {
           key: 'v',
         },
-        displayedColumns: ['col_1'],
+        displayedColumnsIds: ['col_1'],
         viewMode: advancedViewMode,
         selectedGroupKey: 'def-1',
       };
@@ -2202,7 +2203,7 @@ describe('SearchConfigStore', () => {
           fieldValues: {
             key: 'v',
           },
-          displayedColumIds: ['col_1'],
+          displayedColumnsIds: ['col_1'],
           viewMode: advancedViewMode,
           columnGroupKey: 'def-1',
         } satisfies PageData);
@@ -2216,7 +2217,7 @@ describe('SearchConfigStore', () => {
         fieldValues: {
           key: 'v',
         },
-        displayedColumns: ['col_1'],
+        displayedColumnsIds: ['col_1'],
         viewMode: advancedViewMode,
         selectedGroupKey: 'def-1',
       };
@@ -2370,7 +2371,7 @@ describe('SearchConfigStore', () => {
           fieldValues: {
             key: 'v',
           },
-          displayedColumns: ['col_1'],
+          displayedColumnsIds: ['col_1'],
           viewMode: advancedViewMode,
           selectedGroupKey: 'def-1',
         } as any,
@@ -2384,7 +2385,7 @@ describe('SearchConfigStore', () => {
           fieldValues: {
             key: 'v',
           },
-          displayedColumIds: ['col_1'],
+          displayedColumnsIds: ['col_1'],
           viewMode: advancedViewMode,
           columnGroupKey: 'def-1',
         } satisfies PageData);
@@ -2400,7 +2401,7 @@ describe('SearchConfigStore', () => {
           fieldValues: {
             key: 'v',
           },
-          displayedColumns: ['col_1'],
+          displayedColumnsIds: ['col_1'],
           viewMode: advancedViewMode,
           selectedGroupKey: 'def-1',
         } as any,
@@ -2414,7 +2415,7 @@ describe('SearchConfigStore', () => {
           fieldValues: {
             key: 'v',
           },
-          displayedColumIds: ['col_1'],
+          displayedColumnsIds: ['col_1'],
           viewMode: advancedViewMode,
           columnGroupKey: 'def-1',
         } satisfies PageData);
@@ -2430,7 +2431,7 @@ describe('SearchConfigStore', () => {
           fieldValues: {
             key: 'v',
           },
-          displayedColumns: ['col_1'],
+          displayedColumnsIds: ['col_1'],
           viewMode: advancedViewMode,
           selectedGroupKey: 'def-1',
         } as any,
@@ -2444,7 +2445,7 @@ describe('SearchConfigStore', () => {
           fieldValues: {
             key: 'v',
           },
-          displayedColumIds: ['col_1'],
+          displayedColumnsIds: ['col_1'],
           viewMode: advancedViewMode,
           columnGroupKey: 'def-1',
         } satisfies PageData);
@@ -2543,12 +2544,12 @@ describe('SearchConfigStore', () => {
       store.patchState({});
 
       store.updateDisplayedColumns({
-        displayedColumns: ['my-col-1'],
+        displayedColumnsIds: ['my-col-1'],
       });
 
       secondStore.state$.pipe(take(1)).subscribe(() => {
         expect(spy).toHaveBeenCalledWith({
-          displayedColumns: ['my-col-1'],
+          displayedColumnsIds: ['my-col-1'],
           updateStores: false,
         });
         done();
