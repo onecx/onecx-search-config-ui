@@ -158,10 +158,6 @@ export function createTranslateLoader(
 export class OneCXColumnGroupSelectionComponent
   implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit, OnDestroy
 {
-  @Input() set pageName(pageName: string) {
-    this.searchConfigStore.setPageName(pageName);
-  }
-
   @Input() set selectedGroupKey(selectedGroupKey: string) {
     this.searchConfigStore.setSelectedGroupKey({
       selectedGroupKey: selectedGroupKey,
