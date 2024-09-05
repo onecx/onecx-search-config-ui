@@ -17,11 +17,23 @@ import {
   hasValues,
   parseFieldValues,
 } from './search-config.utils';
-import {
-  SEARCH_CONFIG_STORE_TOPIC,
-  SearchConfigTopic,
-} from '@onecx/integration-interface';
 
+import { Topic } from '@onecx/accelerator';
+
+export interface SearchConfigMessage {
+  payload: {
+    storeName: string;
+    stateToUpdate: Partial<SearchConfigState>;
+  };
+}
+
+export class SearchConfigTopic extends Topic<SearchConfigMessage> {
+  constructor() {
+    super('searchConfig', 1);
+  }
+}
+
+export type UnparsedFieldValues = { [key: string]: unknown };
 export type FieldValues = { [key: string]: string };
 export type PageData = {
   pageName: string;
@@ -31,24 +43,37 @@ export type PageData = {
   columnGroupKey: string;
 };
 
-export interface SearchConfigState {
-  pageName: string;
-  nonSearchConfigGroupKeys: Array<string>;
-  customGroupKey: string;
-
-  fieldValues: FieldValues;
-  displayedColumnsIds: Array<string>;
-  viewMode: basicViewModeType | advancedViewModeType;
-
-  searchConfigs: SearchConfigInfo[];
+interface SearchConfigComponentState {
   currentSearchConfig: SearchConfigInfo | undefined;
   selectedGroupKey: string;
-
-  isInChargeOfEdit: boolean;
+  inChargeOfEdit: string;
   editMode: boolean;
   preEditStateSnapshot: SearchConfigState | undefined;
   pageDataToRevert: PageData | undefined;
+  searchConfigs: SearchConfigInfo[];
+
+  pageName: string;
+  fieldValues: FieldValues;
+  displayedColumnsIds: Array<string>;
+  viewMode: basicViewModeType | advancedViewModeType;
 }
+
+interface ColumnGroupSelectionComponentState {
+  currentSearchConfig: SearchConfigInfo | undefined;
+  selectedGroupKey: string;
+  inChargeOfEdit: string;
+  editMode: boolean;
+  preEditStateSnapshot: SearchConfigState | undefined;
+  pageDataToRevert: PageData | undefined;
+  searchConfigs: SearchConfigInfo[];
+
+  nonSearchConfigGroupKeys: Array<string>;
+  customGroupKey: string;
+}
+
+export interface SearchConfigState
+  extends SearchConfigComponentState,
+    ColumnGroupSelectionComponentState {}
 
 export interface SearchConfigViewModel {
   pageName: string;
@@ -77,35 +102,33 @@ export const SEARCH_CONFIG_STORE_NAME = new InjectionToken<string>(
   'searchConfigStoreName',
 );
 
+const initialState: SearchConfigState = {
+  pageName: '',
+  nonSearchConfigGroupKeys: [],
+  customGroupKey: '',
+
+  fieldValues: {},
+  displayedColumnsIds: [],
+  viewMode: basicViewMode,
+
+  searchConfigs: [],
+  currentSearchConfig: undefined,
+  selectedGroupKey: '',
+
+  inChargeOfEdit: '',
+  editMode: false,
+  preEditStateSnapshot: undefined,
+  pageDataToRevert: undefined,
+};
+
 @Injectable()
 export class SearchConfigStore extends ComponentStore<SearchConfigState> {
+  searchConfigTopic$ = new SearchConfigTopic();
   constructor(
-    @Inject(SEARCH_CONFIG_STORE_TOPIC)
-    public searchConfigTopic$: SearchConfigTopic,
     @Inject(SEARCH_CONFIG_STORE_NAME)
     private storeName: string,
   ) {
-    super({
-      pageName: '',
-      nonSearchConfigGroupKeys: [],
-      customGroupKey: '',
-
-      fieldValues: {},
-      displayedColumnsIds: [],
-      viewMode: basicViewMode,
-
-      searchConfigs: [],
-      currentSearchConfig: undefined,
-      selectedGroupKey: '',
-
-      isInChargeOfEdit: false,
-      editMode: false,
-      preEditStateSnapshot: undefined,
-      pageDataToRevert: undefined,
-    });
-    // check the topic value -> if value => set state equal to it
-
-    this.sendUpdateMessage('newStore', {});
+    super(initialState);
   }
 
   // *********** Updaters *********** //
@@ -115,35 +138,16 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     pageName: newPageName,
   }));
 
-  readonly setCustomGroupKey = this.updater(
-    (
-      state,
-      {
-        customGroupKey,
-        updateStores = true,
-      }: { customGroupKey: string; updateStores?: boolean },
-    ) => {
-      updateStores &&
-        this.sendUpdateMessage('setCustomGroupKey', {
-          customGroupKey: customGroupKey,
-        });
-      return { ...state, customGroupKey: customGroupKey };
-    },
-  );
+  readonly setCustomGroupKey = this.updater((state, customGroupKey: string) => {
+    const stateToUpdate: Partial<SearchConfigState> = {
+      customGroupKey: customGroupKey,
+    };
+    this.sendUpdateMessage(stateToUpdate);
+    return { ...state, ...stateToUpdate };
+  });
 
   readonly setSearchConfigs = this.updater(
-    (
-      state,
-      {
-        searchConfigs,
-        updateStores = true,
-      }: { searchConfigs: SearchConfigInfo[]; updateStores?: boolean },
-    ) => {
-      updateStores &&
-        this.sendUpdateMessage('setSearchConfigs', {
-          searchConfigs: searchConfigs,
-        });
-
+    (state, searchConfigs: SearchConfigInfo[]) => {
       const searchConfigActive =
         (state.editMode
           ? state.currentSearchConfig
@@ -160,8 +164,8 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
             : searchConfigs.find(
                 (config) => config.name === state.selectedGroupKey,
               )) !== undefined;
-      return {
-        ...state,
+
+      const stateToUpdate: Partial<SearchConfigState> = {
         selectedGroupKey: selectedKeyActive
           ? state.selectedGroupKey
           : state.customGroupKey,
@@ -170,60 +174,35 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           : undefined,
         searchConfigs: searchConfigs,
       };
+
+      this.sendUpdateMessage(stateToUpdate);
+      return { ...state, ...stateToUpdate };
     },
   );
 
   readonly setNonSearchConfigGroupKeys = this.updater(
-    (
-      state,
-      {
-        nonSearchConfigGroupKeys,
-        updateStores = true,
-      }: { nonSearchConfigGroupKeys: Array<string>; updateStores?: boolean },
-    ) => {
-      updateStores &&
-        this.sendUpdateMessage('setNonSearchConfigGroupKeys', {
-          nonSearchConfigGroupKeys: nonSearchConfigGroupKeys,
-        });
-      return {
-        ...state,
+    (state, nonSearchConfigGroupKeys: Array<string>) => {
+      const stateToUpdate: Partial<SearchConfigState> = {
         nonSearchConfigGroupKeys: nonSearchConfigGroupKeys,
       };
+
+      this.sendUpdateMessage(stateToUpdate);
+      return { ...state, ...stateToUpdate };
     },
   );
 
   readonly addSearchConfig = this.updater(
-    (
-      state,
-      {
-        searchConfig,
-        updateStores = true,
-      }: { searchConfig: SearchConfigInfo; updateStores?: boolean },
-    ) => {
-      updateStores &&
-        this.sendUpdateMessage('addSearchConfig', {
-          searchConfig: searchConfig,
-        });
-      return {
-        ...state,
+    (state, searchConfig: SearchConfigInfo) => {
+      const stateToUpdate: Partial<SearchConfigState> = {
         searchConfigs: state.searchConfigs.concat(searchConfig),
       };
+      this.sendUpdateMessage(stateToUpdate);
+      return { ...state, ...stateToUpdate };
     },
   );
 
   readonly deleteSearchConfig = this.updater(
-    (
-      state,
-      {
-        searchConfig,
-        updateStores = true,
-      }: { searchConfig: SearchConfigInfo; updateStores?: boolean },
-    ) => {
-      updateStores &&
-        this.sendUpdateMessage('deleteSearchConfig', {
-          searchConfig: searchConfig,
-        });
-
+    (state, searchConfig: SearchConfigInfo) => {
       const currentSearchConfig =
         state.currentSearchConfig?.id === searchConfig.id
           ? undefined
@@ -232,160 +211,118 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         state,
         currentSearchConfig,
       );
-      return {
-        ...state,
+
+      const stateToUpdate: Partial<SearchConfigState> = {
         currentSearchConfig: currentSearchConfig,
         selectedGroupKey: selectedGroupKey,
         searchConfigs: state.searchConfigs.filter(
           (config) => config.id !== searchConfig.id,
         ),
       };
+      this.sendUpdateMessage(stateToUpdate);
+      return { ...state, ...stateToUpdate };
     },
   );
 
   readonly setCurrentConfig = this.updater(
-    (
-      state,
-      {
-        config,
-        updateStores = true,
-      }: { config: SearchConfigInfo | undefined; updateStores?: boolean },
-    ) => {
+    (state, config: SearchConfigInfo | undefined) => {
       if (state.editMode) return state;
-      updateStores &&
-        this.sendUpdateMessage('setCurrentConfig', {
-          config: config,
-        });
+      // TODO: Do not set if not in search config list?
       const selectedGroupKey = this.updateSelectedGroupKeyByConfig(
         state,
         config,
       );
-      return {
-        ...state,
+
+      const stateToUpdate: Partial<SearchConfigState> = {
         currentSearchConfig: config,
         selectedGroupKey: selectedGroupKey,
       };
+      this.sendUpdateMessage(stateToUpdate);
+      return { ...state, ...stateToUpdate };
     },
   );
 
   readonly editSearchConfig = this.updater(
-    (
-      state,
-      {
-        searchConfig,
-        updateStores = true,
-      }: { searchConfig: SearchConfigInfo; updateStores?: boolean },
-    ) => {
-      updateStores &&
-        this.sendUpdateMessage('editSearchConfig', {
-          searchConfig: searchConfig,
-        });
-      return {
-        ...state,
+    (state, searchConfig: SearchConfigInfo) => {
+      const stateToUpdate: Partial<SearchConfigState> = {
         searchConfigs: state.searchConfigs.map((config) =>
           config.id === searchConfig.id ? searchConfig : config,
         ),
       };
+      this.sendUpdateMessage(stateToUpdate);
+      return { ...state, ...stateToUpdate };
     },
   );
 
   readonly setSelectedGroupKey = this.updater(
-    (
-      state,
-      {
-        selectedGroupKey,
-        updateStores = true,
-      }: { selectedGroupKey: string; updateStores?: boolean },
-    ) => {
+    (state, selectedGroupKey: string) => {
       if (state.editMode) return state;
-      updateStores &&
-        this.sendUpdateMessage('setSelectedGroupKey', {
-          selectedGroupKey: selectedGroupKey,
-        });
       const currentConfig = this.updateConfigBySelectedGroupKey(
         state,
         selectedGroupKey,
       );
 
-      return {
-        ...state,
+      const stateToUpdate: Partial<SearchConfigState> = {
         currentSearchConfig: currentConfig,
         selectedGroupKey: selectedGroupKey,
       };
+      this.sendUpdateMessage(stateToUpdate);
+      return { ...state, ...stateToUpdate };
     },
   );
 
-  readonly setEditMode = this.updater(
-    (state, { updateStores = true }: { updateStores?: boolean }) => {
-      updateStores && this.sendUpdateMessage('setEditMode', {});
-      return {
-        ...state,
-        editMode: true,
-        isInChargeOfEdit: updateStores ? true : false,
-      };
-    },
-  );
+  readonly setEditMode = this.updater((state) => {
+    const stateToUpdate: Partial<SearchConfigState> = {
+      editMode: true,
+      inChargeOfEdit: this.storeName,
+    };
+    this.sendUpdateMessage(stateToUpdate);
+    return { ...state, ...stateToUpdate };
+  });
 
-  readonly cancelEditMode = this.updater(
-    (state, { updateStores = true }: { updateStores?: boolean }) => {
-      updateStores && this.sendUpdateMessage('cancelEditMode', {});
-      return {
-        ...state,
-        editMode: false,
-        isInChargeOfEdit: false,
-      };
-    },
-  );
+  readonly cancelEditMode = this.updater((state) => {
+    const stateToUpdate: Partial<SearchConfigState> = {
+      editMode: false,
+      inChargeOfEdit: '',
+    };
+    this.sendUpdateMessage(stateToUpdate);
+    return { ...state, ...stateToUpdate };
+  });
 
-  readonly takeSnapshot = this.updater(
-    (state, { updateStores = true }: { updateStores?: boolean }) => {
-      updateStores && this.sendUpdateMessage('takeSnapshot', {});
-      return {
-        ...state,
-        preEditStateSnapshot: state,
-      };
-    },
-  );
+  readonly takeSnapshot = this.updater((state) => {
+    const stateToUpdate: Partial<SearchConfigState> = {
+      preEditStateSnapshot: state,
+    };
+    this.sendUpdateMessage(stateToUpdate);
+    return { ...state, ...stateToUpdate };
+  });
 
-  readonly revertPageData = this.updater(
-    (state, { updateStores = true }: { updateStores?: boolean }) => {
-      updateStores && this.sendUpdateMessage('revertPageData', {});
-      return {
-        ...state,
-        pageDataToRevert: state.preEditStateSnapshot
-          ? {
-              pageName: state.preEditStateSnapshot?.pageName,
-              fieldValues: state.preEditStateSnapshot?.fieldValues,
-              displayedColumnsIds:
-                state.preEditStateSnapshot?.displayedColumnsIds,
-              viewMode: state.preEditStateSnapshot?.viewMode,
-              columnGroupKey: state.preEditStateSnapshot?.selectedGroupKey,
-            }
-          : undefined,
-      };
-    },
-  );
+  readonly revertPageData = this.updater((state) => {
+    const stateToUpdate: Partial<SearchConfigState> = {
+      pageDataToRevert: state.preEditStateSnapshot
+        ? {
+            pageName: state.preEditStateSnapshot?.pageName,
+            fieldValues: state.preEditStateSnapshot?.fieldValues,
+            displayedColumnsIds:
+              state.preEditStateSnapshot?.displayedColumnsIds,
+            viewMode: state.preEditStateSnapshot?.viewMode,
+            columnGroupKey: state.preEditStateSnapshot?.selectedGroupKey,
+          }
+        : undefined,
+    };
+    this.sendUpdateMessage(stateToUpdate);
+    return { ...state, ...stateToUpdate };
+  });
 
   readonly updateFieldValues = this.updater(
-    (
-      state,
-      {
-        values,
-        updateStores = true,
-      }: { values: { [key: string]: unknown }; updateStores?: boolean },
-    ) => {
-      if (!values || areValuesEqual(values, state.fieldValues)) {
+    (state, values: UnparsedFieldValues) => {
+      const parsedValues = parseFieldValues(values);
+      if (areValuesEqual(parsedValues, state.fieldValues)) {
         return { ...state };
       }
 
-      updateStores &&
-        this.sendUpdateMessage('updateFieldValues', {
-          values: values,
-        });
-
-      const fieldValues = parseFieldValues(values);
       const searchConfig = this.isCurrentConfigOutdated(state, {
-        fieldValues: fieldValues,
+        fieldValues: parsedValues,
       })
         ? undefined
         : state.currentSearchConfig;
@@ -393,30 +330,22 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         state,
         searchConfig,
       );
-      return {
-        ...state,
-        fieldValues: fieldValues,
+
+      const stateToUpdate: Partial<SearchConfigState> = {
+        fieldValues: parsedValues,
         currentSearchConfig: searchConfig,
         selectedGroupKey: selectedGroupKey,
       };
+      this.sendUpdateMessage(stateToUpdate);
+      return { ...state, ...stateToUpdate };
     },
   );
 
-  readonly updateDisplayedColumns = this.updater(
-    (
-      state,
-      {
-        displayedColumnsIds,
-        updateStores = true,
-      }: { displayedColumnsIds: string[]; updateStores?: boolean },
-    ) => {
+  readonly updateDisplayedColumnsIds = this.updater(
+    (state, displayedColumnsIds: string[]) => {
       if (areColumnsEqual(displayedColumnsIds, state.displayedColumnsIds)) {
         return { ...state };
       }
-      updateStores &&
-        this.sendUpdateMessage('updateDisplayedColumns', {
-          displayedColumnsIds: displayedColumnsIds,
-        });
 
       const searchConfig = this.isCurrentConfigOutdated(state, {
         displayedColumIds: displayedColumnsIds,
@@ -428,33 +357,22 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         searchConfig,
       );
 
-      return {
-        ...state,
+      const stateToUpdate: Partial<SearchConfigState> = {
         displayedColumnsIds: displayedColumnsIds,
         currentSearchConfig: searchConfig,
         selectedGroupKey: selectedGroupKey,
       };
+      this.sendUpdateMessage(stateToUpdate);
+      return { ...state, ...stateToUpdate };
     },
   );
 
   readonly updateViewMode = this.updater(
-    (
-      state,
-      {
-        viewMode,
-        updateStores = true,
-      }: {
-        viewMode: basicViewModeType | advancedViewModeType;
-        updateStores?: boolean;
-      },
-    ) => {
+    (state, viewMode: basicViewModeType | advancedViewModeType) => {
       if (viewMode === state.viewMode) {
         return { ...state };
       }
-      updateStores &&
-        this.sendUpdateMessage('updateViewMode', {
-          viewMode: viewMode,
-        });
+
       const searchConfig = this.isCurrentConfigOutdated(state, {
         viewMode: viewMode,
       })
@@ -464,12 +382,14 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         state,
         searchConfig,
       );
-      return {
-        ...state,
+
+      const stateToUpdate: Partial<SearchConfigState> = {
         viewMode: viewMode,
         currentSearchConfig: searchConfig,
         selectedGroupKey: selectedGroupKey,
       };
+      this.sendUpdateMessage(stateToUpdate);
+      return { ...state, ...stateToUpdate };
     },
   );
 
@@ -516,7 +436,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       pageName: state.pageName,
       searchConfigs: state.searchConfigs.filter((config) => hasValues(config)),
       editMode: state.editMode,
-      isInChargeOfEdit: state.isInChargeOfEdit,
+      isInChargeOfEdit: state.inChargeOfEdit === this.storeName,
       currentConfig: currentConfig,
     }),
   );
@@ -547,7 +467,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         currentConfig: currentConfig,
         customGroupKey: state.customGroupKey,
         editMode: state.editMode,
-        isInChargeOfEdit: state.isInChargeOfEdit,
+        isInChargeOfEdit: state.inChargeOfEdit === this.storeName,
       };
     },
   );
@@ -559,9 +479,9 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       return config$.pipe(
         withLatestFrom(this.state$),
         tap(([config, state]) => {
-          this.takeSnapshot({});
-          this.setCurrentConfig({ config: config });
-          this.setEditMode({});
+          this.takeSnapshot();
+          this.setCurrentConfig(config);
+          this.setEditMode();
         }),
       );
     },
@@ -571,19 +491,19 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     return trigger$.pipe(
       withLatestFrom(this.preEditStateSnapshot$),
       tap(([, preEditStateSnapshot]) => {
-        this.cancelEditMode({});
+        this.cancelEditMode();
         const savedConfig = preEditStateSnapshot?.currentSearchConfig;
         if (savedConfig) {
           if (hasValues(savedConfig) && hasColumns(savedConfig)) {
-            this.setCurrentConfig({ config: savedConfig });
+            this.setCurrentConfig(savedConfig);
           } else {
-            this.revertPageData({});
-            this.setCurrentConfig({ config: savedConfig });
+            this.revertPageData();
+            this.setCurrentConfig(savedConfig);
           }
           return;
         }
 
-        this.revertPageData({});
+        this.revertPageData();
       }),
     );
   });
@@ -591,132 +511,28 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
   readonly saveEdit = this.effect((config$: Observable<SearchConfigInfo>) => {
     return config$.pipe(
       tap((config) => {
-        this.editSearchConfig({ searchConfig: config });
-        this.cancelEditMode({});
-        this.setCurrentConfig({ config: config });
+        this.editSearchConfig(config);
+        this.cancelEditMode();
+        this.setCurrentConfig(config);
       }),
     );
   });
 
   private readonly storeUpdate = this.effect(() => {
     return this.searchConfigTopic$.pipe(
+      filter((msg) => msg !== undefined),
       filter((msg) => msg.payload.storeName !== this.storeName),
+      tap((msg) => console.log('UPDATE ' + this.storeName, msg)),
       withLatestFrom(this.state$),
       tap(([msg, state]) => {
-        if (msg.payload.name === 'storeData') {
-          const storeData: SearchConfigState = msg.payload.state;
-          const newState = {
-            ...state,
-            nonSearchConfigGroupKeys:
-              state.nonSearchConfigGroupKeys.length > 0
-                ? state.nonSearchConfigGroupKeys
-                : storeData.nonSearchConfigGroupKeys,
-            customGroupKey:
-              state.customGroupKey === ''
-                ? storeData.customGroupKey
-                : state.customGroupKey,
-            fieldValues:
-              Object.keys(state.fieldValues).length === 0
-                ? storeData.fieldValues
-                : state.fieldValues,
-            displayedColumnsIds:
-              state.displayedColumnsIds.length === 0
-                ? storeData.displayedColumnsIds
-                : state.displayedColumnsIds,
-            viewMode:
-              state.viewMode === basicViewMode
-                ? storeData.viewMode
-                : state.viewMode,
-            searchConfigs:
-              state.searchConfigs.length === 0
-                ? storeData.searchConfigs
-                : state.searchConfigs,
-            currentSearchConfig:
-              state.currentSearchConfig ?? storeData.currentSearchConfig,
-            selectedGroupKey:
-              state.selectedGroupKey === ''
-                ? storeData.selectedGroupKey
-                : state.selectedGroupKey,
-            editMode:
-              state.editMode === false ? storeData.editMode : state.editMode,
-            preEditStateSnapshot:
-              state.preEditStateSnapshot ?? storeData.preEditStateSnapshot,
-          };
-          this.patchState(newState);
-        } else if (msg.payload.name === 'newStore') {
-          this.sendUpdateMessage('storeData', {
-            state: state,
-          });
-        } else if (msg.payload.name === 'setSearchConfigs') {
-          this.setSearchConfigs({
-            searchConfigs: msg.payload.searchConfigs,
-            updateStores: false,
-          });
-        } else if (msg.payload.name === 'setCurrentConfig') {
-          this.setCurrentConfig({
-            config: msg.payload.config,
-            updateStores: false,
-          });
-        } else if (msg.payload.name === 'deleteSearchConfig') {
-          this.deleteSearchConfig({
-            searchConfig: msg.payload.searchConfig,
-            updateStores: false,
-          });
-        } else if (msg.payload.name === 'addSearchConfig') {
-          this.addSearchConfig({
-            searchConfig: msg.payload.searchConfig,
-            updateStores: false,
-          });
-        } else if (msg.payload.name === 'updateFieldValues') {
-          this.updateFieldValues({
-            values: msg.payload.values,
-            updateStores: false,
-          });
-        } else if (msg.payload.name === 'updateDisplayedColumns') {
-          this.updateDisplayedColumns({
-            displayedColumnsIds: msg.payload.displayedColumnsIds,
-            updateStores: false,
-          });
-        } else if (msg.payload.name === 'setEditMode') {
-          this.setEditMode({
-            updateStores: false,
-          });
-        } else if (msg.payload.name === 'cancelEditMode') {
-          this.cancelEditMode({
-            updateStores: false,
-          });
-        } else if (msg.payload.name === 'editSearchConfig') {
-          this.editSearchConfig({
-            searchConfig: msg.payload.searchConfig,
-            updateStores: false,
-          });
-        } else if (msg.payload.name === 'setNonSearchConfigGroupKeys') {
-          this.setNonSearchConfigGroupKeys({
-            nonSearchConfigGroupKeys: msg.payload.nonSearchConfigGroupKeys,
-            updateStores: false,
-          });
-        } else if (msg.payload.name === 'setSelectedGroupKey') {
-          this.setSelectedGroupKey({
-            selectedGroupKey: msg.payload.selectedGroupKey,
-            updateStores: false,
-          });
-        } else if (msg.payload.name === 'takeSnapshot') {
-          this.takeSnapshot({ updateStores: false });
-        } else if (msg.payload.name === 'updateViewMode') {
-          this.updateViewMode({
-            viewMode: msg.payload.viewMode,
-            updateStores: false,
-          });
-        } else if (msg.payload.name === 'setCustomGroupKey') {
-          this.setCustomGroupKey({
-            customGroupKey: msg.payload.customGroupKey,
-            updateStores: false,
-          });
-        } else if (msg.payload.name === 'revertPageData') {
-          this.revertPageData({
-            updateStores: false,
-          });
-        }
+        this.patchState({
+          ...state,
+          ...msg.payload.stateToUpdate,
+          selectedGroupKey:
+            msg.payload.stateToUpdate.selectedGroupKey !== ''
+              ? msg.payload.stateToUpdate.selectedGroupKey
+              : state.selectedGroupKey,
+        });
       }),
     );
   });
@@ -726,7 +542,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
   private isCurrentConfigOutdated(
     state: SearchConfigState,
     change: {
-      fieldValues?: { [key: string]: unknown };
+      fieldValues?: FieldValues;
       viewMode?: basicViewModeType | advancedViewModeType;
       displayedColumIds?: Array<string>;
     },
@@ -831,12 +647,17 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     return state.currentSearchConfig;
   }
 
-  private sendUpdateMessage(name: string, content: any) {
+  private sendUpdateMessage(stateToUpdate: Partial<SearchConfigState>) {
+    console.log('PUBLISH ' + this.storeName, {
+      payload: {
+        storeName: this.storeName,
+        stateToUpdate: stateToUpdate,
+      },
+    });
     this.searchConfigTopic$.publish({
       payload: {
-        name: name,
         storeName: this.storeName,
-        ...content,
+        stateToUpdate: stateToUpdate,
       },
     });
   }

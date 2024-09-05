@@ -81,10 +81,6 @@ import {
   advancedViewModeType,
 } from 'src/app/shared/constants';
 import { parseFieldValues } from 'src/app/shared/search-config.utils';
-import {
-  SEARCH_CONFIG_STORE_TOPIC,
-  SearchConfigTopic,
-} from '@onecx/integration-interface';
 
 export function createTranslateLoader(
   httpClient: HttpClient,
@@ -145,10 +141,6 @@ export function createTranslateLoader(
       },
     }),
     {
-      provide: SEARCH_CONFIG_STORE_TOPIC,
-      useClass: SearchConfigTopic,
-    },
-    {
       provide: SEARCH_CONFIG_STORE_NAME,
       useValue: 'ocx-column-group-selection-component-store',
     },
@@ -159,8 +151,8 @@ export class OneCXColumnGroupSelectionComponent
   implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit, OnDestroy
 {
   @Input() set selectedGroupKey(selectedGroupKey: string) {
-    this.searchConfigStore.setSelectedGroupKey({
-      selectedGroupKey: selectedGroupKey,
+    setTimeout(() => {
+      this.searchConfigStore.setSelectedGroupKey(selectedGroupKey);
     });
   }
 
@@ -175,7 +167,9 @@ export class OneCXColumnGroupSelectionComponent
 
   @Input() defaultGroupKey = '';
   @Input() set customGroupKey(key: string) {
-    this.searchConfigStore.setCustomGroupKey({ customGroupKey: key });
+    setTimeout(() => {
+      this.searchConfigStore.setCustomGroupKey(key);
+    });
   }
   @Input() placeholderKey = '';
 
@@ -207,8 +201,8 @@ export class OneCXColumnGroupSelectionComponent
 
     this.searchConfigStore.pageDataToRevert$.subscribe((pageData) => {
       pageData &&
-        this.searchConfigStore.setSelectedGroupKey({
-          selectedGroupKey: pageData.columnGroupKey,
+        setTimeout(() => {
+          this.searchConfigStore.setSelectedGroupKey(pageData.columnGroupKey);
         });
     });
 
@@ -256,6 +250,7 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   ngOnInit() {
+    // this.searchConfigStore.sync();
     this.columns$
       .pipe(
         map((columns) =>
@@ -271,8 +266,8 @@ export class OneCXColumnGroupSelectionComponent
         ),
       )
       .subscribe((groupKeys) => {
-        this.searchConfigStore.setNonSearchConfigGroupKeys({
-          nonSearchConfigGroupKeys: groupKeys,
+        setTimeout(() => {
+          this.searchConfigStore.setNonSearchConfigGroupKeys(groupKeys);
         });
       });
   }
@@ -284,7 +279,9 @@ export class OneCXColumnGroupSelectionComponent
       return;
     }
 
-    this.searchConfigStore.enterEditMode(searchConfig);
+    setTimeout(() => {
+      this.searchConfigStore.enterEditMode(searchConfig);
+    });
   }
 
   onSearchConfigSaveEdit(event: Event, config: SearchConfigInfo | undefined) {
@@ -336,9 +333,13 @@ export class OneCXColumnGroupSelectionComponent
           this.portalMessageService.info({
             summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_SUCCESS',
           });
-          this.searchConfigStore.saveEdit(searchConfig);
+          setTimeout(() => {
+            this.searchConfigStore.saveEdit(searchConfig);
+          });
         } else {
-          this.searchConfigStore.cancelEdit();
+          setTimeout(() => {
+            this.searchConfigStore.cancelEdit();
+          });
         }
       });
   }
@@ -383,7 +384,9 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   onSearchConfigCancelEdit(event: Event) {
-    this.searchConfigStore.cancelEdit();
+    setTimeout(() => {
+      this.searchConfigStore.cancelEdit();
+    });
   }
 
   onSearchConfigDelete(
@@ -401,8 +404,8 @@ export class OneCXColumnGroupSelectionComponent
         this.portalMessageService.info({
           summaryKey: 'SEARCH_CONFIG.DELETE_SUCCESS',
         });
-        this.searchConfigStore.deleteSearchConfig({
-          searchConfig: searchConfig,
+        setTimeout(() => {
+          this.searchConfigStore.deleteSearchConfig(searchConfig);
         });
       }
     });
@@ -421,14 +424,14 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   changeGroupSelection(event: { value: string }) {
-    this.searchConfigStore.setSelectedGroupKey({
-      selectedGroupKey: event.value,
+    setTimeout(() => {
+      this.searchConfigStore.setSelectedGroupKey(event.value);
     });
   }
 
   clearGroupSelection() {
-    this.searchConfigStore.setSelectedGroupKey({
-      selectedGroupKey: this.defaultGroupKey,
+    setTimeout(() => {
+      this.searchConfigStore.setSelectedGroupKey(this.defaultGroupKey);
     });
   }
 

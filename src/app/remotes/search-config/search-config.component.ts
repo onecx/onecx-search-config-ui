@@ -60,16 +60,13 @@ import {
 import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { FloatLabelModule } from 'primeng/floatlabel';
-import {
-  MfeInfo,
-  SEARCH_CONFIG_STORE_TOPIC,
-  SearchConfigTopic,
-} from '@onecx/integration-interface';
+import { MfeInfo } from '@onecx/integration-interface';
 import {
   FieldValues,
   PageData,
   SEARCH_CONFIG_STORE_NAME,
   SearchConfigStore,
+  UnparsedFieldValues,
 } from '../../shared/search-config.store';
 import { PrimeIcons } from 'primeng/api';
 import {
@@ -118,10 +115,6 @@ import { parseFieldValues } from 'src/app/shared/search-config.utils';
     }),
     providePortalDialogService(),
     {
-      provide: SEARCH_CONFIG_STORE_TOPIC,
-      useClass: SearchConfigTopic,
-    },
-    {
       provide: SEARCH_CONFIG_STORE_NAME,
       useValue: 'ocx-search-config-component-store',
     },
@@ -132,26 +125,28 @@ export class OneCXSearchConfigComponent
   implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit, OnDestroy
 {
   @Input() set pageName(pageName: string) {
-    this.searchConfigStore.setPageName(pageName);
+    setTimeout(() => {
+      this.searchConfigStore.setPageName(pageName);
+    });
   }
-  @Input() set currentFieldValues(values: { [key: string]: unknown }) {
-    this.searchConfigStore.updateFieldValues({
-      values: values,
+  @Input() set currentFieldValues(values: UnparsedFieldValues) {
+    setTimeout(() => {
+      this.searchConfigStore.updateFieldValues(values);
     });
   }
   @Input() set displayedColumnsIds(columns: string[]) {
-    this.searchConfigStore.updateDisplayedColumns({
-      displayedColumnsIds: columns,
+    setTimeout(() => {
+      this.searchConfigStore.updateDisplayedColumnsIds(columns);
     });
   }
   @Input() set viewMode(viewMode: basicViewModeType | advancedViewModeType) {
-    this.searchConfigStore.updateViewMode({
-      viewMode: viewMode,
+    setTimeout(() => {
+      this.searchConfigStore.updateViewMode(viewMode);
     });
   }
 
   @Input() searchConfigSelected: EventEmitter<{
-    fieldValues: { [key: string]: string };
+    fieldValues: FieldValues;
     displayedColumnsIds: string[];
     viewMode: basicViewModeType | advancedViewModeType;
   }> = new EventEmitter();
@@ -202,8 +197,8 @@ export class OneCXSearchConfigComponent
         }),
       )
       .subscribe((searchConfigs) => {
-        this.searchConfigStore.setSearchConfigs({
-          searchConfigs: searchConfigs,
+        setTimeout(() => {
+          this.searchConfigStore.setSearchConfigs(searchConfigs);
         });
       });
 
@@ -255,6 +250,7 @@ export class OneCXSearchConfigComponent
   }
 
   ngOnInit(): void {
+    // this.searchConfigStore.sync();
     this.formGroup = new FormGroup({
       searchConfig: new FormControl<SearchConfigInfo | null>(null),
     });
@@ -279,8 +275,8 @@ export class OneCXSearchConfigComponent
       return this.onSearchConfigSave();
     }
 
-    this.searchConfigStore.setCurrentConfig({
-      config: event.value,
+    setTimeout(() => {
+      this.searchConfigStore.setCurrentConfig(event.value);
     });
   }
 
@@ -320,14 +316,12 @@ export class OneCXSearchConfigComponent
             (config) => config.id === response.id,
           );
           config && this.setSearchConfigControl(config);
-          config &&
-            this.searchConfigStore.addSearchConfig({
-              searchConfig: config,
-            });
-          config &&
-            this.searchConfigStore.setCurrentConfig({
-              config: config,
-            });
+          setTimeout(() => {
+            config && this.searchConfigStore.addSearchConfig(config);
+          });
+          setTimeout(() => {
+            config && this.searchConfigStore.setCurrentConfig(config);
+          });
         } else {
           this.setSearchConfigControl(null);
         }
@@ -336,7 +330,9 @@ export class OneCXSearchConfigComponent
 
   onSearchConfigEdit(event: Event, searchConfig: SearchConfigInfo) {
     event.stopPropagation();
-    this.searchConfigStore.enterEditMode(searchConfig);
+    setTimeout(() => {
+      this.searchConfigStore.enterEditMode(searchConfig);
+    });
   }
 
   onSearchConfigSaveEdit(event: Event) {
@@ -384,16 +380,22 @@ export class OneCXSearchConfigComponent
           this.portalMessageService.info({
             summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_SUCCESS',
           });
-          this.searchConfigStore.saveEdit(config);
+          setTimeout(() => {
+            this.searchConfigStore.saveEdit(config);
+          });
         } else {
           this.setSearchConfigControl(null);
-          this.searchConfigStore.cancelEdit();
+          setTimeout(() => {
+            this.searchConfigStore.cancelEdit();
+          });
         }
       });
   }
 
   onSearchConfigCancelEdit(event: Event) {
-    this.searchConfigStore.cancelEdit();
+    setTimeout(() => {
+      this.searchConfigStore.cancelEdit();
+    });
   }
 
   onSearchConfigDelete(event: Event, searchConfig: SearchConfigInfo) {
@@ -404,8 +406,8 @@ export class OneCXSearchConfigComponent
         this.portalMessageService.info({
           summaryKey: 'SEARCH_CONFIG.DELETE_SUCCESS',
         });
-        this.searchConfigStore.deleteSearchConfig({
-          searchConfig: searchConfig,
+        setTimeout(() => {
+          this.searchConfigStore.deleteSearchConfig(searchConfig);
         });
         if (this.getSearchConfigControl() === searchConfig) {
           this.setSearchConfigControl(null);
