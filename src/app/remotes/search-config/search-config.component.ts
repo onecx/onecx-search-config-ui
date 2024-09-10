@@ -250,7 +250,6 @@ export class OneCXSearchConfigComponent
   }
 
   ngOnInit(): void {
-    // this.searchConfigStore.sync();
     this.formGroup = new FormGroup({
       searchConfig: new FormControl<SearchConfigInfo | null>(null),
     });

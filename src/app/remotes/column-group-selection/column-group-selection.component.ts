@@ -250,7 +250,6 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   ngOnInit() {
-    // this.searchConfigStore.sync();
     this.columns$
       .pipe(
         map((columns) =>
@@ -443,12 +442,12 @@ export class OneCXColumnGroupSelectionComponent
   ): boolean {
     if (name === customGroupKey || nonSearchConfigGroupKeys.includes(name))
       return false;
-    else if (configs.find((c) => c.name === name)) return true;
+    else if (this.getConfigByName(configs, name)) return true;
     return true;
   }
 
   isReadonly(configs: SearchConfigInfo[], name: string): boolean {
-    return configs.find((c) => c.name === name)?.isReadonly ?? false;
+    return this.getConfigByName(configs, name)?.isReadonly ?? false;
   }
 
   getConfigByName(

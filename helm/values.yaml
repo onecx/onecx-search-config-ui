@@ -12,13 +12,19 @@ app:
       enabled: true
       specs:
         search-config:
-          exposedModule: "./OneCXSearchConfigComponent"
-          description: "Search config component"
+          exposedModule: './OneCXSearchConfigComponent'
+          description: 'Search config component'
           type: COMPONENT
           technology: WEBCOMPONENTMODULE
           remoteName: onecx-search-config
           tagName: ocx-search-config-component
-        # TODO: ADD column group component
+        column-group-selection:
+          exposedModule: './OneCXColumnGroupSelectionComponent'
+          description: 'Column group selection component'
+          type: COMPONENT
+          technology: WEBCOMPONENTMODULE
+          remoteName: onecx-search-config
+          tagName: ocx-column-group-selection-component
     # Permission
     permission:
       enabled: true
