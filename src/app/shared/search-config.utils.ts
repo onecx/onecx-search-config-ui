@@ -29,20 +29,7 @@ export function parseFieldValues(values: UnparsedFieldValues): FieldValues {
     .reduce(
       (acc: { [key: string]: string }, [key, value]) => ({
         ...acc,
-        [key]: isValidDate(value)
-          ? new Date(
-              Date.UTC(
-                value.getFullYear(),
-                value.getMonth(),
-                value.getDate(),
-                value.getHours(),
-                value.getMinutes(),
-                value.getSeconds(),
-              ),
-            )
-              .toISOString()
-              .slice(0, 10)
-          : String(value),
+        [key]: isValidDate(value) ? value.toISOString() : String(value),
       }),
       {},
     );
