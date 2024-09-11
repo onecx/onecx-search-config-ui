@@ -19,7 +19,7 @@
       icon="{{ stopIcon }}"
       pButton
       type="button"
-      (click)="onSearchConfigCancelEdit($event)"
+      (click)="onSearchConfigCancelEdit()"
     ></button>
     <p-floatLabel>
       <p-dropdown
@@ -39,65 +39,68 @@
           >
             <div
               *ngIf="
-                isSearchConfig(
-                  item,
-                  vm.searchConfigsOnlyColumns,
-                  vm.nonSearchConfigGroupKeys,
-                  vm.customGroupKey
-                )
-              "
-            >
-              {{ item }}
-            </div>
-            <div
-              *ngIf="
                 !isSearchConfig(
                   item,
-                  vm.searchConfigsOnlyColumns,
                   vm.nonSearchConfigGroupKeys,
                   vm.customGroupKey
-                )
+                );
+                else search_config_item
               "
             >
               {{ item ? (item | translate) : '' }}
             </div>
-            <div
-              *ngIf="
-                isSearchConfig(
-                  item,
-                  vm.searchConfigsOnlyColumns,
-                  vm.nonSearchConfigGroupKeys,
-                  vm.customGroupKey
-                ) && !isReadonly(vm.searchConfigsOnlyColumns, item)
-              "
-            >
-              <button
-                pButton
-                type="button"
-                class="p-button-rounded font-medium p-button-text p-button-icon-only"
-                (click)="
-                  onSearchConfigEdit(
-                    $event,
-                    getConfigByName(vm.searchConfigsOnlyColumns, item)
+            <ng-template #search_config_item>
+              <div>
+                {{ item }}
+              </div>
+              <div
+                *ngIf="
+                  !isReadonly(
+                    vm.searchConfigsOnlyColumns.concat(
+                      vm.currentConfig ? [vm.currentConfig] : []
+                    ),
+                    item
                   )
                 "
               >
-                <span class="{{ editIcon }}"></span>
-              </button>
-              <button
-                pButton
-                type="button"
-                class="p-button-rounded font-medium p-button-text p-button-icon-only"
-                (click)="
-                  onSearchConfigDelete(
-                    $event,
-                    getConfigByName(vm.searchConfigsOnlyColumns, item)
-                  )
-                "
-              >
-                <span class="{{ deleteIcon }}"></span>
-              </button>
-            </div>
+                <button
+                  pButton
+                  type="button"
+                  class="p-button-rounded font-medium p-button-text p-button-icon-only"
+                  (click)="
+                    onSearchConfigEdit(
+                      $event,
+                      getConfigByName(
+                        vm.searchConfigsOnlyColumns.concat(
+                          vm.currentConfig ? [vm.currentConfig] : []
+                        ),
+                        item
+                      )
+                    )
+                  "
+                >
+                  <span class="{{ editIcon }}"></span>
+                </button>
+                <button
+                  pButton
+                  type="button"
+                  class="p-button-rounded font-medium p-button-text p-button-icon-only"
+                  (click)="
+                    onSearchConfigDelete(
+                      $event,
+                      getConfigByName(
+                        vm.searchConfigsOnlyColumns.concat(
+                          vm.currentConfig ? [vm.currentConfig] : []
+                        ),
+                        item
+                      )
+                    )
+                  "
+                >
+                  <span class="{{ deleteIcon }}"></span>
+                </button>
+              </div>
+            </ng-template>
           </div>
         </ng-template>
         <ng-template let-item pTemplate="selectedItem">
@@ -113,28 +116,21 @@
             <ng-container *ngIf="!vm.editMode">
               <div
                 *ngIf="
-                  isSearchConfig(
-                    item,
-                    vm.searchConfigsOnlyColumns,
-                    vm.nonSearchConfigGroupKeys,
-                    vm.customGroupKey
-                  )
-                "
-              >
-                {{ item }}
-              </div>
-              <div
-                *ngIf="
                   !isSearchConfig(
                     item,
-                    vm.searchConfigsOnlyColumns,
                     vm.nonSearchConfigGroupKeys,
                     vm.customGroupKey
-                  )
+                  );
+                  else search_config_selected_item
                 "
               >
                 {{ item ? (item | translate) : '' }}
               </div>
+              <ng-template #search_config_selected_item>
+                <div>
+                  {{ item }}
+                </div>
+              </ng-template>
             </ng-container>
           </div>
         </ng-template>

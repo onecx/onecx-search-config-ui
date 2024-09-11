@@ -21,7 +21,7 @@
           icon="{{ stopIcon }}"
           pButton
           type="button"
-          (click)="onSearchConfigCancelEdit($event)"
+          (click)="onSearchConfigCancelEdit()"
         ></button>
         <p-dropdown
           id="searchConfigDropdown"
@@ -39,7 +39,7 @@
           appendTo="body"
         >
           <ng-template let-config pTemplate="selectedItem">
-            <ng-container *ngIf="vm.editMode">
+            <ng-container *ngIf="vm.editMode; else search_config_selected_item">
               <div class="flex align-items-center gap-2">
                 {{
                   'SEARCH_CONFIG.EDITING'
@@ -47,7 +47,7 @@
                 }}
               </div>
             </ng-container>
-            <ng-container *ngIf="!vm.editMode">
+            <ng-template #search_config_selected_item>
               <div
                 class="flex align-items-center gap-2"
                 *ngIf="config.id === addSearchConfigOption.id"
@@ -62,7 +62,7 @@
                   {{ config.name }}
                 </div>
               </div>
-            </ng-container>
+            </ng-template>
           </ng-template>
           <ng-template let-config pTemplate="item">
             <div
