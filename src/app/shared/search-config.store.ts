@@ -34,12 +34,25 @@ export class SearchConfigTopic extends Topic<SearchConfigMessage> {
 
 export type UnparsedFieldValues = { [key: string]: unknown };
 export type FieldValues = { [key: string]: string };
-export type PageData = {
-  pageName: string;
+export type SearchData = {
   fieldValues: FieldValues;
   viewMode: basicViewModeType | advancedViewModeType;
   displayedColumnsIds: Array<string>;
+};
+
+export type PageData = SearchData & {
+  pageName: string;
   columnGroupKey: string;
+};
+
+export enum RevertDataType {
+  CONFIG_ONLY_VALUES = 'CONFIG_ONLY_VALUES',
+  CONFIG_ONLY_COLUMNS = 'CONFIG_ONLY_COLUMNS',
+  NO_CONFIG = 'NO_CONFIG',
+}
+
+export type RevertData = Partial<SearchData> & {
+  type: RevertDataType;
 };
 
 interface SearchConfigComponentState {
@@ -48,7 +61,7 @@ interface SearchConfigComponentState {
   inChargeOfEdit: string;
   editMode: boolean;
   preEditStateSnapshot: SearchConfigState | undefined;
-  pageDataToRevert: Partial<PageData> | undefined;
+  dataToRevert: RevertData | undefined;
   searchConfigs: SearchConfigInfo[];
 
   pageName: string;
@@ -63,7 +76,7 @@ interface ColumnGroupSelectionComponentState {
   inChargeOfEdit: string;
   editMode: boolean;
   preEditStateSnapshot: SearchConfigState | undefined;
-  pageDataToRevert: Partial<PageData> | undefined;
+  dataToRevert: RevertData | undefined;
   searchConfigs: SearchConfigInfo[];
 
   nonSearchConfigGroupKeys: Array<string>;
@@ -117,7 +130,7 @@ const initialState: SearchConfigState = {
   inChargeOfEdit: '',
   editMode: false,
   preEditStateSnapshot: undefined,
-  pageDataToRevert: undefined,
+  dataToRevert: undefined,
 };
 
 @Injectable()
@@ -132,10 +145,13 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
 
   // *********** Updaters *********** //
 
-  readonly setPageName = this.updater((state, newPageName: string) => ({
-    ...state,
-    pageName: newPageName,
-  }));
+  readonly setPageName = this.updater((state, newPageName: string) => {
+    const stateToUpdate: Partial<SearchConfigState> = {
+      pageName: newPageName,
+    };
+    this.sendUpdateMessage(stateToUpdate);
+    return { ...state, ...stateToUpdate };
+  });
 
   readonly setCustomGroupKey = this.updater((state, customGroupKey: string) => {
     const stateToUpdate: Partial<SearchConfigState> = {
@@ -147,26 +163,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
 
   readonly setSearchConfigs = this.updater(
     (state, searchConfigs: SearchConfigInfo[]) => {
-      const searchConfigActive =
-        (state.editMode
-          ? state.currentSearchConfig
-          : searchConfigs.find(
-              (config) => config.name === state.currentSearchConfig?.name,
-            )) !== undefined;
-      const selectedKeyActive =
-        (state.editMode
-          ? state.selectedGroupKey
-          : state.nonSearchConfigGroupKeys
-                .concat([state.customGroupKey])
-                .includes(state.selectedGroupKey)
-            ? state.selectedGroupKey
-            : searchConfigs.find(
-                (config) => config.name === state.selectedGroupKey,
-              )) !== undefined;
-
       const stateToUpdate: Partial<SearchConfigState> = {
-        ...(selectedKeyActive && { selectedGroupKey: state.customGroupKey }),
-        ...(searchConfigActive && { currentSearchConfig: undefined }),
         searchConfigs: searchConfigs,
       };
 
@@ -200,9 +197,11 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     (state, searchConfig: SearchConfigInfo) => {
       const isCurrentSearchConfigDeleted =
         state.currentSearchConfig?.id === searchConfig.id;
+
       const currentSearchConfig = isCurrentSearchConfigDeleted
         ? undefined
         : state.currentSearchConfig;
+
       const selectedGroupKey = this.updateSelectedGroupKeyByConfig(
         state,
         currentSearchConfig,
@@ -227,7 +226,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
   readonly setCurrentConfig = this.updater(
     (state, config: SearchConfigInfo | undefined) => {
       if (state.editMode) return state;
-      // TODO: Do not set if not in search config list?
+
       const selectedGroupKey = this.updateSelectedGroupKeyByConfig(
         state,
         config,
@@ -259,6 +258,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
   readonly setSelectedGroupKey = this.updater(
     (state, selectedGroupKey: string) => {
       if (state.editMode) return state;
+
       const currentConfig = this.updateConfigBySelectedGroupKey(
         state,
         selectedGroupKey,
@@ -301,13 +301,21 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     return { ...state, ...stateToUpdate };
   });
 
-  readonly revertPageData = this.updater((state, data: Partial<PageData>) => {
-    const stateToUpdate: Partial<SearchConfigState> = {
-      pageDataToRevert: data,
-    };
-    this.sendUpdateMessage(stateToUpdate);
-    return { ...state, ...stateToUpdate };
-  });
+  readonly revertData = this.updater(
+    (
+      state,
+      revertData: { data: Partial<SearchData>; type: RevertDataType },
+    ) => {
+      const stateToUpdate: Partial<SearchConfigState> = {
+        dataToRevert: {
+          ...revertData.data,
+          type: revertData.type,
+        },
+      };
+      this.sendUpdateMessage(stateToUpdate);
+      return { ...state, ...stateToUpdate };
+    },
+  );
 
   readonly updateFieldValues = this.updater(
     (state, values: UnparsedFieldValues) => {
@@ -321,6 +329,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       })
         ? undefined
         : state.currentSearchConfig;
+
       const selectedGroupKey = this.updateSelectedGroupKeyByConfig(
         state,
         searchConfig,
@@ -351,6 +360,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       })
         ? undefined
         : state.currentSearchConfig;
+
       const selectedGroupKey = this.updateSelectedGroupKeyByConfig(
         state,
         searchConfig,
@@ -381,6 +391,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       })
         ? undefined
         : state.currentSearchConfig;
+
       const selectedGroupKey = this.updateSelectedGroupKeyByConfig(
         state,
         searchConfig,
@@ -407,8 +418,8 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       preEditStateSnapshot,
   );
 
-  readonly pageDataToRevert$ = this.select(
-    ({ pageDataToRevert }): Partial<PageData> | undefined => pageDataToRevert,
+  readonly dataToRevert$ = this.select(
+    ({ dataToRevert }): RevertData | undefined => dataToRevert,
   );
 
   readonly pageName$ = this.select(
@@ -484,8 +495,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
   readonly enterEditMode = this.effect(
     (config$: Observable<SearchConfigInfo>) => {
       return config$.pipe(
-        withLatestFrom(this.state$),
-        tap(([config, state]) => {
+        tap((config) => {
           this.takeSnapshot();
           this.setCurrentConfig(config);
           this.setEditMode();
@@ -499,32 +509,40 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       withLatestFrom(this.preEditStateSnapshot$),
       tap(([, preEditStateSnapshot]) => {
         this.cancelEditMode();
-        const savedConfig = preEditStateSnapshot?.currentSearchConfig;
-        if (savedConfig) {
-          if (hasValues(savedConfig) && hasColumns(savedConfig)) {
-            this.setCurrentConfig(savedConfig);
-          } else if (hasOnlyValues(savedConfig)) {
-            this.setCurrentConfig(savedConfig);
-            this.setSelectedGroupKey(preEditStateSnapshot.selectedGroupKey);
-            this.revertPageData({
-              displayedColumnsIds: preEditStateSnapshot.displayedColumnsIds,
-            });
-          } else if (hasOnlyColumns(savedConfig)) {
-            this.setCurrentConfig(savedConfig);
-            this.setSelectedGroupKey(preEditStateSnapshot.selectedGroupKey);
-            this.revertPageData({
-              fieldValues: preEditStateSnapshot.fieldValues,
-              viewMode: preEditStateSnapshot.viewMode,
-            });
-          }
+        if (!preEditStateSnapshot) return;
+
+        const savedConfig = preEditStateSnapshot.currentSearchConfig;
+        if (!savedConfig) {
+          this.revertData({
+            data: {
+              fieldValues: preEditStateSnapshot?.fieldValues,
+              displayedColumnsIds: preEditStateSnapshot?.displayedColumnsIds,
+              viewMode: preEditStateSnapshot?.viewMode,
+            },
+            type: RevertDataType.NO_CONFIG,
+          });
           return;
         }
 
-        this.revertPageData({
-          fieldValues: preEditStateSnapshot?.fieldValues,
-          displayedColumnsIds: preEditStateSnapshot?.displayedColumnsIds,
-          viewMode: preEditStateSnapshot?.viewMode,
-        });
+        this.setCurrentConfig(savedConfig);
+        if (hasOnlyValues(savedConfig)) {
+          this.setSelectedGroupKey(preEditStateSnapshot.selectedGroupKey);
+          this.revertData({
+            data: {
+              displayedColumnsIds: preEditStateSnapshot.displayedColumnsIds,
+            },
+            type: RevertDataType.CONFIG_ONLY_VALUES,
+          });
+        } else if (hasOnlyColumns(savedConfig)) {
+          this.setSelectedGroupKey(preEditStateSnapshot.selectedGroupKey);
+          this.revertData({
+            data: {
+              fieldValues: preEditStateSnapshot.fieldValues,
+              viewMode: preEditStateSnapshot.viewMode,
+            },
+            type: RevertDataType.CONFIG_ONLY_COLUMNS,
+          });
+        }
       }),
     );
   });
@@ -536,9 +554,11 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         this.editSearchConfig(config);
         this.cancelEditMode();
         this.setCurrentConfig(config);
-        this.setSelectedGroupKey(
-          hasColumns(config) ? config.name : state.customGroupKey,
-        );
+        if (hasColumns(config)) {
+          this.setSelectedGroupKey(config.name);
+        } else if (hasOnlyValues(config)) {
+          this.setSelectedGroupKey(state.customGroupKey);
+        }
       }),
     );
   });
@@ -547,7 +567,6 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     return this.searchConfigTopic$.pipe(
       filter((msg) => msg !== undefined),
       filter((msg) => msg.payload.storeName !== this.storeName),
-      tap((msg) => console.log('UPDATE ' + this.storeName, msg)),
       withLatestFrom(this.state$),
       tap(([msg, state]) => {
         this.patchState({
@@ -622,18 +641,18 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
 
     if (config && hasColumns(config)) return config.name;
 
-    const configForSelectedKey = state.searchConfigs.find(
+    const searchConfigForSelectedKey = state.searchConfigs.find(
       (c) => c.name === state.selectedGroupKey,
     );
 
-    if (config && hasValues(config) && configForSelectedKey) {
+    if (config && hasValues(config) && searchConfigForSelectedKey) {
       return state.customGroupKey;
     }
 
     if (
       config === undefined &&
-      configForSelectedKey &&
-      !hasOnlyValues(configForSelectedKey)
+      searchConfigForSelectedKey &&
+      !hasOnlyValues(searchConfigForSelectedKey)
     ) {
       return state.customGroupKey;
     }
@@ -673,12 +692,6 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
   }
 
   private sendUpdateMessage(stateToUpdate: Partial<SearchConfigState>) {
-    console.log('PUBLISH ' + this.storeName, {
-      payload: {
-        storeName: this.storeName,
-        stateToUpdate: stateToUpdate,
-      },
-    });
     this.searchConfigTopic$.publish({
       payload: {
         storeName: this.storeName,
