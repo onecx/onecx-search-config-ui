@@ -36,5 +36,5 @@ export function parseFieldValues(values: UnparsedFieldValues): FieldValues {
 }
 
 export function areColumnsEqual(c1: Array<string>, c2: Array<string>): boolean {
-  return equal(c1, c2);
+  return c1.length === c2.length && c1.every((col) => c2.includes(col));
 }
