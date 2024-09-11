@@ -35,6 +35,7 @@ import {
   Subscription,
   catchError,
   combineLatest,
+  debounceTime,
   filter,
   map,
   mergeMap,
@@ -145,11 +146,14 @@ export class OneCXSearchConfigComponent
     });
   }
 
-  @Input() searchConfigSelected: EventEmitter<{
-    fieldValues: FieldValues;
-    displayedColumnsIds: string[];
-    viewMode: basicViewModeType | advancedViewModeType;
-  }> = new EventEmitter();
+  @Input() searchConfigSelected: EventEmitter<
+    | {
+        fieldValues: FieldValues;
+        displayedColumnsIds: string[];
+        viewMode: basicViewModeType | advancedViewModeType;
+      }
+    | undefined
+  > = new EventEmitter();
 
   formGroup: FormGroup | undefined;
 
@@ -177,7 +181,9 @@ export class OneCXSearchConfigComponent
     private appStateService: AppStateService,
     private searchConfigStore: SearchConfigStore,
   ) {
-    this.userService.lang$.subscribe((lang) => this.translateService.use(lang));
+    this.userService.lang$.subscribe((lang) => {
+      this.translateService.use(lang);
+    });
 
     combineLatest([
       this.baseUrl,
@@ -202,22 +208,58 @@ export class OneCXSearchConfigComponent
         });
       });
 
-    this.pageDataRevertSub = this.searchConfigStore.pageDataToRevert$.subscribe(
-      (pageData) => {
-        this.searchConfigSelected.emit(
-          pageData
-            ? {
-                fieldValues: pageData.fieldValues,
-                displayedColumnsIds: pageData.displayedColumnsIds,
-                viewMode: pageData.viewMode,
-              }
-            : undefined,
-        );
-      },
-    );
+    this.pageDataRevertSub = this.searchConfigStore.pageDataToRevert$
+      .pipe(
+        debounceTime(50),
+        filter((data) => data !== undefined),
+        withLatestFrom(this.searchConfigStore.state$),
+      )
+      .subscribe(([pageData, state]) => {
+        const currentConfig = state.preEditStateSnapshot?.currentSearchConfig;
+        if (
+          !currentConfig &&
+          pageData &&
+          pageData.fieldValues &&
+          pageData.displayedColumnsIds &&
+          pageData.viewMode
+        ) {
+          this.searchConfigSelected.emit({
+            fieldValues: pageData.fieldValues,
+            displayedColumnsIds: pageData.displayedColumnsIds,
+            viewMode: pageData.viewMode,
+          });
+          return;
+        } else if (
+          currentConfig &&
+          Object.keys(currentConfig?.values).length > 0
+        ) {
+          this.searchConfigSelected.emit({
+            fieldValues: currentConfig.values,
+            viewMode: currentConfig.isAdvanced
+              ? advancedViewMode
+              : basicViewMode,
+            displayedColumnsIds:
+              state.preEditStateSnapshot?.displayedColumnsIds ||
+              state.displayedColumnsIds,
+          });
+        } else if (
+          currentConfig &&
+          currentConfig.columns.length > 0 &&
+          pageData &&
+          pageData.fieldValues &&
+          pageData.viewMode
+        ) {
+          this.searchConfigSelected.emit({
+            fieldValues: pageData.fieldValues,
+            viewMode: pageData.viewMode,
+            displayedColumnsIds:
+              state.preEditStateSnapshot?.displayedColumnsIds ?? [],
+          });
+        }
+      });
 
     this.currentConfigSub = this.searchConfigStore.currentConfig$
-      .pipe(withLatestFrom(this.searchConfigStore.pageData$))
+      .pipe(debounceTime(50), withLatestFrom(this.searchConfigStore.pageData$))
       .subscribe(([config, pageData]) => {
         this.searchConfigSelected.emit(
           config

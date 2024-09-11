@@ -46,6 +46,7 @@ import {
   Subscription,
   catchError,
   combineLatest,
+  debounceTime,
   filter,
   map,
   mergeMap,
@@ -88,13 +89,14 @@ export function createTranslateLoader(
   translationCacheService: TranslationCacheService,
   appStateService: AppStateService,
 ) {
-  const injector = inject(EnvironmentInjector);
   return new AsyncTranslateLoader(
     appStateService.currentMfe$.pipe(
       map((currentMfe) => {
         return new TranslateCombinedLoader(
-          runInInjectionContext(injector, () =>
-            createRemoteComponentTranslateLoader(httpClient, baseUrl),
+          createRemoteComponentTranslateLoader(
+            httpClient,
+            baseUrl,
+            translationCacheService,
           ),
           new CachingTranslateLoader(
             translationCacheService,
@@ -197,18 +199,37 @@ export class OneCXColumnGroupSelectionComponent
     private portalDialogService: PortalDialogService,
     private portalMessageService: PortalMessageService,
   ) {
-    this.userService.lang$.subscribe((lang) => this.translateService.use(lang));
-
-    this.searchConfigStore.pageDataToRevert$.subscribe((pageData) => {
-      pageData &&
-        setTimeout(() => {
-          this.searchConfigStore.setSelectedGroupKey(pageData.columnGroupKey);
-        });
+    combineLatest([
+      this.userService.lang$.asObservable(),
+      this.appStateService.currentMfe$.asObservable(),
+    ]).subscribe(([lang, _]) => {
+      this.translateService.use(lang);
     });
 
+    this.pageDataRevertSub = this.searchConfigStore.pageDataToRevert$
+      .pipe(
+        debounceTime(50),
+        filter((data) => data !== undefined),
+        withLatestFrom(this.searchConfigStore.state$),
+      )
+      .subscribe(([pageData, state]) => {
+        const columnsData = pageData?.displayedColumnsIds;
+        if (columnsData) {
+          this.groupSelectionChanged.emit({
+            activeColumns: this.columns.filter((c) =>
+              columnsData.includes(c.id),
+            ),
+            groupKey: state.selectedGroupKey,
+          });
+        }
+      });
+
     this.searchConfigStore.selectedGroupKey$
-      .pipe(withLatestFrom(this.vm$))
-      .subscribe(([selectedGroupKey, vm]) => {
+      .pipe(
+        debounceTime(50),
+        withLatestFrom(this.vm$, this.searchConfigStore.state$),
+      )
+      .subscribe(([selectedGroupKey, vm, state]) => {
         const configWithColumns = vm.searchConfigsWithColumns.find(
           (c) => c.name === selectedGroupKey,
         );
@@ -221,6 +242,17 @@ export class OneCXColumnGroupSelectionComponent
             groupKey: selectedGroupKey,
           });
         } else if (selectedGroupKey === vm.customGroupKey) {
+          const displayedColumns =
+            state.currentSearchConfig &&
+            state.currentSearchConfig.columns.length > 0
+              ? state.currentSearchConfig.columns
+              : state.displayedColumnsIds;
+          this.groupSelectionChanged.emit({
+            activeColumns: this.columns.filter((c) =>
+              displayedColumns.includes(c.id),
+            ),
+            groupKey: selectedGroupKey,
+          });
           return;
         } else if (vm.nonSearchConfigGroupKeys.includes(selectedGroupKey)) {
           const activeColumns = this.columns.filter((c) =>
@@ -423,9 +455,11 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   changeGroupSelection(event: { value: string }) {
-    setTimeout(() => {
-      this.searchConfigStore.setSelectedGroupKey(event.value);
-    });
+    if (event.value) {
+      setTimeout(() => {
+        this.searchConfigStore.setSelectedGroupKey(event.value);
+      });
+    }
   }
 
   clearGroupSelection() {
