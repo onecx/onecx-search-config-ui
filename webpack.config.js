@@ -10,9 +10,9 @@ const config = withModuleFederationPlugin({
   filename: 'remoteEntry.js',
   exposes: {
     './OneCXSearchConfigComponent':
-      'src/app/remotes/search-config/search-config.component.bootstrap.ts',
+      'src/app/remotes/search-config/search-config.component.main.ts',
     './OneCXColumnGroupSelectionComponent':
-      'src/app/remotes/column-group-selection/column-group-selection.component.bootstrap.ts',
+      'src/app/remotes/column-group-selection/column-group-selection.component.main.ts',
   },
   shared: share({
     '@angular/core': {
