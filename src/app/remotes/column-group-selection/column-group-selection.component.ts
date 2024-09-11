@@ -39,6 +39,7 @@ import {
 } from '@onecx/angular-remote-components';
 import {
   BehaviorSubject,
+  OperatorFunction,
   ReplaySubject,
   Subscription,
   catchError,
@@ -67,6 +68,8 @@ import {
 import { environment } from 'src/environments/environment';
 import {
   PageData,
+  RevertData,
+  RevertDataType,
   SEARCH_CONFIG_STORE_NAME,
   SearchConfigStore,
 } from '../../shared/search-config.store';
@@ -127,7 +130,6 @@ export function createTranslateLoader(
       provide: BASE_URL,
       useValue: new ReplaySubject<string>(1),
     },
-    providePortalDialogService(),
     provideTranslateServiceForRoot({
       isolate: true,
       loader: {
@@ -136,6 +138,7 @@ export function createTranslateLoader(
         deps: [HttpClient, BASE_URL, TranslationCacheService, AppStateService],
       },
     }),
+    providePortalDialogService(),
     {
       provide: SEARCH_CONFIG_STORE_NAME,
       useValue: 'ocx-column-group-selection-component-store',
@@ -174,14 +177,15 @@ export class OneCXColumnGroupSelectionComponent
     groupKey: string;
   }> = new EventEmitter();
 
+  readonly vm$ = this.searchConfigStore.columnSelectionVm$;
+
+  dataRevertSub: Subscription | undefined;
+  selectedGroupKeySub: Subscription | undefined;
+
   editIcon = PrimeIcons.PENCIL;
   deleteIcon = PrimeIcons.TRASH;
   stopIcon = PrimeIcons.TIMES;
   saveIcon = PrimeIcons.CHECK;
-
-  readonly vm$ = this.searchConfigStore.columnSelectionVm$;
-  pageDataRevertSub: Subscription | undefined;
-  selectedGroupKeySub: Subscription | undefined;
 
   constructor(
     @Inject(BASE_URL) private baseUrl: ReplaySubject<string>,
@@ -200,20 +204,25 @@ export class OneCXColumnGroupSelectionComponent
       this.translateService.use(lang);
     });
 
-    this.pageDataRevertSub = this.searchConfigStore.pageDataToRevert$
+    this.dataRevertSub = this.searchConfigStore.dataToRevert$
       .pipe(
         debounceTime(50),
-        filter((data) => data !== undefined),
-        withLatestFrom(this.searchConfigStore.state$),
+        filter(
+          (dataToRevert) => dataToRevert !== undefined,
+        ) as OperatorFunction<RevertData | undefined, RevertData>,
+        withLatestFrom(this.searchConfigStore.selectedGroupKey$),
       )
-      .subscribe(([pageData, state]) => {
-        const columnsData = pageData?.displayedColumnsIds;
-        if (columnsData) {
+      .subscribe(([dataToRevert, selectedGroupKey]) => {
+        const columnsToRevert = dataToRevert.displayedColumnsIds;
+        if (
+          dataToRevert.type === RevertDataType.CONFIG_ONLY_COLUMNS &&
+          columnsToRevert
+        ) {
           this.groupSelectionChanged.emit({
             activeColumns: this.columns.filter((c) =>
-              columnsData.includes(c.id),
+              columnsToRevert.includes(c.id),
             ),
-            groupKey: state.selectedGroupKey,
+            groupKey: selectedGroupKey,
           });
         }
       });
@@ -221,9 +230,13 @@ export class OneCXColumnGroupSelectionComponent
     this.searchConfigStore.selectedGroupKey$
       .pipe(
         debounceTime(50),
-        withLatestFrom(this.vm$, this.searchConfigStore.state$),
+        withLatestFrom(
+          this.vm$,
+          this.searchConfigStore.currentConfig$,
+          this.searchConfigStore.pageData$,
+        ),
       )
-      .subscribe(([selectedGroupKey, vm, state]) => {
+      .subscribe(([selectedGroupKey, vm, currentConfig, pageData]) => {
         const configWithColumns = vm.searchConfigsWithColumns.find(
           (c) => c.name === selectedGroupKey,
         );
@@ -237,10 +250,9 @@ export class OneCXColumnGroupSelectionComponent
           });
         } else if (selectedGroupKey === vm.customGroupKey) {
           const displayedColumns =
-            state.currentSearchConfig &&
-            state.currentSearchConfig.columns.length > 0
-              ? state.currentSearchConfig.columns
-              : state.displayedColumnsIds;
+            currentConfig && currentConfig.columns.length > 0
+              ? currentConfig.columns
+              : pageData.displayedColumnsIds;
           this.groupSelectionChanged.emit({
             activeColumns: this.columns.filter((c) =>
               displayedColumns.includes(c.id),
@@ -260,19 +272,8 @@ export class OneCXColumnGroupSelectionComponent
       });
   }
   ngOnDestroy(): void {
-    this.pageDataRevertSub?.unsubscribe();
+    this.dataRevertSub?.unsubscribe();
     this.selectedGroupKeySub?.unsubscribe();
-  }
-
-  @Input() set ocxRemoteComponentConfig(config: RemoteComponentConfig) {
-    this.ocxInitRemoteComponent(config);
-  }
-
-  ocxInitRemoteComponent(config: RemoteComponentConfig): void {
-    this.searchConfigService.configuration = new Configuration({
-      basePath: Location.joinWithSlash(config.baseUrl, environment.apiPrefix),
-    });
-    this.baseUrl.next(config.baseUrl);
   }
 
   ngOnInit() {
@@ -295,6 +296,17 @@ export class OneCXColumnGroupSelectionComponent
           this.searchConfigStore.setNonSearchConfigGroupKeys(groupKeys);
         });
       });
+  }
+
+  @Input() set ocxRemoteComponentConfig(config: RemoteComponentConfig) {
+    this.ocxInitRemoteComponent(config);
+  }
+
+  ocxInitRemoteComponent(config: RemoteComponentConfig): void {
+    this.searchConfigService.configuration = new Configuration({
+      basePath: Location.joinWithSlash(config.baseUrl, environment.apiPrefix),
+    });
+    this.baseUrl.next(config.baseUrl);
   }
 
   onSearchConfigEdit(event: Event, searchConfig: SearchConfigInfo | undefined) {
@@ -343,7 +355,7 @@ export class OneCXColumnGroupSelectionComponent
         }),
         withLatestFrom(this.searchConfigStore.pageData$),
         mergeMap(([{ config, result }, pageData]) => {
-          if (!config) {
+          if (!config || !result) {
             return of(undefined);
           }
           if (result.button !== 'primary') {
@@ -408,7 +420,7 @@ export class OneCXColumnGroupSelectionComponent
     );
   }
 
-  onSearchConfigCancelEdit(event: Event) {
+  onSearchConfigCancelEdit() {
     setTimeout(() => {
       this.searchConfigStore.cancelEdit();
     });
@@ -464,13 +476,11 @@ export class OneCXColumnGroupSelectionComponent
 
   isSearchConfig(
     name: string,
-    configs: SearchConfigInfo[],
     nonSearchConfigGroupKeys: string[],
     customGroupKey: string,
   ): boolean {
     if (name === customGroupKey || nonSearchConfigGroupKeys.includes(name))
       return false;
-    else if (this.getConfigByName(configs, name)) return true;
     return true;
   }
 

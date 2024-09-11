@@ -37,6 +37,7 @@ import {
   provideTranslateServiceForRoot,
 } from '@onecx/angular-remote-components';
 import {
+  OperatorFunction,
   ReplaySubject,
   Subscription,
   catchError,
@@ -65,6 +66,8 @@ import { MfeInfo } from '@onecx/integration-interface';
 import {
   FieldValues,
   PageData,
+  RevertData,
+  RevertDataType,
   SEARCH_CONFIG_STORE_NAME,
   SearchConfigStore,
   UnparsedFieldValues,
@@ -80,7 +83,11 @@ import {
   basicViewMode,
   basicViewModeType,
 } from 'src/app/shared/constants';
-import { parseFieldValues } from 'src/app/shared/search-config.utils';
+import {
+  hasColumns,
+  hasValues,
+  parseFieldValues,
+} from 'src/app/shared/search-config.utils';
 
 @Component({
   selector: 'app-ocx-search-config',
@@ -159,7 +166,7 @@ export class OneCXSearchConfigComponent
 
   readonly vm$ = this.searchConfigStore.searchConfigVm$;
 
-  pageDataRevertSub: Subscription | undefined;
+  dataRevertSub: Subscription | undefined;
   currentConfigSub: Subscription | undefined;
 
   addSearchConfigOption: any = {
@@ -208,52 +215,49 @@ export class OneCXSearchConfigComponent
         });
       });
 
-    this.pageDataRevertSub = this.searchConfigStore.pageDataToRevert$
+    this.dataRevertSub = this.searchConfigStore.dataToRevert$
       .pipe(
         debounceTime(50),
-        filter((data) => data !== undefined),
-        withLatestFrom(this.searchConfigStore.state$),
+        filter((data) => data !== undefined) as OperatorFunction<
+          RevertData | undefined,
+          RevertData
+        >,
+        withLatestFrom(this.searchConfigStore.preEditStateSnapshot$),
       )
-      .subscribe(([pageData, state]) => {
-        const currentConfig = state.preEditStateSnapshot?.currentSearchConfig;
+      .subscribe(([dataToRevert, preEditSnapshot]) => {
+        const configToRevert = preEditSnapshot?.currentSearchConfig;
         if (
-          !currentConfig &&
-          pageData &&
-          pageData.fieldValues &&
-          pageData.displayedColumnsIds &&
-          pageData.viewMode
+          dataToRevert.type === RevertDataType.NO_CONFIG &&
+          dataToRevert.fieldValues &&
+          dataToRevert.displayedColumnsIds &&
+          dataToRevert.viewMode
         ) {
           this.searchConfigSelected.emit({
-            fieldValues: pageData.fieldValues,
-            displayedColumnsIds: pageData.displayedColumnsIds,
-            viewMode: pageData.viewMode,
+            fieldValues: dataToRevert.fieldValues,
+            displayedColumnsIds: dataToRevert.displayedColumnsIds,
+            viewMode: dataToRevert.viewMode,
           });
-          return;
         } else if (
-          currentConfig &&
-          Object.keys(currentConfig?.values).length > 0
+          configToRevert &&
+          dataToRevert.type === RevertDataType.CONFIG_ONLY_VALUES
         ) {
           this.searchConfigSelected.emit({
-            fieldValues: currentConfig.values,
-            viewMode: currentConfig.isAdvanced
+            fieldValues: configToRevert.values,
+            viewMode: configToRevert.isAdvanced
               ? advancedViewMode
               : basicViewMode,
-            displayedColumnsIds:
-              state.preEditStateSnapshot?.displayedColumnsIds ||
-              state.displayedColumnsIds,
+            displayedColumnsIds: preEditSnapshot.displayedColumnsIds,
           });
         } else if (
-          currentConfig &&
-          currentConfig.columns.length > 0 &&
-          pageData &&
-          pageData.fieldValues &&
-          pageData.viewMode
+          configToRevert &&
+          dataToRevert.type === RevertDataType.CONFIG_ONLY_COLUMNS &&
+          dataToRevert.fieldValues &&
+          dataToRevert.viewMode
         ) {
           this.searchConfigSelected.emit({
-            fieldValues: pageData.fieldValues,
-            viewMode: pageData.viewMode,
-            displayedColumnsIds:
-              state.preEditStateSnapshot?.displayedColumnsIds ?? [],
+            fieldValues: dataToRevert.fieldValues,
+            viewMode: dataToRevert.viewMode,
+            displayedColumnsIds: preEditSnapshot.displayedColumnsIds,
           });
         }
       });
@@ -264,31 +268,28 @@ export class OneCXSearchConfigComponent
         this.searchConfigSelected.emit(
           config
             ? {
-                fieldValues:
-                  Object.keys(config?.values).length > 0
-                    ? config.values
-                    : pageData.fieldValues,
-                displayedColumnsIds:
-                  config?.columns.length > 0
-                    ? config.columns
-                    : pageData.displayedColumnsIds,
-                viewMode:
-                  Object.keys(config?.values).length > 0
-                    ? config.isAdvanced
-                      ? advancedViewMode
-                      : basicViewMode
-                    : pageData.viewMode,
+                fieldValues: hasValues(config)
+                  ? config.values
+                  : pageData.fieldValues,
+                displayedColumnsIds: hasColumns(config)
+                  ? config.columns
+                  : pageData.displayedColumnsIds,
+                viewMode: hasValues(config)
+                  ? config.isAdvanced
+                    ? advancedViewMode
+                    : basicViewMode
+                  : pageData.viewMode,
               }
             : undefined,
         );
         this.setSearchConfigControl(
-          config && Object.keys(config?.values).length > 0 ? config : null,
+          config && hasValues(config) ? config : null,
         );
       });
   }
   ngOnDestroy(): void {
     this.currentConfigSub?.unsubscribe();
-    this.pageDataRevertSub?.unsubscribe();
+    this.dataRevertSub?.unsubscribe();
   }
 
   ngOnInit(): void {
@@ -406,7 +407,7 @@ export class OneCXSearchConfigComponent
         }),
         withLatestFrom(this.searchConfigStore.pageData$),
         mergeMap(([{ config, result }, pageData]) => {
-          if (!config) {
+          if (!config || !result) {
             return of(undefined);
           }
           if (result.button !== 'primary') {
@@ -433,7 +434,7 @@ export class OneCXSearchConfigComponent
       });
   }
 
-  onSearchConfigCancelEdit(event: Event) {
+  onSearchConfigCancelEdit() {
     setTimeout(() => {
       this.searchConfigStore.cancelEdit();
     });
