@@ -1,5 +1,6 @@
 import { Inject, Injectable, InjectionToken } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
+import { Topic } from '@onecx/accelerator';
 import { Observable, filter, tap, withLatestFrom } from 'rxjs';
 import { SearchConfigInfo } from 'src/app/shared/generated';
 import {
@@ -17,8 +18,6 @@ import {
   hasValues,
   parseFieldValues,
 } from './search-config.utils';
-
-import { Topic } from '@onecx/accelerator';
 
 export interface SearchConfigMessage {
   payload: {

@@ -2,14 +2,11 @@ import { CommonModule, Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import {
   Component,
-  EnvironmentInjector,
   EventEmitter,
   Inject,
   Input,
   OnDestroy,
   OnInit,
-  inject,
-  runInInjectionContext,
 } from '@angular/core';
 import {
   TranslateLoader,
@@ -53,11 +50,12 @@ import {
   of,
   withLatestFrom,
 } from 'rxjs';
-import { SharedModule } from 'src/app/shared/shared.module';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { PrimeIcons } from 'primeng/api';
+import { SharedModule } from 'src/app/shared/shared.module';
 import {
   Configuration,
   SearchConfig,
@@ -72,15 +70,11 @@ import {
   SEARCH_CONFIG_STORE_NAME,
   SearchConfigStore,
 } from '../../shared/search-config.store';
-import { PrimeIcons } from 'primeng/api';
 import {
   CreateOrEditSearchConfigDialogComponent,
   CreateOrEditSearchDialogContent,
 } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
-import {
-  advancedViewMode,
-  advancedViewModeType,
-} from 'src/app/shared/constants';
+import { advancedViewMode } from 'src/app/shared/constants';
 import { parseFieldValues } from 'src/app/shared/search-config.utils';
 
 export function createTranslateLoader(
