@@ -31,6 +31,12 @@
         "EDIT_SUCCESS": "Successfully edited search config",
         "EDIT_FAILURE": "Failed to edit search config"
       },
+      "DELETE_DIALOG": {
+        "HEADER": "Delete search config",
+        "MESSAGE": "Are you sure you want to delete search config {{config}}",
+        "CONFIRM": "Confirm",
+        "CANCEL": "Cancel"
+      },
       "DELETE_SUCCESS": "Successfully deleted search config",
       "DELETE_FAILURE": "Failed to delete search config",
       "FETCH_FAILURE": "Failed to load search config"

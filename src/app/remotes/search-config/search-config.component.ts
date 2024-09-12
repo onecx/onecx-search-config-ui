@@ -422,19 +422,40 @@ export class OneCXSearchConfigComponent
   onSearchConfigDelete(event: Event, searchConfig: SearchConfigInfo) {
     event.stopPropagation();
 
-    this.deleteSearchConfig(searchConfig.id).subscribe((result) => {
-      if (result !== undefined) {
-        this.portalMessageService.info({
-          summaryKey: 'SEARCH_CONFIG.DELETE_SUCCESS',
-        });
-        setTimeout(() => {
-          this.searchConfigStore.deleteSearchConfig(searchConfig);
-        });
-        if (this.getSearchConfigControl() === searchConfig) {
-          this.setSearchConfigControl(null);
+    this.portalDialogService
+      .openDialog(
+        'SEARCH_CONFIG.DELETE_DIALOG.HEADER',
+        {
+          key: 'SEARCH_CONFIG.DELETE_DIALOG.MESSAGE',
+          parameters: {
+            config: searchConfig.name,
+          },
+        },
+        'SEARCH_CONFIG.DELETE_DIALOG.CONFIRM',
+        'SEARCH_CONFIG.DELETE_DIALOG.CANCEL',
+      )
+      .pipe(
+        mergeMap((dialogResult) => {
+          if (!dialogResult) return of(undefined);
+          if (dialogResult.button !== 'primary') {
+            return of(undefined);
+          }
+          return this.deleteSearchConfig(searchConfig.id);
+        }),
+      )
+      .subscribe((result) => {
+        if (result !== undefined) {
+          this.portalMessageService.info({
+            summaryKey: 'SEARCH_CONFIG.DELETE_SUCCESS',
+          });
+          setTimeout(() => {
+            this.searchConfigStore.deleteSearchConfig(searchConfig);
+          });
+          if (this.getSearchConfigControl() === searchConfig) {
+            this.setSearchConfigControl(null);
+          }
         }
-      }
-    });
+      });
   }
 
   private deleteSearchConfig(id: string) {
