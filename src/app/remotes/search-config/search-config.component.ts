@@ -89,6 +89,7 @@ import {
   hasValues,
   parseFieldValues,
 } from 'src/app/shared/search-config.utils';
+import { TooltipModule } from 'primeng/tooltip';
 
 @Component({
   selector: 'app-ocx-search-config',
@@ -107,6 +108,7 @@ import {
     CreateOrEditSearchConfigDialogComponent,
     DropdownModule,
     FloatLabelModule,
+    TooltipModule,
   ],
   providers: [
     PortalMessageService,

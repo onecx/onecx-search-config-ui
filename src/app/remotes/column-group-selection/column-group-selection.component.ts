@@ -80,6 +80,7 @@ import {
 } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
 import { advancedViewMode } from 'src/app/shared/constants';
 import { parseFieldValues } from 'src/app/shared/search-config.utils';
+import { TooltipModule } from 'primeng/tooltip';
 
 export function createTranslateLoader(
   httpClient: HttpClient,
@@ -124,6 +125,7 @@ export function createTranslateLoader(
     ButtonModule,
     DropdownModule,
     FloatLabelModule,
+    TooltipModule,
   ],
   providers: [
     PortalMessageService,
