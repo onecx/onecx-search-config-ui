@@ -67,9 +67,10 @@ import {
   FieldValues,
   PageData,
   RevertData,
-  RevertDataType,
   SEARCH_CONFIG_STORE_NAME,
+  SEARCH_CONFIG_TOPIC,
   SearchConfigStore,
+  SearchConfigTopic,
   UnparsedFieldValues,
 } from '../../shared/search-config.store';
 import { PrimeIcons } from 'primeng/api';
@@ -126,6 +127,10 @@ import {
       provide: SEARCH_CONFIG_STORE_NAME,
       useValue: 'ocx-search-config-component-store',
     },
+    {
+      provide: SEARCH_CONFIG_TOPIC,
+      useValue: new SearchConfigTopic(),
+    },
     SearchConfigStore,
   ],
 })
@@ -164,7 +169,7 @@ export class OneCXSearchConfigComponent
 
   formGroup: FormGroup | undefined;
 
-  readonly vm$ = this.searchConfigStore.searchConfigVm$;
+  readonly vm$ = this.searchConfigStore.searchConfigVm$.pipe(debounceTime(50));
 
   dataRevertSub: Subscription | undefined;
   currentConfigSub: Subscription | undefined;
@@ -217,68 +222,40 @@ export class OneCXSearchConfigComponent
 
     this.dataRevertSub = this.searchConfigStore.dataToRevert$
       .pipe(
-        debounceTime(50),
+        debounceTime(20),
         filter((data) => data !== undefined) as OperatorFunction<
           RevertData | undefined,
           RevertData
         >,
-        withLatestFrom(this.searchConfigStore.preEditStateSnapshot$),
       )
-      .subscribe(([dataToRevert, preEditSnapshot]) => {
-        const configToRevert = preEditSnapshot?.currentSearchConfig;
-        if (
-          dataToRevert.type === RevertDataType.NO_CONFIG &&
-          dataToRevert.fieldValues &&
-          dataToRevert.displayedColumnsIds &&
-          dataToRevert.viewMode
-        ) {
-          this.searchConfigSelected.emit({
-            fieldValues: dataToRevert.fieldValues,
-            displayedColumnsIds: dataToRevert.displayedColumnsIds,
-            viewMode: dataToRevert.viewMode,
-          });
-        } else if (
-          configToRevert &&
-          dataToRevert.type === RevertDataType.CONFIG_ONLY_VALUES
-        ) {
-          this.searchConfigSelected.emit({
-            fieldValues: configToRevert.values,
-            viewMode: configToRevert.isAdvanced
-              ? advancedViewMode
-              : basicViewMode,
-            displayedColumnsIds: preEditSnapshot.displayedColumnsIds,
-          });
-        } else if (
-          configToRevert &&
-          dataToRevert.type === RevertDataType.CONFIG_ONLY_COLUMNS &&
-          dataToRevert.fieldValues &&
-          dataToRevert.viewMode
-        ) {
-          this.searchConfigSelected.emit({
-            fieldValues: dataToRevert.fieldValues,
-            viewMode: dataToRevert.viewMode,
-            displayedColumnsIds: preEditSnapshot.displayedColumnsIds,
-          });
-        }
+      .subscribe((dataToRevert) => {
+        this.searchConfigSelected.emit({
+          fieldValues: dataToRevert.fieldValues,
+          displayedColumnsIds: dataToRevert.displayedColumnsIds,
+          viewMode: dataToRevert.viewMode,
+        });
       });
 
     this.currentConfigSub = this.searchConfigStore.currentConfig$
-      .pipe(debounceTime(50), withLatestFrom(this.searchConfigStore.pageData$))
-      .subscribe(([config, pageData]) => {
+      .pipe(
+        debounceTime(50),
+        withLatestFrom(this.searchConfigStore.currentEffectiveData$),
+      )
+      .subscribe(([config, currentData]) => {
         this.searchConfigSelected.emit(
           config
             ? {
                 fieldValues: hasValues(config)
                   ? config.values
-                  : pageData.fieldValues,
+                  : currentData.fieldValues,
                 displayedColumnsIds: hasColumns(config)
                   ? config.columns
-                  : pageData.displayedColumnsIds,
+                  : currentData.displayedColumnsIds,
                 viewMode: hasValues(config)
                   ? config.isAdvanced
                     ? advancedViewMode
                     : basicViewMode
-                  : pageData.viewMode,
+                  : currentData.viewMode,
               }
             : undefined,
         );
@@ -333,7 +310,7 @@ export class OneCXSearchConfigComponent
       .pipe(
         withLatestFrom(
           this.appStateService.currentMfe$.asObservable(),
-          this.searchConfigStore.pageData$,
+          this.searchConfigStore.currentPageData$,
         ),
         mergeMap(([dialogResult, currentMfe, pageData]) => {
           if (!dialogResult || !dialogResult.result) {
@@ -405,7 +382,7 @@ export class OneCXSearchConfigComponent
             }),
           );
         }),
-        withLatestFrom(this.searchConfigStore.pageData$),
+        withLatestFrom(this.searchConfigStore.currentPageData$),
         mergeMap(([{ config, result }, pageData]) => {
           if (!config || !result) {
             return of(undefined);

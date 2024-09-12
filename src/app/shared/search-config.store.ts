@@ -19,6 +19,10 @@ import {
   parseFieldValues,
 } from './search-config.utils';
 
+export const SEARCH_CONFIG_TOPIC = new InjectionToken<SearchConfigTopic>(
+  'searchConfigTopic',
+);
+
 export interface SearchConfigMessage {
   payload: {
     storeName: string;
@@ -45,14 +49,8 @@ export type PageData = SearchData & {
   columnGroupKey: string;
 };
 
-export enum RevertDataType {
-  CONFIG_ONLY_VALUES = 'CONFIG_ONLY_VALUES',
-  CONFIG_ONLY_COLUMNS = 'CONFIG_ONLY_COLUMNS',
-  NO_CONFIG = 'NO_CONFIG',
-}
-
-export type RevertData = Partial<SearchData> & {
-  type: RevertDataType;
+export type RevertData = SearchData & {
+  columnGroupKey: string;
 };
 
 interface SearchConfigComponentState {
@@ -85,10 +83,11 @@ interface ColumnGroupSelectionComponentState {
 
 export interface SearchConfigState
   extends SearchConfigComponentState,
-    ColumnGroupSelectionComponentState {}
+    ColumnGroupSelectionComponentState {
+  effectiveSearchData: SearchData;
+}
 
 export interface SearchConfigViewModel {
-  pageName: string;
   searchConfigs: SearchConfigInfo[];
   currentConfig: SearchConfigInfo | undefined;
 
@@ -114,7 +113,7 @@ export const SEARCH_CONFIG_STORE_NAME = new InjectionToken<string>(
   'searchConfigStoreName',
 );
 
-const initialState: SearchConfigState = {
+export const initialState: SearchConfigState = {
   pageName: '',
   nonSearchConfigGroupKeys: [],
   customGroupKey: '',
@@ -131,14 +130,21 @@ const initialState: SearchConfigState = {
   editMode: false,
   preEditStateSnapshot: undefined,
   dataToRevert: undefined,
+
+  effectiveSearchData: {
+    fieldValues: {},
+    displayedColumnsIds: [],
+    viewMode: basicViewMode,
+  },
 };
 
 @Injectable()
 export class SearchConfigStore extends ComponentStore<SearchConfigState> {
-  searchConfigTopic$ = new SearchConfigTopic();
   constructor(
     @Inject(SEARCH_CONFIG_STORE_NAME)
     private storeName: string,
+    @Inject(SEARCH_CONFIG_TOPIC)
+    private searchConfigTopic$: SearchConfigTopic,
   ) {
     super(initialState);
   }
@@ -279,6 +285,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     const stateToUpdate: Partial<SearchConfigState> = {
       editMode: true,
       inChargeOfEdit: this.storeName,
+      dataToRevert: undefined,
     };
     this.sendUpdateMessage(stateToUpdate);
     return { ...state, ...stateToUpdate };
@@ -301,21 +308,71 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     return { ...state, ...stateToUpdate };
   });
 
-  readonly revertData = this.updater(
-    (
-      state,
-      revertData: { data: Partial<SearchData>; type: RevertDataType },
-    ) => {
-      const stateToUpdate: Partial<SearchConfigState> = {
+  readonly revertData = this.updater((state) => {
+    if (!state.preEditStateSnapshot) return state;
+
+    let stateToUpdate: Partial<SearchConfigState> = {};
+
+    const savedConfig = state.preEditStateSnapshot.currentSearchConfig;
+
+    if (!savedConfig) {
+      stateToUpdate = {
         dataToRevert: {
-          ...revertData.data,
-          type: revertData.type,
+          fieldValues: state.preEditStateSnapshot.fieldValues,
+          displayedColumnsIds: state.preEditStateSnapshot.displayedColumnsIds,
+          viewMode: state.preEditStateSnapshot.viewMode,
+          columnGroupKey: state.preEditStateSnapshot.selectedGroupKey,
         },
+        currentSearchConfig: undefined,
+        selectedGroupKey: state.preEditStateSnapshot.selectedGroupKey,
       };
-      this.sendUpdateMessage(stateToUpdate);
-      return { ...state, ...stateToUpdate };
-    },
-  );
+    } else if (hasOnlyColumns(savedConfig)) {
+      stateToUpdate = {
+        dataToRevert: {
+          fieldValues: state.preEditStateSnapshot.fieldValues,
+          displayedColumnsIds: savedConfig.columns,
+          viewMode: state.preEditStateSnapshot.viewMode,
+          columnGroupKey: savedConfig.name,
+        },
+        currentSearchConfig: savedConfig,
+        selectedGroupKey: savedConfig.name,
+      };
+    } else if (hasOnlyValues(savedConfig)) {
+      stateToUpdate = {
+        dataToRevert: {
+          fieldValues: savedConfig.values,
+          displayedColumnsIds: state.preEditStateSnapshot.displayedColumnsIds,
+          viewMode: savedConfig.isAdvanced ? advancedViewMode : basicViewMode,
+          columnGroupKey: state.preEditStateSnapshot.selectedGroupKey,
+        },
+        currentSearchConfig: savedConfig,
+        selectedGroupKey: state.preEditStateSnapshot.selectedGroupKey,
+      };
+    } else {
+      stateToUpdate = {
+        dataToRevert: {
+          fieldValues: savedConfig.values,
+          displayedColumnsIds: savedConfig.columns,
+          viewMode: savedConfig.isAdvanced ? advancedViewMode : basicViewMode,
+          columnGroupKey: savedConfig.name,
+        },
+        currentSearchConfig: savedConfig,
+        selectedGroupKey: savedConfig.name,
+      };
+    }
+
+    stateToUpdate = {
+      ...stateToUpdate,
+      effectiveSearchData: {
+        fieldValues: stateToUpdate.dataToRevert?.fieldValues!,
+        displayedColumnsIds: stateToUpdate.dataToRevert?.displayedColumnsIds!,
+        viewMode: stateToUpdate.dataToRevert?.viewMode!,
+      },
+    };
+
+    this.sendUpdateMessage(stateToUpdate);
+    return { ...state, ...stateToUpdate };
+  });
 
   readonly updateFieldValues = this.updater(
     (state, values: UnparsedFieldValues) => {
@@ -343,6 +400,10 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           selectedGroupKey: selectedGroupKey,
         }),
         fieldValues: parsedValues,
+        effectiveSearchData: {
+          ...state.effectiveSearchData,
+          fieldValues: parsedValues,
+        },
       };
       this.sendUpdateMessage(stateToUpdate);
       return { ...state, ...stateToUpdate };
@@ -374,6 +435,10 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           selectedGroupKey: selectedGroupKey,
         }),
         displayedColumnsIds: displayedColumnsIds,
+        effectiveSearchData: {
+          ...state.effectiveSearchData,
+          displayedColumnsIds: displayedColumnsIds,
+        },
       };
       this.sendUpdateMessage(stateToUpdate);
       return { ...state, ...stateToUpdate };
@@ -405,6 +470,10 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           selectedGroupKey: selectedGroupKey,
         }),
         viewMode: viewMode,
+        effectiveSearchData: {
+          ...state.effectiveSearchData,
+          viewMode: viewMode,
+        },
       };
       this.sendUpdateMessage(stateToUpdate);
       return { ...state, ...stateToUpdate };
@@ -427,7 +496,16 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     (state): string => state.pageName,
   );
 
-  readonly pageData$ = this.select(
+  readonly selectedGroupKey$ = this.select(
+    ({ selectedGroupKey }): string => selectedGroupKey,
+  );
+
+  readonly currentConfig$ = this.select(
+    ({ currentSearchConfig }): SearchConfigInfo | undefined =>
+      currentSearchConfig,
+  );
+
+  readonly currentPageData$ = this.select(
     this.state$,
     (state): PageData => ({
       pageName: state.pageName,
@@ -438,20 +516,14 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     }),
   );
 
-  readonly selectedGroupKey$ = this.select(
-    ({ selectedGroupKey }): string => selectedGroupKey,
-  );
-
-  readonly currentConfig$ = this.select(
-    ({ currentSearchConfig }): SearchConfigInfo | undefined =>
-      currentSearchConfig,
+  readonly currentEffectiveData$ = this.select(
+    ({ effectiveSearchData }): SearchData => effectiveSearchData,
   );
 
   readonly searchConfigVm$ = this.select(
     this.state$,
     this.currentConfig$,
     (state, currentConfig): SearchConfigViewModel => ({
-      pageName: state.pageName,
       searchConfigs: state.searchConfigs.filter((config) => hasValues(config)),
       editMode: state.editMode,
       isInChargeOfEdit: state.inChargeOfEdit === this.storeName,
@@ -506,43 +578,9 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
 
   readonly cancelEdit = this.effect((trigger$) => {
     return trigger$.pipe(
-      withLatestFrom(this.preEditStateSnapshot$),
-      tap(([, preEditStateSnapshot]) => {
+      tap(() => {
+        this.revertData();
         this.cancelEditMode();
-        if (!preEditStateSnapshot) return;
-
-        const savedConfig = preEditStateSnapshot.currentSearchConfig;
-        if (!savedConfig) {
-          this.revertData({
-            data: {
-              fieldValues: preEditStateSnapshot?.fieldValues,
-              displayedColumnsIds: preEditStateSnapshot?.displayedColumnsIds,
-              viewMode: preEditStateSnapshot?.viewMode,
-            },
-            type: RevertDataType.NO_CONFIG,
-          });
-          return;
-        }
-
-        this.setCurrentConfig(savedConfig);
-        if (hasOnlyValues(savedConfig)) {
-          this.setSelectedGroupKey(preEditStateSnapshot.selectedGroupKey);
-          this.revertData({
-            data: {
-              displayedColumnsIds: preEditStateSnapshot.displayedColumnsIds,
-            },
-            type: RevertDataType.CONFIG_ONLY_VALUES,
-          });
-        } else if (hasOnlyColumns(savedConfig)) {
-          this.setSelectedGroupKey(preEditStateSnapshot.selectedGroupKey);
-          this.revertData({
-            data: {
-              fieldValues: preEditStateSnapshot.fieldValues,
-              viewMode: preEditStateSnapshot.viewMode,
-            },
-            type: RevertDataType.CONFIG_ONLY_COLUMNS,
-          });
-        }
       }),
     );
   });

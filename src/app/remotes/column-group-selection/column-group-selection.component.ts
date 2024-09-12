@@ -69,9 +69,10 @@ import { environment } from 'src/environments/environment';
 import {
   PageData,
   RevertData,
-  RevertDataType,
   SEARCH_CONFIG_STORE_NAME,
+  SEARCH_CONFIG_TOPIC,
   SearchConfigStore,
+  SearchConfigTopic,
 } from '../../shared/search-config.store';
 import {
   CreateOrEditSearchConfigDialogComponent,
@@ -143,6 +144,10 @@ export function createTranslateLoader(
       provide: SEARCH_CONFIG_STORE_NAME,
       useValue: 'ocx-column-group-selection-component-store',
     },
+    {
+      provide: SEARCH_CONFIG_TOPIC,
+      useValue: new SearchConfigTopic(),
+    },
     SearchConfigStore,
   ],
 })
@@ -177,7 +182,9 @@ export class OneCXColumnGroupSelectionComponent
     groupKey: string;
   }> = new EventEmitter();
 
-  readonly vm$ = this.searchConfigStore.columnSelectionVm$;
+  readonly vm$ = this.searchConfigStore.columnSelectionVm$.pipe(
+    debounceTime(50),
+  );
 
   dataRevertSub: Subscription | undefined;
   selectedGroupKeySub: Subscription | undefined;
@@ -206,25 +213,18 @@ export class OneCXColumnGroupSelectionComponent
 
     this.dataRevertSub = this.searchConfigStore.dataToRevert$
       .pipe(
-        debounceTime(50),
+        debounceTime(20),
         filter(
           (dataToRevert) => dataToRevert !== undefined,
         ) as OperatorFunction<RevertData | undefined, RevertData>,
-        withLatestFrom(this.searchConfigStore.selectedGroupKey$),
       )
-      .subscribe(([dataToRevert, selectedGroupKey]) => {
-        const columnsToRevert = dataToRevert.displayedColumnsIds;
-        if (
-          dataToRevert.type === RevertDataType.CONFIG_ONLY_COLUMNS &&
-          columnsToRevert
-        ) {
-          this.groupSelectionChanged.emit({
-            activeColumns: this.columns.filter((c) =>
-              columnsToRevert.includes(c.id),
-            ),
-            groupKey: selectedGroupKey,
-          });
-        }
+      .subscribe((dataToRevert) => {
+        this.groupSelectionChanged.emit({
+          activeColumns: this.columns.filter((c) =>
+            dataToRevert.displayedColumnsIds.includes(c.id),
+          ),
+          groupKey: dataToRevert.columnGroupKey,
+        });
       });
 
     this.searchConfigStore.selectedGroupKey$
@@ -233,7 +233,7 @@ export class OneCXColumnGroupSelectionComponent
         withLatestFrom(
           this.vm$,
           this.searchConfigStore.currentConfig$,
-          this.searchConfigStore.pageData$,
+          this.searchConfigStore.currentPageData$,
         ),
       )
       .subscribe(([selectedGroupKey, vm, currentConfig, pageData]) => {
@@ -249,16 +249,6 @@ export class OneCXColumnGroupSelectionComponent
             groupKey: selectedGroupKey,
           });
         } else if (selectedGroupKey === vm.customGroupKey) {
-          const displayedColumns =
-            currentConfig && currentConfig.columns.length > 0
-              ? currentConfig.columns
-              : pageData.displayedColumnsIds;
-          this.groupSelectionChanged.emit({
-            activeColumns: this.columns.filter((c) =>
-              displayedColumns.includes(c.id),
-            ),
-            groupKey: selectedGroupKey,
-          });
           return;
         } else if (vm.nonSearchConfigGroupKeys.includes(selectedGroupKey)) {
           const activeColumns = this.columns.filter((c) =>
@@ -353,7 +343,7 @@ export class OneCXColumnGroupSelectionComponent
             }),
           );
         }),
-        withLatestFrom(this.searchConfigStore.pageData$),
+        withLatestFrom(this.searchConfigStore.currentPageData$),
         mergeMap(([{ config, result }, pageData]) => {
           if (!config || !result) {
             return of(undefined);
