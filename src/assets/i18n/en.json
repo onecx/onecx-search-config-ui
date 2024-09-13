@@ -11,7 +11,7 @@
       "DROPDOWN_LABEL": "Search config",
       "CREATE": "Add search config",
       "PLACEHOLDER": "Choose search config",
-      "EDITING": "Editing search config {{config}}",
+      "EDITING": "Editing {{config}} search config",
       "SAVE_EDIT": "Save search config",
       "SAVE_EDIT_TOOLTIP": "Save currently edited search config",
       "CANCEL_EDIT": "Cancel search config",
