@@ -153,7 +153,7 @@ export const initialState: SearchConfigState = {
 
 @Injectable()
 export class SearchConfigStore extends ComponentStore<SearchConfigState> {
-  columnGroupComponentReloading: boolean = false;
+  columnGroupComponentReloading = false;
 
   constructor(
     @Inject(SEARCH_CONFIG_STORE_NAME)
@@ -404,9 +404,15 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     stateToUpdate = {
       ...stateToUpdate,
       displayedSearchData: {
-        fieldValues: stateToUpdate.dataToRevert?.fieldValues!,
-        displayedColumnsIds: stateToUpdate.dataToRevert?.displayedColumnsIds!,
-        viewMode: stateToUpdate.dataToRevert?.viewMode!,
+        fieldValues:
+          stateToUpdate.dataToRevert?.fieldValues ??
+          state.displayedSearchData.fieldValues,
+        displayedColumnsIds:
+          stateToUpdate.dataToRevert?.displayedColumnsIds ??
+          state.displayedSearchData.displayedColumnsIds,
+        viewMode:
+          stateToUpdate.dataToRevert?.viewMode ??
+          state.displayedSearchData.viewMode,
       },
     };
 

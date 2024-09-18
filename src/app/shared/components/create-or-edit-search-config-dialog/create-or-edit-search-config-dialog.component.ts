@@ -67,7 +67,7 @@ export class CreateOrEditSearchConfigDialogComponent
     return this.searchConfigFormGroup.controls['saveColumns'].value;
   }
 
-  _frozeColumnSaveOption: boolean = false;
+  _frozeColumnSaveOption = false;
   @Input()
   set frozeColumnSaveOption(value: boolean | undefined) {
     this._frozeColumnSaveOption = value !== undefined ? value : false;
@@ -81,7 +81,7 @@ export class CreateOrEditSearchConfigDialogComponent
     return this._frozeColumnSaveOption;
   }
 
-  _frozeColumnSaveOptionExplanation: string = '';
+  _frozeColumnSaveOptionExplanation = '';
   @Input()
   set frozeColumnSaveOptionExplanation(value: string | undefined) {
     this._frozeColumnSaveOptionExplanation = value !== undefined ? value : '';
