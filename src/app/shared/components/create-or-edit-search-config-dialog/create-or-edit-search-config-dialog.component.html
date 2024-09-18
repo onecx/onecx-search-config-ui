@@ -1,21 +1,43 @@
 <form [formGroup]="searchConfigFormGroup" [class]="'searchConfigDialog'">
-    <div>
-      <input
-        type="text"
-        pInputText
-        formControlName="searchConfigName"
-        id="searchConfigName"
-        [placeholder]="placeHolderKey | translate"
-      />
-    </div>
-  
-    <div>
-      <p-checkbox formControlName="saveInputValues" [binary]="true" inputId="saveInputValuesId"> </p-checkbox>
-      <label for="saveInputValuesId">{{ 'SEARCH_CONFIG.SAVE_INPUT_FIELDS_OPTION' | translate }}</label>
-    </div>
-  
-    <div>
-      <p-checkbox formControlName="saveColumns" [binary]="true" inputId="saveColumnsId"></p-checkbox>
-      <label for="saveColumnsId">{{ 'SEARCH_CONFIG.SAVE_COLUMNS_OPTION' | translate }}</label>
-    </div>
-  </form>
+  <div>
+    <input
+      type="text"
+      pInputText
+      formControlName="searchConfigName"
+      id="searchConfigName"
+      [placeholder]="placeHolderKey | translate"
+    />
+  </div>
+
+  <div>
+    <p-checkbox
+      formControlName="saveInputValues"
+      [binary]="true"
+      inputId="saveInputValuesId"
+    >
+    </p-checkbox>
+    <label for="saveInputValuesId">{{
+      'SEARCH_CONFIG.SAVE_INPUT_FIELDS_OPTION' | translate
+    }}</label>
+  </div>
+
+  <div>
+    <p-checkbox
+      [binary]="true"
+      formControlName="saveColumns"
+      inputId="saveColumnsId"
+    ></p-checkbox>
+    <label for="saveColumnsId">
+      <ng-container>
+        {{ 'SEARCH_CONFIG.SAVE_COLUMNS_OPTION' | translate }}
+      </ng-container>
+      <ng-container *ngIf="frozeColumnSaveOption">
+        {{ _frozeColumnSaveOptionExplanation | translate }}
+      </ng-container>
+    </label>
+  </div>
+</form>
+
+<div>
+  {{ searchConfigFormGroup.controls['saveColumns'].value }}
+</div>

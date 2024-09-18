@@ -71,6 +71,7 @@ import {
   SEARCH_CONFIG_TOPIC,
   SearchConfigStore,
   SearchConfigTopic,
+  SearchConfigViewModel,
   UnparsedFieldValues,
 } from '../../shared/search-config.store';
 import { PrimeIcons } from 'primeng/api';
@@ -83,6 +84,7 @@ import {
   advancedViewModeType,
   basicViewMode,
   basicViewModeType,
+  searchConfigStoreName,
 } from 'src/app/shared/constants';
 import {
   hasColumns,
@@ -127,7 +129,7 @@ import { TooltipModule } from 'primeng/tooltip';
     providePortalDialogService(),
     {
       provide: SEARCH_CONFIG_STORE_NAME,
-      useValue: 'ocx-search-config-component-store',
+      useValue: searchConfigStoreName,
     },
     {
       provide: SEARCH_CONFIG_TOPIC,
@@ -157,6 +159,13 @@ export class OneCXSearchConfigComponent
   @Input() set viewMode(viewMode: basicViewModeType | advancedViewModeType) {
     setTimeout(() => {
       this.searchConfigStore.updateViewMode(viewMode);
+    });
+  }
+
+  @Input()
+  set layout(layout: 'table' | 'grid' | 'list') {
+    setTimeout(() => {
+      this.searchConfigStore.updateLayout(layout);
     });
   }
 
@@ -241,18 +250,23 @@ export class OneCXSearchConfigComponent
     this.currentConfigSub = this.searchConfigStore.currentConfig$
       .pipe(
         debounceTime(50),
-        withLatestFrom(this.searchConfigStore.currentEffectiveData$),
+        withLatestFrom(
+          this.searchConfigStore.currentDisplayedData$,
+          this.searchConfigStore.isColumnGroupComponentActive$,
+        ),
       )
-      .subscribe(([config, currentData]) => {
+      .subscribe(([config, currentData, isColumnGroupActive]) => {
         this.searchConfigSelected.emit(
           config
             ? {
                 fieldValues: hasValues(config)
                   ? config.values
                   : currentData.fieldValues,
-                displayedColumnsIds: hasColumns(config)
-                  ? config.columns
-                  : currentData.displayedColumnsIds,
+                displayedColumnsIds:
+                  hasColumns(config) &&
+                  (isColumnGroupActive || currentData.layout !== 'table')
+                    ? config.columns
+                    : currentData.displayedColumnsIds,
                 viewMode: hasValues(config)
                   ? config.isAdvanced
                     ? advancedViewMode
@@ -288,12 +302,15 @@ export class OneCXSearchConfigComponent
     this.baseUrl.next(config.baseUrl);
   }
 
-  onSearchConfigChange(event: {
-    originalEvent: Event;
-    value: SearchConfigInfo;
-  }) {
+  onSearchConfigChange(
+    event: {
+      originalEvent: Event;
+      value: SearchConfigInfo;
+    },
+    vm: SearchConfigViewModel,
+  ) {
     if (event.value.id === this.addSearchConfigOption.id) {
-      return this.onSearchConfigSave();
+      return this.onSearchConfigSave(vm);
     }
 
     setTimeout(() => {
@@ -301,11 +318,27 @@ export class OneCXSearchConfigComponent
     });
   }
 
-  onSearchConfigSave() {
+  onSearchConfigSave(vm: SearchConfigViewModel) {
     this.portalDialogService
       .openDialog<CreateOrEditSearchDialogContent>(
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_HEADER',
-        CreateOrEditSearchConfigDialogComponent,
+        {
+          type: CreateOrEditSearchConfigDialogComponent,
+          inputs: {
+            searchConfigName: '',
+            saveInputValues: false,
+            saveColumns: false,
+            frozeColumnSaveOption:
+              vm.isColumnGroupComponentActive && vm.layout === 'table'
+                ? false
+                : true,
+            frozeColumnSaveOptionExplanation: vm.isColumnGroupComponentActive
+              ? vm.layout !== 'table'
+                ? 'SEARCH_CONFIG.TABLE_VIEW_INACTIVE'
+                : ''
+              : 'SEARCH_CONFIG.COLUMN_GROUP_COMPONENT_INACTIVE',
+          },
+        },
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CANCEL',
       )
@@ -356,7 +389,7 @@ export class OneCXSearchConfigComponent
     });
   }
 
-  onSearchConfigSaveEdit(event: Event) {
+  onSearchConfigSaveEdit(event: Event, vm: SearchConfigViewModel) {
     event.stopPropagation();
     const searchConfig = this.getSearchConfigControl();
     this.portalDialogService
@@ -368,6 +401,15 @@ export class OneCXSearchConfigComponent
             searchConfigName: searchConfig.name,
             saveInputValues: Object.keys(searchConfig.values ?? {}).length > 0,
             saveColumns: (searchConfig.columns ?? []).length > 0,
+            frozeColumnSaveOption:
+              vm.isColumnGroupComponentActive && vm.layout === 'table'
+                ? false
+                : true,
+            frozeColumnSaveOptionExplanation: vm.isColumnGroupComponentActive
+              ? vm.layout !== 'table'
+                ? 'SEARCH_CONFIG.TABLE_VIEW_INACTIVE'
+                : ''
+              : 'SEARCH_CONFIG.COLUMN_GROUP_COMPONENT_INACTIVE',
           },
         },
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
@@ -392,7 +434,7 @@ export class OneCXSearchConfigComponent
           if (result.button !== 'primary') {
             return of(undefined);
           }
-          return this.editSearchConfig(config, result.result, pageData);
+          return this.editSearchConfig(config, result.result, pageData, vm);
         }),
       )
       .subscribe((response) => {
@@ -517,12 +559,18 @@ export class OneCXSearchConfigComponent
     config: SearchConfig,
     configData: CreateOrEditSearchDialogContent | undefined,
     data: PageData,
+    vm: SearchConfigViewModel,
   ) {
     const request: UpdateSearchConfigRequest = {
       searchConfig: {
         ...config,
         name: configData?.searchConfigName ?? config.name ?? '',
-        columns: configData?.saveColumns ? data.displayedColumnsIds : [],
+        columns:
+          vm.isColumnGroupComponentActive && vm.layout === 'table'
+            ? configData?.saveColumns
+              ? data.displayedColumnsIds
+              : []
+            : config.columns,
         values: configData?.saveInputValues
           ? parseFieldValues(data.fieldValues)
           : {},

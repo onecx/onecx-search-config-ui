@@ -21,6 +21,8 @@
       "CREATE_EDIT_PLACEHOLDER": "Bitte den Namen der Suchkonfiguration eingeben",
       "SAVE_COLUMNS_OPTION": "Möchten Sie die angezeigten Spalten speichern?",
       "SAVE_INPUT_FIELDS_OPTION": "Möchten Sie die Eingabewerte aus den Eingabefeldern speichern?",
+      "COLUMN_GROUP_COMPONENT_INACTIVE": "*Die Komponente Spaltengruppe ist inaktiv. Aktivieren Sie sie, um Suchkonfigurationen mit Spalten zu speichern, zu laden und zu bearbeiten",
+      "TABLE_VIEW_INACTIVE": "*Die Tabellenansicht ist inaktiv. Aktivieren Sie sie, um Suchkonfigurationen mit Spalten zu speichern, zu laden und zu bearbeiten",
       "CREATE_EDIT_DIALOG": {
         "CREATE_HEADER": "Suchkonfiguration erstellen",
         "EDIT_HEADER": "Suchkonfiguration bearbeiten",

@@ -16,7 +16,7 @@
           [pTooltip]="'SEARCH_CONFIG.SAVE_EDIT_TOOLTIP' | translate"
           tooltipPosition="top"
           tooltipEvent="hover"
-          (click)="onSearchConfigSaveEdit($event)"
+          (click)="onSearchConfigSaveEdit($event, vm)"
         ></button>
         <button
           *ngIf="vm.editMode && vm.isInChargeOfEdit"
@@ -41,7 +41,7 @@
             ) | translate: { config: vm.currentConfig?.name }
           "
           [disabled]="vm.editMode"
-          (onChange)="onSearchConfigChange($event)"
+          (onChange)="onSearchConfigChange($event, vm)"
           appendTo="body"
         >
           <ng-template let-config pTemplate="selectedItem">

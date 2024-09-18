@@ -9,15 +9,16 @@ import {
   OnInit,
 } from '@angular/core';
 import {
+  MissingTranslationHandler,
+  MissingTranslationHandlerParams,
   TranslateLoader,
   TranslateModule,
+  TranslateParser,
   TranslateService,
 } from '@ngx-translate/core';
 import {
-  AsyncTranslateLoader,
   CachingTranslateLoader,
   DataTableColumn,
-  TranslateCombinedLoader,
   TranslationCacheService,
   createRemoteComponentTranslateLoader,
 } from '@onecx/angular-accelerator';
@@ -49,6 +50,7 @@ import {
   map,
   mergeMap,
   of,
+  tap,
   withLatestFrom,
 } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -78,34 +80,62 @@ import {
   CreateOrEditSearchConfigDialogComponent,
   CreateOrEditSearchDialogContent,
 } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
-import { advancedViewMode } from 'src/app/shared/constants';
+import {
+  advancedViewMode,
+  columngGroupSelectionStoreName,
+} from 'src/app/shared/constants';
 import { parseFieldValues } from 'src/app/shared/search-config.utils';
 import { TooltipModule } from 'primeng/tooltip';
 
-export function createTranslateLoader(
+class MfeTranslationHandler implements MissingTranslationHandler {
+  mfeTranslations = new BehaviorSubject<any>({});
+  constructor(
+    private httpClient: HttpClient,
+    private userSerivce: UserService,
+    private translationCacheService: TranslationCacheService,
+    private appStateService: AppStateService,
+    private translateParser: TranslateParser,
+  ) {
+    userSerivce.lang$
+      .pipe(
+        withLatestFrom(appStateService.currentMfe$.asObservable()),
+        mergeMap(([lang, mfe]) => {
+          const cachingTranslateLoader = new CachingTranslateLoader(
+            translationCacheService,
+            httpClient,
+            Location.joinWithSlash(mfe.remoteBaseUrl, 'assets/i18n/'),
+            '.json',
+          );
+          return cachingTranslateLoader.getTranslation(lang);
+        }),
+        tap((v) => {
+          console.log(v);
+        }),
+      )
+      .subscribe(this.mfeTranslations);
+  }
+
+  handle(params: MissingTranslationHandlerParams) {
+    return this.translateParser.getValue(
+      this.mfeTranslations.getValue(),
+      params.key,
+    );
+  }
+}
+
+function createMissingTranslationHandler(
   httpClient: HttpClient,
-  baseUrl: ReplaySubject<string>,
+  userSerivce: UserService,
   translationCacheService: TranslationCacheService,
   appStateService: AppStateService,
+  translateParser: TranslateParser,
 ) {
-  return new AsyncTranslateLoader(
-    appStateService.currentMfe$.pipe(
-      map((currentMfe) => {
-        return new TranslateCombinedLoader(
-          createRemoteComponentTranslateLoader(
-            httpClient,
-            baseUrl,
-            translationCacheService,
-          ),
-          new CachingTranslateLoader(
-            translationCacheService,
-            httpClient,
-            Location.joinWithSlash(currentMfe.remoteBaseUrl, 'assets/i18n/'),
-            '.json',
-          ),
-        );
-      }),
-    ),
+  return new MfeTranslationHandler(
+    httpClient,
+    userSerivce,
+    translationCacheService,
+    appStateService,
+    translateParser,
   );
 }
 
@@ -137,14 +167,25 @@ export function createTranslateLoader(
       isolate: true,
       loader: {
         provide: TranslateLoader,
-        useFactory: createTranslateLoader,
-        deps: [HttpClient, BASE_URL, TranslationCacheService, AppStateService],
+        useFactory: createRemoteComponentTranslateLoader,
+        deps: [HttpClient, BASE_URL, TranslationCacheService],
+      },
+      missingTranslationHandler: {
+        provide: MissingTranslationHandler,
+        useFactory: createMissingTranslationHandler,
+        deps: [
+          HttpClient,
+          UserService,
+          TranslationCacheService,
+          AppStateService,
+          TranslateParser,
+        ],
       },
     }),
     providePortalDialogService(),
     {
       provide: SEARCH_CONFIG_STORE_NAME,
-      useValue: 'ocx-column-group-selection-component-store',
+      useValue: columngGroupSelectionStoreName,
     },
     {
       provide: SEARCH_CONFIG_TOPIC,
@@ -156,7 +197,9 @@ export function createTranslateLoader(
 export class OneCXColumnGroupSelectionComponent
   implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit, OnDestroy
 {
-  @Input() set selectedGroupKey(selectedGroupKey: string) {
+  @Input() set selectedGroupKey(selectedGroupKey: string | undefined) {
+    if (selectedGroupKey === undefined) return;
+
     setTimeout(() => {
       this.searchConfigStore.setSelectedGroupKey(selectedGroupKey);
     });
@@ -230,15 +273,8 @@ export class OneCXColumnGroupSelectionComponent
       });
 
     this.searchConfigStore.selectedGroupKey$
-      .pipe(
-        debounceTime(50),
-        withLatestFrom(
-          this.vm$,
-          this.searchConfigStore.currentConfig$,
-          this.searchConfigStore.currentPageData$,
-        ),
-      )
-      .subscribe(([selectedGroupKey, vm, currentConfig, pageData]) => {
+      .pipe(debounceTime(50), withLatestFrom(this.vm$))
+      .subscribe(([selectedGroupKey, vm]) => {
         const configWithColumns = vm.searchConfigsWithColumns.find(
           (c) => c.name === selectedGroupKey,
         );
@@ -288,6 +324,8 @@ export class OneCXColumnGroupSelectionComponent
           this.searchConfigStore.setNonSearchConfigGroupKeys(groupKeys);
         });
       });
+
+    this.groupSelectionChanged.emit(undefined);
   }
 
   @Input() set ocxRemoteComponentConfig(config: RemoteComponentConfig) {

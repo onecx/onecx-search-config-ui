@@ -8,6 +8,8 @@ import {
   advancedViewModeType,
   basicViewMode,
   basicViewModeType,
+  columngGroupSelectionStoreName,
+  searchConfigStoreName,
 } from './constants';
 import {
   areColumnsEqual,
@@ -42,6 +44,7 @@ export type SearchData = {
   fieldValues: FieldValues;
   viewMode: basicViewModeType | advancedViewModeType;
   displayedColumnsIds: Array<string>;
+  layout?: 'table' | 'grid' | 'list';
 };
 
 export type PageData = SearchData & {
@@ -66,6 +69,7 @@ interface SearchConfigComponentState {
   fieldValues: FieldValues;
   displayedColumnsIds: Array<string>;
   viewMode: basicViewModeType | advancedViewModeType;
+  layout: 'table' | 'grid' | 'list' | undefined;
 }
 
 interface ColumnGroupSelectionComponentState {
@@ -84,7 +88,9 @@ interface ColumnGroupSelectionComponentState {
 export interface SearchConfigState
   extends SearchConfigComponentState,
     ColumnGroupSelectionComponentState {
-  effectiveSearchData: SearchData;
+  displayedSearchData: SearchData;
+  searchConfigComponentActive: boolean;
+  columnGroupComponentActive: boolean;
 }
 
 export interface SearchConfigViewModel {
@@ -93,6 +99,8 @@ export interface SearchConfigViewModel {
 
   editMode: boolean;
   isInChargeOfEdit: boolean;
+  isColumnGroupComponentActive: boolean;
+  layout: 'table' | 'grid' | 'list' | undefined;
 }
 
 export interface ColumnSelectionViewModel {
@@ -121,6 +129,7 @@ export const initialState: SearchConfigState = {
   fieldValues: {},
   displayedColumnsIds: [],
   viewMode: basicViewMode,
+  layout: undefined,
 
   searchConfigs: [],
   currentSearchConfig: undefined,
@@ -131,15 +140,21 @@ export const initialState: SearchConfigState = {
   preEditStateSnapshot: undefined,
   dataToRevert: undefined,
 
-  effectiveSearchData: {
+  displayedSearchData: {
     fieldValues: {},
     displayedColumnsIds: [],
     viewMode: basicViewMode,
+    layout: undefined,
   },
+
+  searchConfigComponentActive: false,
+  columnGroupComponentActive: false,
 };
 
 @Injectable()
 export class SearchConfigStore extends ComponentStore<SearchConfigState> {
+  columnGroupComponentReloading: boolean = false;
+
   constructor(
     @Inject(SEARCH_CONFIG_STORE_NAME)
     private storeName: string,
@@ -147,9 +162,32 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     private searchConfigTopic$: SearchConfigTopic,
   ) {
     super(initialState);
+    this.activateStore(storeName);
   }
 
   // *********** Updaters *********** //
+
+  readonly activateStore = this.updater((state, storeName: string) => {
+    let stateToUpdate: Partial<SearchConfigState> = {};
+    if (storeName === searchConfigStoreName) {
+      stateToUpdate = {
+        searchConfigComponentActive: true,
+      };
+    } else if (storeName === columngGroupSelectionStoreName) {
+      stateToUpdate = {
+        columnGroupComponentActive: true,
+      };
+    }
+    this.sendUpdateMessage(stateToUpdate);
+    return { ...state, ...stateToUpdate };
+  });
+
+  readonly deactivateColumnGroupStore = this.updater((state) => {
+    return {
+      ...state,
+      columnGroupComponentActive: false,
+    };
+  });
 
   readonly setPageName = this.updater((state, newPageName: string) => {
     const stateToUpdate: Partial<SearchConfigState> = {
@@ -352,7 +390,9 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       stateToUpdate = {
         dataToRevert: {
           fieldValues: savedConfig.values,
-          displayedColumnsIds: savedConfig.columns,
+          displayedColumnsIds: state.columnGroupComponentActive
+            ? savedConfig.columns
+            : state.preEditStateSnapshot.displayedColumnsIds,
           viewMode: savedConfig.isAdvanced ? advancedViewMode : basicViewMode,
           columnGroupKey: savedConfig.name,
         },
@@ -363,7 +403,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
 
     stateToUpdate = {
       ...stateToUpdate,
-      effectiveSearchData: {
+      displayedSearchData: {
         fieldValues: stateToUpdate.dataToRevert?.fieldValues!,
         displayedColumnsIds: stateToUpdate.dataToRevert?.displayedColumnsIds!,
         viewMode: stateToUpdate.dataToRevert?.viewMode!,
@@ -373,6 +413,20 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     this.sendUpdateMessage(stateToUpdate);
     return { ...state, ...stateToUpdate };
   });
+
+  readonly activateEditedConfig = this.updater(
+    (state, config: SearchConfigInfo) => {
+      const stateToUpdate: Partial<SearchConfigState> = {
+        currentSearchConfig: config,
+        selectedGroupKey: hasColumns(config)
+          ? config.name
+          : state.customGroupKey,
+      };
+
+      this.sendUpdateMessage(stateToUpdate);
+      return { ...state, ...stateToUpdate };
+    },
+  );
 
   readonly updateFieldValues = this.updater(
     (state, values: UnparsedFieldValues) => {
@@ -400,8 +454,8 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           selectedGroupKey: selectedGroupKey,
         }),
         fieldValues: parsedValues,
-        effectiveSearchData: {
-          ...state.effectiveSearchData,
+        displayedSearchData: {
+          ...state.displayedSearchData,
           fieldValues: parsedValues,
         },
       };
@@ -435,8 +489,8 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           selectedGroupKey: selectedGroupKey,
         }),
         displayedColumnsIds: displayedColumnsIds,
-        effectiveSearchData: {
-          ...state.effectiveSearchData,
+        displayedSearchData: {
+          ...state.displayedSearchData,
           displayedColumnsIds: displayedColumnsIds,
         },
       };
@@ -470,8 +524,8 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           selectedGroupKey: selectedGroupKey,
         }),
         viewMode: viewMode,
-        effectiveSearchData: {
-          ...state.effectiveSearchData,
+        displayedSearchData: {
+          ...state.displayedSearchData,
           viewMode: viewMode,
         },
       };
@@ -480,7 +534,33 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     },
   );
 
+  readonly updateLayout = this.updater(
+    (state, layout: 'table' | 'grid' | 'list') => {
+      if (layout === state.layout) {
+        return { ...state };
+      }
+
+      const stateToUpdate: Partial<SearchConfigState> = {
+        layout: layout,
+        displayedSearchData: {
+          ...state.displayedSearchData,
+          layout: layout,
+        },
+      };
+      this.sendUpdateMessage(stateToUpdate);
+      return { ...state, ...stateToUpdate };
+    },
+  );
+
   // *********** Selectors *********** //
+
+  readonly isSearchConfigComponentActive$ = this.select(
+    ({ searchConfigComponentActive }): boolean => searchConfigComponentActive,
+  );
+
+  readonly isColumnGroupComponentActive$ = this.select(
+    ({ columnGroupComponentActive }): boolean => columnGroupComponentActive,
+  );
 
   readonly preEditStateSnapshot$ = this.select(
     ({ preEditStateSnapshot }): SearchConfigState | undefined =>
@@ -513,21 +593,29 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       viewMode: state.viewMode,
       displayedColumnsIds: state.displayedColumnsIds,
       columnGroupKey: state.selectedGroupKey,
+      layout: state.layout,
     }),
   );
 
-  readonly currentEffectiveData$ = this.select(
-    ({ effectiveSearchData }): SearchData => effectiveSearchData,
+  readonly currentDisplayedData$ = this.select(
+    ({ displayedSearchData }): SearchData => displayedSearchData,
   );
 
   readonly searchConfigVm$ = this.select(
     this.state$,
     this.currentConfig$,
-    (state, currentConfig): SearchConfigViewModel => ({
+    this.isColumnGroupComponentActive$,
+    (
+      state,
+      currentConfig,
+      isColumnGroupComponentActive,
+    ): SearchConfigViewModel => ({
       searchConfigs: state.searchConfigs.filter((config) => hasValues(config)),
       editMode: state.editMode,
       isInChargeOfEdit: state.inChargeOfEdit === this.storeName,
       currentConfig: currentConfig,
+      isColumnGroupComponentActive: isColumnGroupComponentActive,
+      layout: state.layout,
     }),
   );
 
@@ -591,12 +679,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       tap(([config, state]) => {
         this.editSearchConfig(config);
         this.cancelEditMode();
-        this.setCurrentConfig(config);
-        if (hasColumns(config)) {
-          this.setSelectedGroupKey(config.name);
-        } else if (hasOnlyValues(config)) {
-          this.setSelectedGroupKey(state.customGroupKey);
-        }
+        this.activateEditedConfig(config);
       }),
     );
   });
@@ -607,6 +690,56 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       filter((msg) => msg.payload.storeName !== this.storeName),
       withLatestFrom(this.state$),
       tap(([msg, state]) => {
+        // ignore state updates from CG when still reloading
+        if (
+          msg.payload.storeName === columngGroupSelectionStoreName &&
+          this.columnGroupComponentReloading &&
+          msg.payload.stateToUpdate.columnGroupComponentActive === undefined
+        ) {
+          return;
+        }
+        // CG announces it has reloaded so start listening to messages again
+        if (
+          msg.payload.storeName === columngGroupSelectionStoreName &&
+          this.columnGroupComponentReloading &&
+          msg.payload.stateToUpdate.columnGroupComponentActive
+        ) {
+          this.columnGroupComponentReloading = false;
+          this.patchState({
+            ...state,
+            columnGroupComponentActive: true,
+          });
+          return;
+        }
+        // SC receives info to reinit CG
+        if (
+          msg.payload.stateToUpdate.columnGroupComponentActive &&
+          state.columnGroupComponentActive &&
+          msg.payload.storeName === columngGroupSelectionStoreName
+        ) {
+          this.deactivateColumnGroupStore();
+          this.columnGroupComponentReloading = true;
+          this.sendUpdateMessage({
+            ...state,
+            columnGroupComponentActive: false,
+          });
+          return;
+        }
+        // CG receives reload trigger
+        if (
+          msg.payload.stateToUpdate.columnGroupComponentActive === false &&
+          msg.payload.storeName === searchConfigStoreName
+        ) {
+          this.patchState({
+            ...msg.payload.stateToUpdate,
+            columnGroupComponentActive: true,
+          });
+          this.sendUpdateMessage({
+            columnGroupComponentActive: true,
+          });
+          return;
+        }
+        // normal state update
         this.patchState({
           ...state,
           ...msg.payload.stateToUpdate,
@@ -614,6 +747,14 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
             (msg.payload.stateToUpdate.selectedGroupKey ?? '') !== ''
               ? msg.payload.stateToUpdate.selectedGroupKey
               : state.selectedGroupKey,
+          columnGroupComponentActive:
+            msg.payload.storeName === columngGroupSelectionStoreName
+              ? true
+              : state.columnGroupComponentActive,
+          searchConfigComponentActive:
+            msg.payload.storeName === searchConfigStoreName
+              ? true
+              : state.searchConfigComponentActive,
         });
       }),
     );
@@ -627,6 +768,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       fieldValues?: FieldValues;
       viewMode?: basicViewModeType | advancedViewModeType;
       displayedColumIds?: Array<string>;
+      layout?: 'table' | 'grid' | 'list';
     },
   ) {
     if (state.editMode) return false;
@@ -639,7 +781,9 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       !areColumnsEqual(
         state.currentSearchConfig.columns,
         change.displayedColumIds,
-      )
+      ) &&
+      // treat values and columns config as solumns only when column group component is not active
+      state.columnGroupComponentActive
     )
       return true;
 
@@ -672,6 +816,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     state: SearchConfigState,
     config: SearchConfigInfo | undefined,
   ) {
+    if (!state.columnGroupComponentActive) return state.selectedGroupKey;
     if (state.editMode) return state.selectedGroupKey;
 
     if (config && config.name === state.selectedGroupKey)
@@ -704,6 +849,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     state: SearchConfigState,
     selectedGroupKey: string,
   ): SearchConfigInfo | undefined {
+    if (!state.searchConfigComponentActive) return state.currentSearchConfig;
     if (state.editMode) return state.currentSearchConfig;
 
     const searchConfigForSelectedKey = state.searchConfigs.find(
@@ -729,7 +875,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     return state.currentSearchConfig;
   }
 
-  private sendUpdateMessage(stateToUpdate: Partial<SearchConfigState>) {
+  sendUpdateMessage(stateToUpdate: Partial<SearchConfigState>) {
     this.searchConfigTopic$.publish({
       payload: {
         storeName: this.storeName,

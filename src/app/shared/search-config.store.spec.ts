@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { take } from 'rxjs';
+import { debounceTime, take } from 'rxjs';
 import { FakeTopic } from '@onecx/angular-integration-interface/mocks';
 
 import {
@@ -9,7 +9,12 @@ import {
   initialState,
 } from './search-config.store';
 import { SearchConfigInfo } from './generated';
-import { advancedViewMode, basicViewMode } from './constants';
+import {
+  advancedViewMode,
+  basicViewMode,
+  columngGroupSelectionStoreName,
+  searchConfigStoreName,
+} from './constants';
 
 describe('SearchConfigStore', () => {
   let store: SearchConfigStore;
@@ -77,6 +82,89 @@ describe('SearchConfigStore', () => {
     );
   });
 
+  describe('activate store', () => {
+    it('should update isSearchConfigComponentActive$ selector on change for search config store', (done) => {
+      store.patchState({});
+
+      store.activateStore(searchConfigStoreName);
+
+      store.isSearchConfigComponentActive$
+        .pipe(take(1))
+        .subscribe((isActive) => {
+          expect(isActive).toBeTruthy();
+          done();
+        });
+    });
+
+    it('should update isColumnGroupComponentActive$ selector on change for column group store', (done) => {
+      store.patchState({});
+
+      store.activateStore(columngGroupSelectionStoreName);
+
+      store.isColumnGroupComponentActive$
+        .pipe(take(1))
+        .subscribe((isActive) => {
+          expect(isActive).toBeTruthy();
+          done();
+        });
+    });
+
+    it('should send update message for search config store activation', (done) => {
+      store.patchState({});
+
+      store.activateStore(searchConfigStoreName);
+
+      mockSearchConfigStoreTopic.subscribe((msg) => {
+        expect(msg.payload.storeName).toBe('store-1');
+        expect(msg.payload.stateToUpdate).toStrictEqual({
+          searchConfigComponentActive: true,
+        });
+        done();
+      });
+    });
+
+    it('should send update message for column group store activation', (done) => {
+      store.patchState({});
+
+      store.activateStore(columngGroupSelectionStoreName);
+
+      mockSearchConfigStoreTopic.subscribe((msg) => {
+        expect(msg.payload.storeName).toBe('store-1');
+        expect(msg.payload.stateToUpdate).toStrictEqual({
+          columnGroupComponentActive: true,
+        });
+        done();
+      });
+    });
+  });
+
+  describe('deactivate column group store', () => {
+    it('should update isColumnGroupComponentActive$ selector', (done) => {
+      store.patchState({
+        columnGroupComponentActive: true,
+      });
+
+      store.deactivateColumnGroupStore();
+
+      store.isColumnGroupComponentActive$
+        .pipe(take(1))
+        .subscribe((isActive) => {
+          expect(isActive).toBeFalsy();
+          done();
+        });
+    });
+
+    it('should not send update message', () => {
+      store.patchState({});
+
+      store.deactivateColumnGroupStore();
+
+      mockSearchConfigStoreTopic.subscribe((msg) => {
+        throw new Error();
+      });
+    });
+  });
+
   describe('set page name', () => {
     it('should update pageName$ selector on change', (done) => {
       store.patchState({});
@@ -97,7 +185,7 @@ describe('SearchConfigStore', () => {
       store.setPageName('my-page');
 
       store.pageName$.pipe(take(1)).subscribe(() => {
-        fail();
+        throw new Error();
       });
     });
 
@@ -136,7 +224,7 @@ describe('SearchConfigStore', () => {
       store.setCustomGroupKey('custom-key');
 
       store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-        fail();
+        throw new Error();
       });
     });
 
@@ -175,7 +263,7 @@ describe('SearchConfigStore', () => {
       store.setSearchConfigs([testConfigOnlyValues]);
 
       store.searchConfigVm$.pipe(take(1)).subscribe(() => {
-        fail();
+        throw new Error();
       });
     });
 
@@ -213,7 +301,7 @@ describe('SearchConfigStore', () => {
       ]);
 
       store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-        fail();
+        throw new Error();
       });
     });
 
@@ -253,7 +341,7 @@ describe('SearchConfigStore', () => {
       store.setNonSearchConfigGroupKeys(['1']);
 
       store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-        fail();
+        throw new Error();
       });
     });
 
@@ -291,7 +379,7 @@ describe('SearchConfigStore', () => {
         store.addSearchConfig(testConfigOnlyValues);
 
         store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -331,7 +419,7 @@ describe('SearchConfigStore', () => {
         store.addSearchConfig(testConfigOnlyColumns);
 
         store.searchConfigVm$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -399,7 +487,7 @@ describe('SearchConfigStore', () => {
         store.deleteSearchConfig(testConfigOnlyValues);
 
         store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -459,7 +547,7 @@ describe('SearchConfigStore', () => {
         store.deleteSearchConfig(testConfigOnlyColumns);
 
         store.searchConfigVm$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -515,6 +603,7 @@ describe('SearchConfigStore', () => {
         ],
         selectedGroupKey: testConfigOnlyColumns.name,
         customGroupKey: 'custom-key',
+        columnGroupComponentActive: true,
       });
 
       store.deleteSearchConfig(testConfigOnlyColumns);
@@ -554,7 +643,7 @@ describe('SearchConfigStore', () => {
         store.deleteSearchConfig(testConfigBase);
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
       it('should not update if current key is same as current config and other is deleted', () => {
@@ -566,7 +655,7 @@ describe('SearchConfigStore', () => {
         store.deleteSearchConfig(testConfigOnlyColumns);
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -576,6 +665,7 @@ describe('SearchConfigStore', () => {
           currentSearchConfig: testConfigBase,
           selectedGroupKey: testConfigBase.name,
           customGroupKey: 'custom-key',
+          columnGroupComponentActive: true,
         });
 
         store.deleteSearchConfig(testConfigBase);
@@ -611,7 +701,7 @@ describe('SearchConfigStore', () => {
       store.setCurrentConfig(testConfigOnlyColumns);
 
       store.currentConfig$.pipe(take(1)).subscribe(() => {
-        fail();
+        throw new Error();
       });
     });
 
@@ -623,7 +713,7 @@ describe('SearchConfigStore', () => {
       store.setCurrentConfig(testConfigBase);
 
       store.currentConfig$.pipe(take(1)).subscribe(() => {
-        fail();
+        throw new Error();
       });
     });
 
@@ -638,7 +728,7 @@ describe('SearchConfigStore', () => {
         store.setCurrentConfig(testConfigValuesAndColumns);
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -651,7 +741,7 @@ describe('SearchConfigStore', () => {
         store.setCurrentConfig(testConfigBase);
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -660,6 +750,7 @@ describe('SearchConfigStore', () => {
           searchConfigs: [testConfigValuesAndColumns],
           currentSearchConfig: undefined,
           selectedGroupKey: '',
+          columnGroupComponentActive: true,
         });
 
         store.setCurrentConfig(testConfigValuesAndColumns);
@@ -675,6 +766,7 @@ describe('SearchConfigStore', () => {
           searchConfigs: [testConfigOnlyColumns],
           currentSearchConfig: undefined,
           selectedGroupKey: '',
+          columnGroupComponentActive: true,
         });
 
         store.setCurrentConfig(testConfigOnlyColumns);
@@ -695,7 +787,7 @@ describe('SearchConfigStore', () => {
         store.setCurrentConfig(testConfigOnlyValues);
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -705,6 +797,7 @@ describe('SearchConfigStore', () => {
           currentSearchConfig: testConfigOnlyColumns,
           selectedGroupKey: testConfigOnlyColumns.name,
           customGroupKey: 'custom-key',
+          columnGroupComponentActive: true,
         });
 
         store.setCurrentConfig(testConfigOnlyValues);
@@ -725,7 +818,7 @@ describe('SearchConfigStore', () => {
         store.setCurrentConfig(undefined);
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -735,6 +828,7 @@ describe('SearchConfigStore', () => {
           currentSearchConfig: testConfigOnlyColumns,
           selectedGroupKey: testConfigOnlyColumns.name,
           customGroupKey: 'custom-key',
+          columnGroupComponentActive: true,
         });
 
         store.setCurrentConfig(undefined);
@@ -766,6 +860,7 @@ describe('SearchConfigStore', () => {
     it('should send update message with all changes', (done) => {
       store.patchState({
         currentSearchConfig: testConfigBase,
+        columnGroupComponentActive: true,
       });
 
       store.setCurrentConfig(testConfigOnlyColumns);
@@ -811,7 +906,7 @@ describe('SearchConfigStore', () => {
       store.editSearchConfig(testConfigBase);
 
       store.searchConfigVm$.pipe(take(1)).subscribe(() => {
-        fail();
+        throw new Error();
       });
     });
 
@@ -851,7 +946,7 @@ describe('SearchConfigStore', () => {
       store.editSearchConfig(testConfigOnlyColumns);
 
       store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-        fail();
+        throw new Error();
       });
     });
 
@@ -890,7 +985,7 @@ describe('SearchConfigStore', () => {
         store.setSelectedGroupKey('1');
 
         store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -916,6 +1011,7 @@ describe('SearchConfigStore', () => {
           currentSearchConfig: testConfigValuesAndColumns,
           nonSearchConfigGroupKeys: ['default'],
           searchConfigs: [testConfigValuesAndColumns],
+          searchConfigComponentActive: true,
         });
 
         store.setSelectedGroupKey('default');
@@ -933,6 +1029,7 @@ describe('SearchConfigStore', () => {
           nonSearchConfigGroupKeys: ['default'],
           searchConfigs: [testConfigValuesAndColumns],
           customGroupKey: 'custom-key',
+          searchConfigComponentActive: true,
         });
 
         store.setSelectedGroupKey('custom-key');
@@ -949,6 +1046,7 @@ describe('SearchConfigStore', () => {
           currentSearchConfig: testConfigOnlyValues,
           nonSearchConfigGroupKeys: ['default'],
           searchConfigs: [testConfigOnlyValues, testConfigOnlyColumns],
+          searchConfigComponentActive: true,
         });
 
         store.setSelectedGroupKey(testConfigOnlyColumns.name);
@@ -970,7 +1068,7 @@ describe('SearchConfigStore', () => {
         store.setSelectedGroupKey('extended');
 
         store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -986,7 +1084,7 @@ describe('SearchConfigStore', () => {
         store.setSelectedGroupKey('custom-key');
 
         store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -1000,7 +1098,7 @@ describe('SearchConfigStore', () => {
         store.setSelectedGroupKey('any');
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -1010,6 +1108,7 @@ describe('SearchConfigStore', () => {
           currentSearchConfig: testConfigValuesAndColumns,
           nonSearchConfigGroupKeys: ['default'],
           searchConfigs: [testConfigValuesAndColumns],
+          searchConfigComponentActive: true,
         });
 
         store.setSelectedGroupKey('default');
@@ -1027,6 +1126,7 @@ describe('SearchConfigStore', () => {
           nonSearchConfigGroupKeys: ['default'],
           searchConfigs: [testConfigValuesAndColumns],
           customGroupKey: 'custom-key',
+          searchConfigComponentActive: true,
         });
 
         store.setSelectedGroupKey('custom-key');
@@ -1043,6 +1143,7 @@ describe('SearchConfigStore', () => {
           currentSearchConfig: testConfigOnlyValues,
           nonSearchConfigGroupKeys: ['default'],
           searchConfigs: [testConfigOnlyValues, testConfigOnlyColumns],
+          searchConfigComponentActive: true,
         });
 
         store.setSelectedGroupKey(testConfigOnlyColumns.name);
@@ -1064,7 +1165,7 @@ describe('SearchConfigStore', () => {
         store.setSelectedGroupKey('extended');
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -1080,7 +1181,7 @@ describe('SearchConfigStore', () => {
         store.setSelectedGroupKey('custom-key');
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -1094,7 +1195,7 @@ describe('SearchConfigStore', () => {
         store.setSelectedGroupKey('1');
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -1130,6 +1231,7 @@ describe('SearchConfigStore', () => {
       store.patchState({
         selectedGroupKey: testConfigBase.name,
         currentSearchConfig: testConfigBase,
+        searchConfigComponentActive: true,
       });
 
       store.setSelectedGroupKey('2');
@@ -1330,7 +1432,7 @@ describe('SearchConfigStore', () => {
       store.revertData();
 
       store.dataToRevert$.pipe(take(1)).subscribe(() => {
-        fail();
+        throw new Error();
       });
     });
 
@@ -1436,7 +1538,7 @@ describe('SearchConfigStore', () => {
       store.revertData();
 
       store.currentConfig$.pipe(take(1)).subscribe(() => {
-        fail();
+        throw new Error();
       });
     });
 
@@ -1478,7 +1580,7 @@ describe('SearchConfigStore', () => {
         store.revertData();
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -1542,7 +1644,7 @@ describe('SearchConfigStore', () => {
         store.revertData();
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -1564,7 +1666,7 @@ describe('SearchConfigStore', () => {
         store.revertData();
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -1649,7 +1751,7 @@ describe('SearchConfigStore', () => {
         store.revertData();
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -1667,7 +1769,7 @@ describe('SearchConfigStore', () => {
       store.revertData();
 
       store.currentConfig$.pipe(take(1)).subscribe(() => {
-        fail();
+        throw new Error();
       });
     });
 
@@ -1681,8 +1783,9 @@ describe('SearchConfigStore', () => {
           displayedColumnsIds: ['c'],
           viewMode: basicViewMode,
           selectedGroupKey: 'default',
+          columnGroupComponentActive: true,
         },
-        effectiveSearchData: {},
+        displayedSearchData: {},
       } as any);
 
       store.revertData();
@@ -1700,7 +1803,7 @@ describe('SearchConfigStore', () => {
           },
           currentSearchConfig: undefined,
           selectedGroupKey: 'default',
-          effectiveSearchData: {
+          displayedSearchData: {
             fieldValues: {
               k: 'v',
             },
@@ -1748,7 +1851,7 @@ describe('SearchConfigStore', () => {
         });
 
         store.currentPageData$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -1768,7 +1871,7 @@ describe('SearchConfigStore', () => {
         });
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -1787,7 +1890,7 @@ describe('SearchConfigStore', () => {
         });
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -1823,7 +1926,7 @@ describe('SearchConfigStore', () => {
         });
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -1847,7 +1950,7 @@ describe('SearchConfigStore', () => {
         });
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -1867,7 +1970,7 @@ describe('SearchConfigStore', () => {
         });
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -1888,7 +1991,7 @@ describe('SearchConfigStore', () => {
         });
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -1901,6 +2004,7 @@ describe('SearchConfigStore', () => {
           currentSearchConfig: testConfigValuesAndColumns,
           selectedGroupKey: testConfigValuesAndColumns.name,
           customGroupKey: 'custom-key',
+          columnGroupComponentActive: true,
         });
 
         store.updateFieldValues({
@@ -1932,7 +2036,7 @@ describe('SearchConfigStore', () => {
         });
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -1955,8 +2059,8 @@ describe('SearchConfigStore', () => {
           fieldValues: {
             key: 'v2',
           },
-          effectiveSearchData: {
-            ...initialState.effectiveSearchData,
+          displayedSearchData: {
+            ...initialState.displayedSearchData,
             fieldValues: {
               key: 'v2',
             },
@@ -1976,6 +2080,7 @@ describe('SearchConfigStore', () => {
           ...testConfigBase.values,
         },
         customGroupKey: 'custom-key',
+        columnGroupComponentActive: true,
       });
 
       store.updateFieldValues({
@@ -1992,8 +2097,8 @@ describe('SearchConfigStore', () => {
           },
           currentSearchConfig: undefined,
           selectedGroupKey: 'custom-key',
-          effectiveSearchData: {
-            ...initialState.effectiveSearchData,
+          displayedSearchData: {
+            ...initialState.displayedSearchData,
             fieldValues: {
               ...testConfigBase.values,
               notInConfig: 'v2',
@@ -2028,7 +2133,7 @@ describe('SearchConfigStore', () => {
         store.updateDisplayedColumnsIds(['col_1']);
 
         store.currentPageData$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -2044,7 +2149,7 @@ describe('SearchConfigStore', () => {
         store.updateDisplayedColumnsIds(['col_2']);
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -2057,7 +2162,7 @@ describe('SearchConfigStore', () => {
         store.updateDisplayedColumnsIds(['col_2']);
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -2065,6 +2170,7 @@ describe('SearchConfigStore', () => {
         store.patchState({
           displayedColumnsIds: testConfigValuesAndColumns.columns,
           currentSearchConfig: testConfigValuesAndColumns,
+          columnGroupComponentActive: true,
         });
 
         store.updateDisplayedColumnsIds(['col_2']);
@@ -2084,7 +2190,7 @@ describe('SearchConfigStore', () => {
         store.updateDisplayedColumnsIds(testConfigValuesAndColumns.columns);
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -2101,7 +2207,7 @@ describe('SearchConfigStore', () => {
         store.updateDisplayedColumnsIds([...testConfigBase.columns, 'newCol']);
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -2115,7 +2221,7 @@ describe('SearchConfigStore', () => {
         store.updateDisplayedColumnsIds(['col_2']);
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -2129,7 +2235,7 @@ describe('SearchConfigStore', () => {
         store.updateDisplayedColumnsIds([...testConfigBase.columns, 'newCol']);
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -2140,6 +2246,7 @@ describe('SearchConfigStore', () => {
           currentSearchConfig: testConfigValuesAndColumns,
           selectedGroupKey: testConfigValuesAndColumns.name,
           customGroupKey: 'custom-key',
+          columnGroupComponentActive: true,
         });
 
         store.updateDisplayedColumnsIds([
@@ -2163,7 +2270,7 @@ describe('SearchConfigStore', () => {
         store.updateDisplayedColumnsIds(testConfigValuesAndColumns.columns);
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -2180,8 +2287,8 @@ describe('SearchConfigStore', () => {
         expect(msg.payload.storeName).toBe('store-1');
         expect(msg.payload.stateToUpdate).toStrictEqual({
           displayedColumnsIds: ['col_2'],
-          effectiveSearchData: {
-            ...initialState.effectiveSearchData,
+          displayedSearchData: {
+            ...initialState.displayedSearchData,
             displayedColumnsIds: ['col_2'],
           },
         });
@@ -2197,6 +2304,7 @@ describe('SearchConfigStore', () => {
         searchConfigs: [testConfigBase],
         displayedColumnsIds: testConfigBase.columns,
         customGroupKey: 'custom-key',
+        columnGroupComponentActive: true,
       });
 
       store.updateDisplayedColumnsIds([
@@ -2213,8 +2321,8 @@ describe('SearchConfigStore', () => {
           ],
           currentSearchConfig: undefined,
           selectedGroupKey: 'custom-key',
-          effectiveSearchData: {
-            ...initialState.effectiveSearchData,
+          displayedSearchData: {
+            ...initialState.displayedSearchData,
             displayedColumnsIds: [
               ...testConfigBase.columns,
               'new-col-not-in-config',
@@ -2249,7 +2357,7 @@ describe('SearchConfigStore', () => {
         store.updateViewMode(advancedViewMode);
 
         store.currentPageData$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -2267,7 +2375,7 @@ describe('SearchConfigStore', () => {
         store.updateViewMode(advancedViewMode);
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -2280,7 +2388,7 @@ describe('SearchConfigStore', () => {
         store.updateViewMode(advancedViewMode);
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -2319,7 +2427,7 @@ describe('SearchConfigStore', () => {
         );
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -2340,7 +2448,7 @@ describe('SearchConfigStore', () => {
         );
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -2354,7 +2462,7 @@ describe('SearchConfigStore', () => {
         store.updateViewMode(advancedViewMode);
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -2372,7 +2480,7 @@ describe('SearchConfigStore', () => {
         );
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -2385,6 +2493,7 @@ describe('SearchConfigStore', () => {
           currentSearchConfig: testConfigValuesAndColumns,
           selectedGroupKey: testConfigValuesAndColumns.name,
           customGroupKey: 'custom-key',
+          columnGroupComponentActive: true,
         });
 
         store.updateViewMode(
@@ -2413,7 +2522,7 @@ describe('SearchConfigStore', () => {
         );
 
         store.currentConfig$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
     });
@@ -2426,6 +2535,7 @@ describe('SearchConfigStore', () => {
         searchConfigs: [testConfigBase],
         viewMode: testConfigBase.isAdvanced ? advancedViewMode : basicViewMode,
         customGroupKey: 'custom-key',
+        columnGroupComponentActive: true,
       });
 
       store.updateViewMode(
@@ -2440,8 +2550,8 @@ describe('SearchConfigStore', () => {
           viewMode: testConfigBase.isAdvanced
             ? basicViewMode
             : advancedViewMode,
-          effectiveSearchData: {
-            ...initialState.effectiveSearchData,
+          displayedSearchData: {
+            ...initialState.displayedSearchData,
             viewMode: testConfigBase.isAdvanced
               ? basicViewMode
               : advancedViewMode,
@@ -2463,8 +2573,79 @@ describe('SearchConfigStore', () => {
         expect(msg.payload.storeName).toBe('store-1');
         expect(msg.payload.stateToUpdate).toStrictEqual({
           viewMode: basicViewMode,
-          effectiveSearchData: {
-            ...initialState.effectiveSearchData,
+          displayedSearchData: {
+            ...initialState.displayedSearchData,
+            viewMode: basicViewMode,
+          },
+        });
+        done();
+      });
+    });
+  });
+
+  describe('update layout', () => {
+    it('should not update if layout did not change', () => {
+      store.patchState({
+        ...initialState,
+        layout: 'table',
+      });
+
+      store.updateLayout('table');
+
+      store.searchConfigVm$.pipe(take(1)).subscribe(() => {
+        throw new Error();
+      });
+    });
+
+    it('should update if layout changed', (done) => {
+      store.patchState({
+        ...initialState,
+        layout: 'table',
+      });
+
+      store.updateLayout('grid');
+
+      store.searchConfigVm$.pipe(take(1)).subscribe((vm) => {
+        expect(vm.layout).toBe('grid');
+        done();
+      });
+    });
+
+    it('should send update message with all changes', (done) => {
+      store.patchState({
+        ...initialState,
+        layout: 'table',
+      });
+
+      store.updateLayout('grid');
+
+      mockSearchConfigStoreTopic.subscribe((msg) => {
+        expect(msg.payload.storeName).toBe('store-1');
+        expect(msg.payload.stateToUpdate).toStrictEqual({
+          layout: 'grid',
+          displayedSearchData: {
+            ...initialState.displayedSearchData,
+            layout: 'grid',
+          },
+        });
+        done();
+      });
+    });
+
+    it('should send update message with minimal changes', (done) => {
+      store.patchState({
+        ...initialState,
+        viewMode: advancedViewMode,
+      });
+
+      store.updateViewMode(basicViewMode);
+
+      mockSearchConfigStoreTopic.subscribe((msg) => {
+        expect(msg.payload.storeName).toBe('store-1');
+        expect(msg.payload.stateToUpdate).toStrictEqual({
+          viewMode: basicViewMode,
+          displayedSearchData: {
+            ...initialState.displayedSearchData,
             viewMode: basicViewMode,
           },
         });
@@ -2538,6 +2719,7 @@ describe('SearchConfigStore', () => {
         selectedGroupKey: 'default',
         nonSearchConfigGroupKeys: ['default'],
         editMode: false,
+        columnGroupComponentActive: true,
       });
 
       store.enterEditMode(testConfigValuesAndColumns);
@@ -2647,7 +2829,7 @@ describe('SearchConfigStore', () => {
         });
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -2697,7 +2879,7 @@ describe('SearchConfigStore', () => {
         });
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -2749,7 +2931,7 @@ describe('SearchConfigStore', () => {
         });
 
         store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          fail();
+          throw new Error();
         });
       });
 
@@ -2811,6 +2993,142 @@ describe('SearchConfigStore', () => {
           selectedGroupKey: 'my-key',
         });
         done();
+      });
+    });
+
+    fdescribe('column group selection store reconstruction', () => {
+      beforeEach(() => {
+        store.ngOnDestroy();
+        secondStore.ngOnDestroy();
+
+        store = new SearchConfigStore(
+          searchConfigStoreName,
+          mockSearchConfigStoreTopic as any as SearchConfigTopic,
+        );
+
+        secondStore = new SearchConfigStore(
+          columngGroupSelectionStoreName,
+          mockSearchConfigStoreTopic as any as SearchConfigTopic,
+        );
+      });
+
+      it('should initialize reload in search config store', (done) => {
+        store.setState({
+          ...initialState,
+          columnGroupComponentActive: true,
+        });
+
+        const spy = jest.spyOn(store, 'deactivateColumnGroupStore');
+
+        secondStore.activateStore(columngGroupSelectionStoreName);
+
+        store.state$.pipe(take(1)).subscribe(() => {
+          expect(spy).toHaveBeenCalledTimes(1);
+          done();
+        });
+      });
+
+      it('should trigger reload in column group store', (done) => {
+        const searchConfigStoreState = {
+          ...initialState,
+          fieldValues: {
+            asdKey: 'asd',
+          },
+          displayedColumnsIds: ['col-1', 'col-2'],
+          columnGroupComponentActive: true,
+        };
+
+        store.patchState(searchConfigStoreState);
+
+        const spy = jest.spyOn(secondStore, 'patchState');
+
+        secondStore.activateStore(columngGroupSelectionStoreName);
+
+        secondStore.state$.pipe(take(1)).subscribe(() => {
+          expect(spy).toHaveBeenCalledWith({
+            ...searchConfigStoreState,
+            columnGroupComponentActive: true,
+          });
+          done();
+        });
+      });
+
+      it('should not update in search config store when column group is reloading', (done) => {
+        const searchConfigStoreState = {
+          ...initialState,
+          fieldValues: {
+            asdKey: 'asd',
+          },
+          displayedColumnsIds: ['col-1', 'col-2'],
+          columnGroupComponentActive: true,
+        };
+
+        store.patchState(searchConfigStoreState);
+
+        // make sure that CG never sends message informing about reinit finish
+        let isSecondStoreActive = false;
+        jest
+          .spyOn(secondStore, 'sendUpdateMessage')
+          .mockImplementation((stateToUpdate) => {
+            if (stateToUpdate.columnGroupComponentActive && isSecondStoreActive)
+              return;
+            isSecondStoreActive = true;
+            mockSearchConfigStoreTopic.publish({
+              payload: {
+                storeName: columngGroupSelectionStoreName,
+                stateToUpdate: stateToUpdate,
+              },
+            });
+          });
+
+        const spy = jest.spyOn(store, 'patchState');
+
+        secondStore.activateStore(columngGroupSelectionStoreName);
+
+        // updating custom group key when reload is ongoing
+        secondStore.setCustomGroupKey('test-custom-key');
+
+        setTimeout(() => {
+          store.setPageName('wait for this');
+        });
+
+        mockSearchConfigStoreTopic.subscribe((msg) => {
+          if (msg.payload.stateToUpdate.pageName === 'wait for this') {
+            expect(spy).toHaveBeenCalledTimes(0);
+            done();
+          }
+        });
+      });
+
+      it('should start updating in search config store when column group finishes reload', (done) => {
+        const searchConfigStoreState = {
+          ...initialState,
+          fieldValues: {
+            asdKey: 'asd',
+          },
+          displayedColumnsIds: ['col-1', 'col-2'],
+          columnGroupComponentActive: true,
+        };
+
+        store.patchState(searchConfigStoreState);
+
+        const spy = jest.spyOn(store, 'patchState');
+
+        secondStore.activateStore(columngGroupSelectionStoreName);
+
+        // updateing custom group key after reload completed
+        secondStore.setCustomGroupKey('my-custom-key');
+
+        setTimeout(() => {
+          store.setPageName('wait for this');
+        });
+
+        mockSearchConfigStoreTopic.subscribe((msg) => {
+          if (msg.payload.stateToUpdate.pageName === 'wait for this') {
+            expect(spy).toHaveBeenCalledTimes(2); // activation of column group and custom key patches
+            done();
+          }
+        });
       });
     });
   });

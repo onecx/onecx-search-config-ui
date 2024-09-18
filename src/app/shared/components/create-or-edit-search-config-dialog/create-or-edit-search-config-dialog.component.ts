@@ -67,6 +67,29 @@ export class CreateOrEditSearchConfigDialogComponent
     return this.searchConfigFormGroup.controls['saveColumns'].value;
   }
 
+  _frozeColumnSaveOption: boolean = false;
+  @Input()
+  set frozeColumnSaveOption(value: boolean | undefined) {
+    this._frozeColumnSaveOption = value !== undefined ? value : false;
+    if (value) {
+      this.searchConfigFormGroup.controls['saveColumns'].disable();
+    } else {
+      this.searchConfigFormGroup.controls['saveColumns'].enable();
+    }
+  }
+  get frozeColumnSaveOption(): boolean {
+    return this._frozeColumnSaveOption;
+  }
+
+  _frozeColumnSaveOptionExplanation: string = '';
+  @Input()
+  set frozeColumnSaveOptionExplanation(value: string | undefined) {
+    this._frozeColumnSaveOptionExplanation = value !== undefined ? value : '';
+  }
+  get frozeColumnSaveOptionExplanation(): string {
+    return this._frozeColumnSaveOptionExplanation;
+  }
+
   @Output() primaryButtonEnabled: EventEmitter<boolean> = new EventEmitter();
 
   searchConfigFormGroup: FormGroup = new FormGroup({

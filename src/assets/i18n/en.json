@@ -21,6 +21,8 @@
       "CREATE_EDIT_PLACEHOLDER": "Please enter the name of the search configuration",
       "SAVE_COLUMNS_OPTION": "Do you want to save the shown columns?",
       "SAVE_INPUT_FIELDS_OPTION": "Do you want to save the input values from the input fields?",
+      "COLUMN_GROUP_COMPONENT_INACTIVE": "*Column group component is inactive. Enable it to save, load and edit search configs with columns",
+      "TABLE_VIEW_INACTIVE": "*Table view is inactive. Enable it to save, load and edit search configs with columns",
       "CREATE_EDIT_DIALOG": {
         "CREATE_HEADER": "Create search config",
         "EDIT_HEADER": "Edit search config",
