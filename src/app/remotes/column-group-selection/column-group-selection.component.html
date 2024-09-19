@@ -1,5 +1,6 @@
 <div
   class="flex gap-2 justify-content-end align-content-center align-items-center"
+  *ocxIfPermission="'SEARCHCONFIG#VIEW'; permissions: permissions"
 >
   <div
     class="flex gap-2 align-content-center align-items-center"
@@ -70,6 +71,10 @@
                 "
               >
                 <button
+                  *ocxIfPermission="
+                    'SEARCHCONFIG#EDIT';
+                    permissions: permissions
+                  "
                   pButton
                   type="button"
                   class="p-button-rounded font-medium p-button-text p-button-icon-only"
@@ -91,6 +96,10 @@
                   <span class="{{ editIcon }}"></span>
                 </button>
                 <button
+                  *ocxIfPermission="
+                    'SEARCHCONFIG#DELETE';
+                    permissions: permissions
+                  "
                   pButton
                   type="button"
                   class="p-button-rounded font-medium p-button-text p-button-icon-only"

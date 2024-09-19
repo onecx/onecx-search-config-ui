@@ -239,6 +239,8 @@ export class OneCXColumnGroupSelectionComponent
   stopIcon = PrimeIcons.TIMES;
   saveIcon = PrimeIcons.CHECK;
 
+  permissions: string[] = [];
+
   constructor(
     @Inject(BASE_URL) private baseUrl: ReplaySubject<string>,
     private userService: UserService,
@@ -337,6 +339,7 @@ export class OneCXColumnGroupSelectionComponent
       basePath: Location.joinWithSlash(config.baseUrl, environment.apiPrefix),
     });
     this.baseUrl.next(config.baseUrl);
+    this.permissions = config.permissions;
   }
 
   onSearchConfigEdit(event: Event, searchConfig: SearchConfigInfo | undefined) {

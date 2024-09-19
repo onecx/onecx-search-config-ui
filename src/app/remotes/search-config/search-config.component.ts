@@ -185,6 +185,7 @@ export class OneCXSearchConfigComponent
   dataRevertSub: Subscription | undefined;
   currentConfigSub: Subscription | undefined;
 
+  baseOptions: any[] = [];
   addSearchConfigOption: any = {
     id: 'ocx-add-search-config-option',
   };
@@ -193,6 +194,8 @@ export class OneCXSearchConfigComponent
   deleteIcon = PrimeIcons.TRASH;
   stopIcon = PrimeIcons.TIMES;
   saveIcon = PrimeIcons.CHECK;
+
+  permissions: string[] = [];
 
   constructor(
     @Inject(BASE_URL) private baseUrl: ReplaySubject<string>,
@@ -300,6 +303,14 @@ export class OneCXSearchConfigComponent
       basePath: Location.joinWithSlash(config.baseUrl, environment.apiPrefix),
     });
     this.baseUrl.next(config.baseUrl);
+    this.permissions = config.permissions;
+    if (config.permissions.includes('SEARCHCONFIG#CREATE')) {
+      this.baseOptions = [
+        {
+          id: 'ocx-add-search-config-option',
+        },
+      ];
+    }
   }
 
   onSearchConfigChange(

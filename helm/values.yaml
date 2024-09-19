@@ -30,6 +30,11 @@ app:
       enabled: true
       spec:
         permissions:
+          SEARCHCONFIG:
+            CREATE: Create search config
+            DELETE: Delete search config
+            EDIT: Edit search config
+            VIEW: View search configs
     # Keycloak
     keycloak:
       client:
