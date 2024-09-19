@@ -151,21 +151,10 @@ export class OneCXSearchConfigComponent
       this.searchConfigStore.updateFieldValues(values);
     });
   }
-  @Input() set displayedColumnsIds(columns: string[]) {
-    setTimeout(() => {
-      this.searchConfigStore.updateDisplayedColumnsIds(columns);
-    });
-  }
+
   @Input() set viewMode(viewMode: basicViewModeType | advancedViewModeType) {
     setTimeout(() => {
       this.searchConfigStore.updateViewMode(viewMode);
-    });
-  }
-
-  @Input()
-  set layout(layout: 'table' | 'grid' | 'list') {
-    setTimeout(() => {
-      this.searchConfigStore.updateLayout(layout);
     });
   }
 
@@ -217,7 +206,6 @@ export class OneCXSearchConfigComponent
       this.appStateService.currentMfe$.asObservable(),
     ])
       .pipe(
-        filter(([_, pageName, currentMfe]) => pageName.length > 0),
         mergeMap(([_, pageName, currentMfe]) => {
           return this.searchConfigService
             .getSearchConfigInfos({
@@ -243,6 +231,7 @@ export class OneCXSearchConfigComponent
         >,
       )
       .subscribe((dataToRevert) => {
+        if (!(dataToRevert.fieldValues && dataToRevert.viewMode)) return;
         this.searchConfigSelected.emit({
           fieldValues: dataToRevert.fieldValues,
           displayedColumnsIds: dataToRevert.displayedColumnsIds,
@@ -264,17 +253,16 @@ export class OneCXSearchConfigComponent
             ? {
                 fieldValues: hasValues(config)
                   ? config.values
-                  : currentData.fieldValues,
+                  : (currentData.fieldValues ?? {}),
                 displayedColumnsIds:
-                  hasColumns(config) &&
-                  (isColumnGroupActive || currentData.layout !== 'table')
+                  hasColumns(config) && isColumnGroupActive
                     ? config.columns
                     : currentData.displayedColumnsIds,
                 viewMode: hasValues(config)
                   ? config.isAdvanced
                     ? advancedViewMode
                     : basicViewMode
-                  : currentData.viewMode,
+                  : (currentData.viewMode ?? basicViewMode),
               }
             : undefined,
         );
@@ -321,6 +309,9 @@ export class OneCXSearchConfigComponent
     vm: SearchConfigViewModel,
   ) {
     if (event.value.id === this.addSearchConfigOption.id) {
+      setTimeout(() => {
+        this.searchConfigStore.setCurrentConfig(undefined);
+      });
       return this.onSearchConfigSave(vm);
     }
 
@@ -357,8 +348,9 @@ export class OneCXSearchConfigComponent
         withLatestFrom(
           this.appStateService.currentMfe$.asObservable(),
           this.searchConfigStore.currentPageData$,
+          this.searchConfigStore.pageName$,
         ),
-        mergeMap(([dialogResult, currentMfe, pageData]) => {
+        mergeMap(([dialogResult, currentMfe, pageData, pageName]) => {
           if (!dialogResult || !dialogResult.result) {
             return of(undefined);
           }
@@ -369,6 +361,7 @@ export class OneCXSearchConfigComponent
             dialogResult.result,
             currentMfe,
             pageData,
+            pageName,
           );
         }),
       )
@@ -527,20 +520,21 @@ export class OneCXSearchConfigComponent
     configData: CreateOrEditSearchDialogContent,
     currentMfe: MfeInfo,
     data: PageData,
+    pageName: string,
   ) {
     const request: CreateSearchConfigRequest = {
       appId: currentMfe.appId,
       productName: currentMfe.productName,
       fieldListVersion: 0,
       isReadonly: false,
-      page: data.pageName,
+      page: pageName,
       name: configData.searchConfigName ?? '',
       isAdvanced: configData.saveInputValues
         ? data.viewMode === advancedViewMode
         : false,
       columns: configData.saveColumns ? data.displayedColumnsIds : [],
       values: configData.saveInputValues
-        ? parseFieldValues(data.fieldValues)
+        ? parseFieldValues(data.fieldValues ?? {})
         : {},
     };
     return this.searchConfigService.createSearchConfig(request).pipe(
@@ -583,7 +577,7 @@ export class OneCXSearchConfigComponent
               : []
             : config.columns,
         values: configData?.saveInputValues
-          ? parseFieldValues(data.fieldValues)
+          ? parseFieldValues(data.fieldValues ?? {})
           : {},
         isAdvanced: data.viewMode === advancedViewMode,
       },

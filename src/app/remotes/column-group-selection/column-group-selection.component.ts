@@ -69,6 +69,7 @@ import {
 } from 'src/app/shared/generated';
 import { environment } from 'src/environments/environment';
 import {
+  ColumnSelectionViewModel,
   PageData,
   RevertData,
   SEARCH_CONFIG_STORE_NAME,
@@ -107,9 +108,6 @@ class MfeTranslationHandler implements MissingTranslationHandler {
             '.json',
           );
           return cachingTranslateLoader.getTranslation(lang);
-        }),
-        tap((v) => {
-          console.log(v);
         }),
       )
       .subscribe(this.mfeTranslations);
@@ -205,6 +203,30 @@ export class OneCXColumnGroupSelectionComponent
     });
   }
 
+  @Input() set customGroupKey(key: string) {
+    setTimeout(() => {
+      this.searchConfigStore.setCustomGroupKey(key);
+    });
+  }
+
+  @Input() set displayedColumnsIds(columns: string[]) {
+    setTimeout(() => {
+      this.searchConfigStore.updateDisplayedColumnsIds(columns);
+    });
+  }
+
+  @Input()
+  set layout(layout: 'table' | 'grid' | 'list') {
+    setTimeout(() => {
+      this.searchConfigStore.updateLayout(layout);
+    });
+  }
+
+  @Input() groupSelectionChanged: EventEmitter<{
+    activeColumns: DataTableColumn[];
+    groupKey: string;
+  }> = new EventEmitter();
+
   columns$ = new BehaviorSubject<DataTableColumn[]>([]);
   @Input()
   get columns(): DataTableColumn[] {
@@ -215,17 +237,7 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   @Input() defaultGroupKey = '';
-  @Input() set customGroupKey(key: string) {
-    setTimeout(() => {
-      this.searchConfigStore.setCustomGroupKey(key);
-    });
-  }
   @Input() placeholderKey = '';
-
-  @Input() groupSelectionChanged: EventEmitter<{
-    activeColumns: DataTableColumn[];
-    groupKey: string;
-  }> = new EventEmitter();
 
   readonly vm$ = this.searchConfigStore.columnSelectionVm$.pipe(
     debounceTime(50),
@@ -266,6 +278,7 @@ export class OneCXColumnGroupSelectionComponent
         ) as OperatorFunction<RevertData | undefined, RevertData>,
       )
       .subscribe((dataToRevert) => {
+        if (!dataToRevert.columnGroupKey) return;
         this.groupSelectionChanged.emit({
           activeColumns: this.columns.filter((c) =>
             dataToRevert.displayedColumnsIds.includes(c.id),
@@ -425,7 +438,7 @@ export class OneCXColumnGroupSelectionComponent
         name: configData?.searchConfigName ?? config.name ?? '',
         columns: configData?.saveColumns ? data.displayedColumnsIds : [],
         values: configData?.saveInputValues
-          ? parseFieldValues(data.fieldValues)
+          ? parseFieldValues(data.fieldValues ?? {})
           : {},
         isAdvanced: data.viewMode === advancedViewMode,
       },
@@ -528,12 +541,11 @@ export class OneCXColumnGroupSelectionComponent
     });
   }
 
-  isSearchConfig(
-    name: string,
-    nonSearchConfigGroupKeys: string[],
-    customGroupKey: string,
-  ): boolean {
-    if (name === customGroupKey || nonSearchConfigGroupKeys.includes(name))
+  isSearchConfig(name: string, vm: ColumnSelectionViewModel): boolean {
+    if (
+      name === vm.customGroupKey ||
+      vm.nonSearchConfigGroupKeys.includes(name)
+    )
       return false;
     return true;
   }

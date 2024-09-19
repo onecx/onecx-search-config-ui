@@ -1,164 +1,158 @@
-<div
-  class="flex gap-2 justify-content-end align-content-center align-items-center"
-  *ocxIfPermission="'SEARCHCONFIG#VIEW'; permissions: permissions"
->
-  <div
-    class="flex gap-2 align-content-center align-items-center"
-    *ngIf="vm$ | async as vm"
-  >
-    <button
-      *ngIf="vm.editMode && vm.isInChargeOfEdit"
-      [label]="'SEARCH_CONFIG.SAVE_EDIT' | translate"
-      icon="{{ saveIcon }}"
-      pButton
-      type="button"
-      [pTooltip]="'SEARCH_CONFIG.SAVE_EDIT_TOOLTIP' | translate"
-      tooltipPosition="top"
-      tooltipEvent="hover"
-      (click)="onSearchConfigSaveEdit($event, vm.currentConfig)"
-    ></button>
-    <button
-      *ngIf="vm.editMode && vm.isInChargeOfEdit"
-      [label]="'SEARCH_CONFIG.CANCEL_EDIT' | translate"
-      icon="{{ stopIcon }}"
-      pButton
-      type="button"
-      [pTooltip]="'SEARCH_CONFIG.CANCEL_EDIT_TOOLTIP' | translate"
-      tooltipPosition="top"
-      tooltipEvent="hover"
-      (click)="onSearchConfigCancelEdit()"
-    ></button>
-    <p-floatLabel>
-      <p-dropdown
-        id="columnGroupSelectionDropdown"
-        (onClear)="clearGroupSelection()"
-        (onChange)="changeGroupSelection($event)"
-        [options]="vm.allGroupKeys"
-        [placeholder]="placeholderKey | translate"
-        [disabled]="vm.editMode"
-        [showClear]="vm.selectedGroupKey !== defaultGroupKey"
-        [(ngModel)]="vm.selectedGroupKey"
-        appendTo="body"
-      >
-        <ng-template let-item pTemplate="item">
-          <div
-            class="flex align-items-center gap-2 h-2rem justify-content-between"
+<ng-container *ngIf="vm$ | async as vm">
+  <ng-container *ngIf="vm.layout === 'table'; else emptyComponent">
+    <div
+      class="flex gap-2 justify-content-end align-content-center align-items-center"
+      *ocxIfPermission="'SEARCHCONFIG#VIEW'; permissions: permissions"
+    >
+      <div class="flex gap-2 align-content-center align-items-center">
+        <button
+          *ngIf="vm.editMode && vm.isInChargeOfEdit"
+          [label]="'SEARCH_CONFIG.SAVE_EDIT' | translate"
+          icon="{{ saveIcon }}"
+          pButton
+          type="button"
+          [pTooltip]="'SEARCH_CONFIG.SAVE_EDIT_TOOLTIP' | translate"
+          tooltipPosition="top"
+          tooltipEvent="hover"
+          (click)="onSearchConfigSaveEdit($event, vm.currentConfig)"
+        ></button>
+        <button
+          *ngIf="vm.editMode && vm.isInChargeOfEdit"
+          [label]="'SEARCH_CONFIG.CANCEL_EDIT' | translate"
+          icon="{{ stopIcon }}"
+          pButton
+          type="button"
+          [pTooltip]="'SEARCH_CONFIG.CANCEL_EDIT_TOOLTIP' | translate"
+          tooltipPosition="top"
+          tooltipEvent="hover"
+          (click)="onSearchConfigCancelEdit()"
+        ></button>
+        <p-floatLabel>
+          <p-dropdown
+            id="columnGroupSelectionDropdown"
+            (onClear)="clearGroupSelection()"
+            (onChange)="changeGroupSelection($event)"
+            [options]="vm.allGroupKeys"
+            [placeholder]="placeholderKey | translate"
+            [disabled]="vm.editMode"
+            [showClear]="vm.selectedGroupKey !== defaultGroupKey"
+            [(ngModel)]="vm.selectedGroupKey"
+            appendTo="body"
           >
-            <div
-              *ngIf="
-                !isSearchConfig(
-                  item,
-                  vm.nonSearchConfigGroupKeys,
-                  vm.customGroupKey
-                );
-                else search_config_item
-              "
-            >
-              {{ item ? (item | translate) : '' }}
-            </div>
-            <ng-template #search_config_item>
-              <div>
-                {{ item }}
-              </div>
+            <ng-template let-item pTemplate="item">
               <div
-                *ngIf="
-                  !isReadonly(
-                    vm.searchConfigsOnlyColumns.concat(
-                      vm.currentConfig ? [vm.currentConfig] : []
-                    ),
-                    item
-                  )
-                "
+                class="flex align-items-center gap-2 h-2rem justify-content-between"
               >
-                <button
-                  *ocxIfPermission="
-                    'SEARCHCONFIG#EDIT';
-                    permissions: permissions
-                  "
-                  pButton
-                  type="button"
-                  class="p-button-rounded font-medium p-button-text p-button-icon-only"
-                  [pTooltip]="'SEARCH_CONFIG.EDIT_TOOLTIP' | translate"
-                  tooltipPosition="top"
-                  tooltipEvent="hover"
-                  (click)="
-                    onSearchConfigEdit(
-                      $event,
-                      getConfigByName(
+                <div *ngIf="!isSearchConfig(item, vm); else search_config_item">
+                  {{ item ? (item | translate) : '' }}
+                </div>
+                <ng-template #search_config_item>
+                  <div>
+                    {{ item }}
+                  </div>
+                  <div
+                    *ngIf="
+                      !isReadonly(
                         vm.searchConfigsOnlyColumns.concat(
                           vm.currentConfig ? [vm.currentConfig] : []
                         ),
                         item
                       )
-                    )
-                  "
-                >
-                  <span class="{{ editIcon }}"></span>
-                </button>
-                <button
-                  *ocxIfPermission="
-                    'SEARCHCONFIG#DELETE';
-                    permissions: permissions
-                  "
-                  pButton
-                  type="button"
-                  class="p-button-rounded font-medium p-button-text p-button-icon-only"
-                  [pTooltip]="'SEARCH_CONFIG.DELETE_TOOLTIP' | translate"
-                  tooltipPosition="top"
-                  tooltipEvent="hover"
-                  (click)="
-                    onSearchConfigDelete(
-                      $event,
-                      getConfigByName(
-                        vm.searchConfigsOnlyColumns.concat(
-                          vm.currentConfig ? [vm.currentConfig] : []
-                        ),
-                        item
-                      )
-                    )
-                  "
-                >
-                  <span class="{{ deleteIcon }}"></span>
-                </button>
+                    "
+                  >
+                    <button
+                      *ocxIfPermission="
+                        'SEARCHCONFIG#EDIT';
+                        permissions: permissions
+                      "
+                      pButton
+                      type="button"
+                      class="p-button-rounded font-medium p-button-text p-button-icon-only"
+                      [pTooltip]="'SEARCH_CONFIG.EDIT_TOOLTIP' | translate"
+                      tooltipPosition="top"
+                      tooltipEvent="hover"
+                      (click)="
+                        onSearchConfigEdit(
+                          $event,
+                          getConfigByName(
+                            vm.searchConfigsOnlyColumns.concat(
+                              vm.currentConfig ? [vm.currentConfig] : []
+                            ),
+                            item
+                          )
+                        )
+                      "
+                    >
+                      <span class="{{ editIcon }}"></span>
+                    </button>
+                    <button
+                      *ocxIfPermission="
+                        'SEARCHCONFIG#DELETE';
+                        permissions: permissions
+                      "
+                      pButton
+                      type="button"
+                      class="p-button-rounded font-medium p-button-text p-button-icon-only"
+                      [pTooltip]="'SEARCH_CONFIG.DELETE_TOOLTIP' | translate"
+                      tooltipPosition="top"
+                      tooltipEvent="hover"
+                      (click)="
+                        onSearchConfigDelete(
+                          $event,
+                          getConfigByName(
+                            vm.searchConfigsOnlyColumns.concat(
+                              vm.currentConfig ? [vm.currentConfig] : []
+                            ),
+                            item
+                          )
+                        )
+                      "
+                    >
+                      <span class="{{ deleteIcon }}"></span>
+                    </button>
+                  </div>
+                </ng-template>
               </div>
             </ng-template>
-          </div>
-        </ng-template>
-        <ng-template let-item pTemplate="selectedItem">
-          <div class="flex align-items-center gap-2 justify-content-between">
-            <ng-container *ngIf="vm.editMode">
-              <div>
-                {{
-                  'SEARCH_CONFIG.EDITING'
-                    | translate: { config: vm.currentConfig?.name }
-                }}
-              </div>
-            </ng-container>
-            <ng-container *ngIf="!vm.editMode">
+            <ng-template let-item pTemplate="selectedItem">
               <div
-                *ngIf="
-                  !isSearchConfig(
-                    item,
-                    vm.nonSearchConfigGroupKeys,
-                    vm.customGroupKey
-                  );
-                  else search_config_selected_item
-                "
+                class="flex align-items-center gap-2 justify-content-between"
               >
-                {{ item ? (item | translate) : '' }}
+                <ng-container *ngIf="vm.editMode">
+                  <div>
+                    {{
+                      'SEARCH_CONFIG.EDITING'
+                        | translate: { config: vm.currentConfig?.name }
+                    }}
+                  </div>
+                </ng-container>
+                <ng-container *ngIf="!vm.editMode">
+                  <div
+                    *ngIf="
+                      !isSearchConfig(item, vm);
+                      else search_config_selected_item
+                    "
+                  >
+                    {{ item ? (item | translate) : '' }}
+                  </div>
+                  <ng-template #search_config_selected_item>
+                    <div>
+                      {{ item }}
+                    </div>
+                  </ng-template>
+                </ng-container>
               </div>
-              <ng-template #search_config_selected_item>
-                <div>
-                  {{ item }}
-                </div>
-              </ng-template>
-            </ng-container>
-          </div>
-        </ng-template>
-      </p-dropdown>
-      <label *ngIf="vm.allGroupKeys.length" for="columnGroupSelectionDropdown">
-        {{ 'OCX_CUSTOM_GROUP_COLUMN_SELECTOR.DROPDOWN_LABEL' | translate }}
-      </label>
-    </p-floatLabel>
-  </div>
-</div>
+            </ng-template>
+          </p-dropdown>
+          <label
+            *ngIf="vm.allGroupKeys.length"
+            for="columnGroupSelectionDropdown"
+          >
+            {{ 'OCX_CUSTOM_GROUP_COLUMN_SELECTOR.DROPDOWN_LABEL' | translate }}
+          </label>
+        </p-floatLabel>
+      </div>
+    </div>
+  </ng-container>
+  <ng-template #emptyComponent> </ng-template>
+</ng-container>

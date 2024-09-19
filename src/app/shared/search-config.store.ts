@@ -8,7 +8,7 @@ import {
   advancedViewModeType,
   basicViewMode,
   basicViewModeType,
-  columngGroupSelectionStoreName,
+  columngGroupSelectionStoreName as columnGroupSelectionStoreName,
   searchConfigStoreName,
 } from './constants';
 import {
@@ -29,6 +29,7 @@ export interface SearchConfigMessage {
   payload: {
     storeName: string;
     stateToUpdate: Partial<SearchConfigState>;
+    wholeState: boolean;
   };
 }
 
@@ -41,77 +42,74 @@ export class SearchConfigTopic extends Topic<SearchConfigMessage> {
 export type UnparsedFieldValues = { [key: string]: unknown };
 export type FieldValues = { [key: string]: string };
 export type SearchData = {
-  fieldValues: FieldValues;
-  viewMode: basicViewModeType | advancedViewModeType;
+  fieldValues: FieldValues | undefined;
+  viewMode: basicViewModeType | advancedViewModeType | undefined;
   displayedColumnsIds: Array<string>;
-  layout?: 'table' | 'grid' | 'list';
 };
 
 export type PageData = SearchData & {
-  pageName: string;
-  columnGroupKey: string;
+  columnGroupKey: string | undefined;
 };
 
-export type RevertData = SearchData & {
-  columnGroupKey: string;
-};
+export type RevertData = PageData;
 
 interface SearchConfigComponentState {
   currentSearchConfig: SearchConfigInfo | undefined;
-  selectedGroupKey: string;
-  inChargeOfEdit: string;
+  selectedGroupKey: string | undefined;
+  inChargeOfEdit: string | undefined;
   editMode: boolean;
   preEditStateSnapshot: SearchConfigState | undefined;
   dataToRevert: RevertData | undefined;
   searchConfigs: SearchConfigInfo[];
 
-  pageName: string;
-  fieldValues: FieldValues;
+  pageName: string | undefined;
+  fieldValues: FieldValues | undefined;
   displayedColumnsIds: Array<string>;
-  viewMode: basicViewModeType | advancedViewModeType;
+  viewMode: basicViewModeType | advancedViewModeType | undefined;
   layout: 'table' | 'grid' | 'list' | undefined;
 }
 
 interface ColumnGroupSelectionComponentState {
   currentSearchConfig: SearchConfigInfo | undefined;
-  selectedGroupKey: string;
-  inChargeOfEdit: string;
+  selectedGroupKey: string | undefined;
+  inChargeOfEdit: string | undefined;
   editMode: boolean;
   preEditStateSnapshot: SearchConfigState | undefined;
   dataToRevert: RevertData | undefined;
   searchConfigs: SearchConfigInfo[];
 
   nonSearchConfigGroupKeys: Array<string>;
-  customGroupKey: string;
+  customGroupKey: string | undefined;
 }
 
 export interface SearchConfigState
   extends SearchConfigComponentState,
     ColumnGroupSelectionComponentState {
-  displayedSearchData: SearchData;
   searchConfigComponentActive: boolean;
+  displayedSearchData: SearchData | undefined;
   columnGroupComponentActive: boolean;
 }
 
 export interface SearchConfigViewModel {
   searchConfigs: SearchConfigInfo[];
   currentConfig: SearchConfigInfo | undefined;
+  isColumnGroupComponentActive: boolean;
+  layout: 'table' | 'grid' | 'list' | undefined;
 
   editMode: boolean;
   isInChargeOfEdit: boolean;
-  isColumnGroupComponentActive: boolean;
-  layout: 'table' | 'grid' | 'list' | undefined;
 }
 
 export interface ColumnSelectionViewModel {
   nonSearchConfigGroupKeys: Array<string>;
-  customGroupKey: string;
+  customGroupKey: string | undefined;
 
   allGroupKeys: Array<string>;
   searchConfigsOnlyColumns: SearchConfigInfo[];
   searchConfigsWithColumns: SearchConfigInfo[];
-  selectedGroupKey: string;
+  selectedGroupKey: string | undefined;
   currentConfig: SearchConfigInfo | undefined;
+  layout: 'table' | 'grid' | 'list' | undefined;
 
   editMode: boolean;
   isInChargeOfEdit: boolean;
@@ -122,30 +120,25 @@ export const SEARCH_CONFIG_STORE_NAME = new InjectionToken<string>(
 );
 
 export const initialState: SearchConfigState = {
-  pageName: '',
+  pageName: undefined,
   nonSearchConfigGroupKeys: [],
-  customGroupKey: '',
+  customGroupKey: undefined,
 
-  fieldValues: {},
+  fieldValues: undefined,
   displayedColumnsIds: [],
-  viewMode: basicViewMode,
+  viewMode: undefined,
   layout: undefined,
 
   searchConfigs: [],
   currentSearchConfig: undefined,
-  selectedGroupKey: '',
+  selectedGroupKey: undefined,
 
   inChargeOfEdit: '',
   editMode: false,
   preEditStateSnapshot: undefined,
   dataToRevert: undefined,
 
-  displayedSearchData: {
-    fieldValues: {},
-    displayedColumnsIds: [],
-    viewMode: basicViewMode,
-    layout: undefined,
-  },
+  displayedSearchData: undefined,
 
   searchConfigComponentActive: false,
   columnGroupComponentActive: false,
@@ -173,12 +166,12 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       stateToUpdate = {
         searchConfigComponentActive: true,
       };
-    } else if (storeName === columngGroupSelectionStoreName) {
+    } else if (storeName === columnGroupSelectionStoreName) {
       stateToUpdate = {
         columnGroupComponentActive: true,
       };
     }
-    this.sendUpdateMessage(stateToUpdate);
+    this.sendUpdateMessage(stateToUpdate, state);
     return { ...state, ...stateToUpdate };
   });
 
@@ -193,7 +186,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     const stateToUpdate: Partial<SearchConfigState> = {
       pageName: newPageName,
     };
-    this.sendUpdateMessage(stateToUpdate);
+    this.sendUpdateMessage(stateToUpdate, state);
     return { ...state, ...stateToUpdate };
   });
 
@@ -201,7 +194,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     const stateToUpdate: Partial<SearchConfigState> = {
       customGroupKey: customGroupKey,
     };
-    this.sendUpdateMessage(stateToUpdate);
+    this.sendUpdateMessage(stateToUpdate, state);
     return { ...state, ...stateToUpdate };
   });
 
@@ -210,8 +203,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       const stateToUpdate: Partial<SearchConfigState> = {
         searchConfigs: searchConfigs,
       };
-
-      this.sendUpdateMessage(stateToUpdate);
+      this.sendUpdateMessage(stateToUpdate, state);
       return { ...state, ...stateToUpdate };
     },
   );
@@ -222,7 +214,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         nonSearchConfigGroupKeys: nonSearchConfigGroupKeys,
       };
 
-      this.sendUpdateMessage(stateToUpdate);
+      this.sendUpdateMessage(stateToUpdate, state);
       return { ...state, ...stateToUpdate };
     },
   );
@@ -232,7 +224,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       const stateToUpdate: Partial<SearchConfigState> = {
         searchConfigs: state.searchConfigs.concat(searchConfig),
       };
-      this.sendUpdateMessage(stateToUpdate);
+      this.sendUpdateMessage(stateToUpdate, state);
       return { ...state, ...stateToUpdate };
     },
   );
@@ -262,7 +254,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           (config) => config.id !== searchConfig.id,
         ),
       };
-      this.sendUpdateMessage(stateToUpdate);
+      this.sendUpdateMessage(stateToUpdate, state);
       return { ...state, ...stateToUpdate };
     },
   );
@@ -282,7 +274,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         }),
         currentSearchConfig: config,
       };
-      this.sendUpdateMessage(stateToUpdate);
+      this.sendUpdateMessage(stateToUpdate, state);
       return { ...state, ...stateToUpdate };
     },
   );
@@ -294,7 +286,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           config.id === searchConfig.id ? searchConfig : config,
         ),
       };
-      this.sendUpdateMessage(stateToUpdate);
+      this.sendUpdateMessage(stateToUpdate, state);
       return { ...state, ...stateToUpdate };
     },
   );
@@ -314,7 +306,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         }),
         selectedGroupKey: selectedGroupKey,
       };
-      this.sendUpdateMessage(stateToUpdate);
+      this.sendUpdateMessage(stateToUpdate, state);
       return { ...state, ...stateToUpdate };
     },
   );
@@ -325,7 +317,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       inChargeOfEdit: this.storeName,
       dataToRevert: undefined,
     };
-    this.sendUpdateMessage(stateToUpdate);
+    this.sendUpdateMessage(stateToUpdate, state);
     return { ...state, ...stateToUpdate };
   });
 
@@ -334,7 +326,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       editMode: false,
       inChargeOfEdit: '',
     };
-    this.sendUpdateMessage(stateToUpdate);
+    this.sendUpdateMessage(stateToUpdate, state);
     return { ...state, ...stateToUpdate };
   });
 
@@ -342,7 +334,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     const stateToUpdate: Partial<SearchConfigState> = {
       preEditStateSnapshot: state,
     };
-    this.sendUpdateMessage(stateToUpdate);
+    this.sendUpdateMessage(stateToUpdate, state);
     return { ...state, ...stateToUpdate };
   });
 
@@ -356,10 +348,10 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     if (!savedConfig) {
       stateToUpdate = {
         dataToRevert: {
-          fieldValues: state.preEditStateSnapshot.fieldValues,
+          fieldValues: state.preEditStateSnapshot.fieldValues ?? {},
           displayedColumnsIds: state.preEditStateSnapshot.displayedColumnsIds,
-          viewMode: state.preEditStateSnapshot.viewMode,
-          columnGroupKey: state.preEditStateSnapshot.selectedGroupKey,
+          viewMode: state.preEditStateSnapshot.viewMode ?? basicViewMode,
+          columnGroupKey: state.preEditStateSnapshot.selectedGroupKey ?? '',
         },
         currentSearchConfig: undefined,
         selectedGroupKey: state.preEditStateSnapshot.selectedGroupKey,
@@ -367,9 +359,9 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     } else if (hasOnlyColumns(savedConfig)) {
       stateToUpdate = {
         dataToRevert: {
-          fieldValues: state.preEditStateSnapshot.fieldValues,
+          fieldValues: state.preEditStateSnapshot.fieldValues ?? {},
           displayedColumnsIds: savedConfig.columns,
-          viewMode: state.preEditStateSnapshot.viewMode,
+          viewMode: state.preEditStateSnapshot.viewMode ?? basicViewMode,
           columnGroupKey: savedConfig.name,
         },
         currentSearchConfig: savedConfig,
@@ -381,7 +373,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           fieldValues: savedConfig.values,
           displayedColumnsIds: state.preEditStateSnapshot.displayedColumnsIds,
           viewMode: savedConfig.isAdvanced ? advancedViewMode : basicViewMode,
-          columnGroupKey: state.preEditStateSnapshot.selectedGroupKey,
+          columnGroupKey: state.preEditStateSnapshot.selectedGroupKey ?? '',
         },
         currentSearchConfig: savedConfig,
         selectedGroupKey: state.preEditStateSnapshot.selectedGroupKey,
@@ -406,17 +398,20 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       displayedSearchData: {
         fieldValues:
           stateToUpdate.dataToRevert?.fieldValues ??
-          state.displayedSearchData.fieldValues,
+          state.displayedSearchData?.fieldValues ??
+          {},
         displayedColumnsIds:
           stateToUpdate.dataToRevert?.displayedColumnsIds ??
-          state.displayedSearchData.displayedColumnsIds,
+          state.displayedSearchData?.displayedColumnsIds ??
+          [],
         viewMode:
           stateToUpdate.dataToRevert?.viewMode ??
-          state.displayedSearchData.viewMode,
+          state.displayedSearchData?.viewMode ??
+          basicViewMode,
       },
     };
 
-    this.sendUpdateMessage(stateToUpdate);
+    this.sendUpdateMessage(stateToUpdate, state);
     return { ...state, ...stateToUpdate };
   });
 
@@ -429,7 +424,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
           : state.customGroupKey,
       };
 
-      this.sendUpdateMessage(stateToUpdate);
+      this.sendUpdateMessage(stateToUpdate, state);
       return { ...state, ...stateToUpdate };
     },
   );
@@ -437,7 +432,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
   readonly updateFieldValues = this.updater(
     (state, values: UnparsedFieldValues) => {
       const parsedValues = parseFieldValues(values ?? {});
-      if (areValuesEqual(parsedValues, state.fieldValues)) {
+      if (areValuesEqual(parsedValues, state.fieldValues ?? {})) {
         return { ...state };
       }
 
@@ -461,11 +456,13 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         }),
         fieldValues: parsedValues,
         displayedSearchData: {
-          ...state.displayedSearchData,
           fieldValues: parsedValues,
+          displayedColumnsIds:
+            state.displayedSearchData?.displayedColumnsIds ?? [],
+          viewMode: state.displayedSearchData?.viewMode,
         },
       };
-      this.sendUpdateMessage(stateToUpdate);
+      this.sendUpdateMessage(stateToUpdate, state);
       return { ...state, ...stateToUpdate };
     },
   );
@@ -496,11 +493,12 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         }),
         displayedColumnsIds: displayedColumnsIds,
         displayedSearchData: {
-          ...state.displayedSearchData,
+          fieldValues: state.displayedSearchData?.fieldValues,
           displayedColumnsIds: displayedColumnsIds,
+          viewMode: state.displayedSearchData?.viewMode,
         },
       };
-      this.sendUpdateMessage(stateToUpdate);
+      this.sendUpdateMessage(stateToUpdate, state);
       return { ...state, ...stateToUpdate };
     },
   );
@@ -531,11 +529,13 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         }),
         viewMode: viewMode,
         displayedSearchData: {
-          ...state.displayedSearchData,
+          fieldValues: state.displayedSearchData?.fieldValues,
+          displayedColumnsIds:
+            state.displayedSearchData?.displayedColumnsIds ?? [],
           viewMode: viewMode,
         },
       };
-      this.sendUpdateMessage(stateToUpdate);
+      this.sendUpdateMessage(stateToUpdate, state);
       return { ...state, ...stateToUpdate };
     },
   );
@@ -548,12 +548,8 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
 
       const stateToUpdate: Partial<SearchConfigState> = {
         layout: layout,
-        displayedSearchData: {
-          ...state.displayedSearchData,
-          layout: layout,
-        },
       };
-      this.sendUpdateMessage(stateToUpdate);
+      this.sendUpdateMessage(stateToUpdate, state);
       return { ...state, ...stateToUpdate };
     },
   );
@@ -569,22 +565,20 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
   );
 
   readonly preEditStateSnapshot$ = this.select(
-    ({ preEditStateSnapshot }): SearchConfigState | undefined =>
-      preEditStateSnapshot,
+    ({ preEditStateSnapshot }) => preEditStateSnapshot,
+  ).pipe(filter(this.isNotUndefined));
+
+  readonly dataToRevert$ = this.select(({ dataToRevert }) => dataToRevert).pipe(
+    filter(this.isNotUndefined),
   );
 
-  readonly dataToRevert$ = this.select(
-    ({ dataToRevert }): RevertData | undefined => dataToRevert,
-  );
-
-  readonly pageName$ = this.select(
-    this.state$,
-    (state): string => state.pageName,
+  readonly pageName$ = this.select(this.state$, (state) => state.pageName).pipe(
+    filter(this.isNotUndefined),
   );
 
   readonly selectedGroupKey$ = this.select(
-    ({ selectedGroupKey }): string => selectedGroupKey,
-  );
+    ({ selectedGroupKey }) => selectedGroupKey,
+  ).pipe(filter(this.isNotUndefined));
 
   readonly currentConfig$ = this.select(
     ({ currentSearchConfig }): SearchConfigInfo | undefined =>
@@ -594,33 +588,26 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
   readonly currentPageData$ = this.select(
     this.state$,
     (state): PageData => ({
-      pageName: state.pageName,
       fieldValues: state.fieldValues,
       viewMode: state.viewMode,
       displayedColumnsIds: state.displayedColumnsIds,
       columnGroupKey: state.selectedGroupKey,
-      layout: state.layout,
     }),
   );
 
   readonly currentDisplayedData$ = this.select(
-    ({ displayedSearchData }): SearchData => displayedSearchData,
-  );
+    ({ displayedSearchData }) => displayedSearchData,
+  ).pipe(filter(this.isNotUndefined));
 
   readonly searchConfigVm$ = this.select(
     this.state$,
     this.currentConfig$,
-    this.isColumnGroupComponentActive$,
-    (
-      state,
-      currentConfig,
-      isColumnGroupComponentActive,
-    ): SearchConfigViewModel => ({
+    (state, currentConfig): SearchConfigViewModel => ({
       searchConfigs: state.searchConfigs.filter((config) => hasValues(config)),
       editMode: state.editMode,
       isInChargeOfEdit: state.inChargeOfEdit === this.storeName,
       currentConfig: currentConfig,
-      isColumnGroupComponentActive: isColumnGroupComponentActive,
+      isColumnGroupComponentActive: state.columnGroupComponentActive,
       layout: state.layout,
     }),
   );
@@ -641,7 +628,9 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         allGroupKeys: state.nonSearchConfigGroupKeys
           .concat(
             searchConfigsOnlyColumns.map((config) => config.name),
-            state.selectedGroupKey === '' ? [] : [state.selectedGroupKey],
+            state.selectedGroupKey === undefined
+              ? []
+              : [state.selectedGroupKey],
           )
           .filter(
             (value, index, self) =>
@@ -652,6 +641,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         customGroupKey: state.customGroupKey,
         editMode: state.editMode,
         isInChargeOfEdit: state.inChargeOfEdit === this.storeName,
+        layout: state.layout,
       };
     },
   );
@@ -696,56 +686,77 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       filter((msg) => msg.payload.storeName !== this.storeName),
       withLatestFrom(this.state$),
       tap(([msg, state]) => {
-        // ignore state updates from CG when still reloading
         if (
-          msg.payload.storeName === columngGroupSelectionStoreName &&
-          this.columnGroupComponentReloading &&
-          msg.payload.stateToUpdate.columnGroupComponentActive === undefined
+          msg.payload.storeName === columnGroupSelectionStoreName &&
+          msg.payload.wholeState
         ) {
-          return;
-        }
-        // CG announces it has reloaded so start listening to messages again
-        if (
-          msg.payload.storeName === columngGroupSelectionStoreName &&
-          this.columnGroupComponentReloading &&
-          msg.payload.stateToUpdate.columnGroupComponentActive
-        ) {
-          this.columnGroupComponentReloading = false;
+          const displayedSearchData = {
+            ...(state.displayedSearchData && {
+              fieldValues: state.displayedSearchData.fieldValues,
+              viewMode: state.displayedSearchData.viewMode,
+            }),
+            ...(msg.payload.stateToUpdate.displayedSearchData && {
+              displayedColumnsIds:
+                msg.payload.stateToUpdate.displayedSearchData
+                  .displayedColumnsIds,
+            }),
+          };
           this.patchState({
             ...state,
             columnGroupComponentActive: true,
+            selectedGroupKey: msg.payload.stateToUpdate.selectedGroupKey,
+            customGroupKey: msg.payload.stateToUpdate.customGroupKey,
+            displayedColumnsIds: msg.payload.stateToUpdate.displayedColumnsIds,
+            layout: msg.payload.stateToUpdate.layout,
+            nonSearchConfigGroupKeys:
+              msg.payload.stateToUpdate.nonSearchConfigGroupKeys,
+            displayedSearchData:
+              Object.keys(displayedSearchData).length === 0
+                ? undefined
+                : {
+                    fieldValues: displayedSearchData.fieldValues,
+                    viewMode: displayedSearchData.viewMode,
+                    displayedColumnsIds:
+                      displayedSearchData.displayedColumnsIds ?? [],
+                  },
           });
           return;
         }
-        // SC receives info to reinit CG
         if (
-          msg.payload.stateToUpdate.columnGroupComponentActive &&
-          state.columnGroupComponentActive &&
-          msg.payload.storeName === columngGroupSelectionStoreName
+          msg.payload.storeName === searchConfigStoreName &&
+          msg.payload.wholeState
         ) {
-          this.deactivateColumnGroupStore();
-          this.columnGroupComponentReloading = true;
-          this.sendUpdateMessage({
-            ...state,
-            columnGroupComponentActive: false,
-          });
-          return;
-        }
-        // CG receives reload trigger
-        if (
-          msg.payload.stateToUpdate.columnGroupComponentActive === false &&
-          msg.payload.storeName === searchConfigStoreName
-        ) {
+          const displayedSearchData = {
+            ...(state.displayedSearchData && {
+              displayedColumnsIds:
+                state.displayedSearchData.displayedColumnsIds,
+            }),
+            ...(msg.payload.stateToUpdate.displayedSearchData && {
+              fieldValues:
+                msg.payload.stateToUpdate.displayedSearchData.fieldValues,
+              viewMode: msg.payload.stateToUpdate.displayedSearchData.viewMode,
+            }),
+          };
           this.patchState({
-            ...msg.payload.stateToUpdate,
-            columnGroupComponentActive: true,
-          });
-          this.sendUpdateMessage({
-            columnGroupComponentActive: true,
+            ...state,
+            searchConfigComponentActive: true,
+            pageName: msg.payload.stateToUpdate.pageName,
+            fieldValues: msg.payload.stateToUpdate.fieldValues,
+            viewMode: msg.payload.stateToUpdate.viewMode,
+            searchConfigs: msg.payload.stateToUpdate.searchConfigs,
+            currentSearchConfig: msg.payload.stateToUpdate.currentSearchConfig,
+            displayedSearchData:
+              Object.keys(displayedSearchData).length === 0
+                ? undefined
+                : {
+                    fieldValues: displayedSearchData.fieldValues,
+                    viewMode: displayedSearchData.viewMode,
+                    displayedColumnsIds:
+                      displayedSearchData.displayedColumnsIds ?? [],
+                  },
           });
           return;
         }
-        // normal state update
         this.patchState({
           ...state,
           ...msg.payload.stateToUpdate,
@@ -754,7 +765,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
               ? msg.payload.stateToUpdate.selectedGroupKey
               : state.selectedGroupKey,
           columnGroupComponentActive:
-            msg.payload.storeName === columngGroupSelectionStoreName
+            msg.payload.storeName === columnGroupSelectionStoreName
               ? true
               : state.columnGroupComponentActive,
           searchConfigComponentActive:
@@ -767,6 +778,40 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
   });
 
   // *********** Utilities *********** //
+
+  sendUpdateMessage(
+    stateToUpdate: Partial<SearchConfigState>,
+    state: SearchConfigState,
+  ) {
+    let wholeState = false;
+    if (
+      this.storeName === searchConfigStoreName &&
+      !state.columnGroupComponentActive
+    ) {
+      stateToUpdate = {
+        ...state,
+        ...stateToUpdate,
+      };
+      wholeState = true;
+    }
+    if (
+      this.storeName === columnGroupSelectionStoreName &&
+      !state.searchConfigComponentActive
+    ) {
+      stateToUpdate = {
+        ...state,
+        ...stateToUpdate,
+      };
+      wholeState = true;
+    }
+    this.searchConfigTopic$.publish({
+      payload: {
+        storeName: this.storeName,
+        stateToUpdate: stateToUpdate,
+        wholeState: wholeState,
+      },
+    });
+  }
 
   private isCurrentConfigOutdated(
     state: SearchConfigState,
@@ -872,7 +917,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
 
     if (
       !state.nonSearchConfigGroupKeys
-        .concat(state.customGroupKey)
+        .concat(state.customGroupKey ? [state.customGroupKey] : [])
         .includes(selectedGroupKey)
     ) {
       return state.searchConfigs.find((c) => c.name === selectedGroupKey);
@@ -881,12 +926,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     return state.currentSearchConfig;
   }
 
-  sendUpdateMessage(stateToUpdate: Partial<SearchConfigState>) {
-    this.searchConfigTopic$.publish({
-      payload: {
-        storeName: this.storeName,
-        stateToUpdate: stateToUpdate,
-      },
-    });
+  private isNotUndefined<T>(val: T | undefined): val is T {
+    return val !== undefined;
   }
 }
