@@ -16,6 +16,8 @@
       "SAVE_EDIT_TOOLTIP": "Aktuell bearbeitete Suchkonfiguration speichern",
       "CANCEL_EDIT": "Suchkonfiguration abbrechen",
       "CANCEL_EDIT_TOOLTIP": "Bearbeitung der Suchkonfiguration abbrechen",
+      "EDIT": "Suchkonfiguration bearbeiten",
+      "DELETE": "Suchkonfiguration löschen",
       "EDIT_TOOLTIP": "Suchkonfiguration bearbeiten",
       "DELETE_TOOLTIP": "Suchkonfiguration löschen",
       "CREATE_EDIT_PLACEHOLDER": "Bitte den Namen der Suchkonfiguration eingeben",

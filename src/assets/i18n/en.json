@@ -16,6 +16,8 @@
       "SAVE_EDIT_TOOLTIP": "Save currently edited search config",
       "CANCEL_EDIT": "Cancel search config",
       "CANCEL_EDIT_TOOLTIP": "Stop editing search config",
+      "EDIT": "Edit search config",
+      "DELETE": "Delete search config",
       "EDIT_TOOLTIP": "Edit search config",
       "DELETE_TOOLTIP": "Delete search config",
       "CREATE_EDIT_PLACEHOLDER": "Please enter the name of the search configuration",
