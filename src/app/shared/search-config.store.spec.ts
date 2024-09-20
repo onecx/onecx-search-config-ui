@@ -1,9 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import { debounceTime, take } from 'rxjs';
+import { debounceTime, filter, take } from 'rxjs';
 import { FakeTopic } from '@onecx/angular-integration-interface/mocks';
 
 import {
   SearchConfigMessage,
+  SearchConfigState,
   SearchConfigStore,
   SearchConfigTopic,
   initialState,
@@ -1318,10 +1319,14 @@ describe('SearchConfigStore', () => {
 
       store.setEditMode();
 
-      store.dataToRevert$.pipe(take(1)).subscribe((data) => {
-        expect(data).toBe(undefined);
-        done();
-      });
+      store.state$
+        .pipe(
+          filter((state) => state.dataToRevert === undefined),
+          take(1),
+        )
+        .subscribe(() => {
+          done();
+        });
     });
 
     it('should send update message', (done) => {
@@ -2060,7 +2065,8 @@ describe('SearchConfigStore', () => {
             key: 'v2',
           },
           displayedSearchData: {
-            ...initialState.displayedSearchData,
+            displayedColumnsIds: [],
+            viewMode: undefined,
             fieldValues: {
               key: 'v2',
             },
@@ -2098,7 +2104,8 @@ describe('SearchConfigStore', () => {
           currentSearchConfig: undefined,
           selectedGroupKey: 'custom-key',
           displayedSearchData: {
-            ...initialState.displayedSearchData,
+            displayedColumnsIds: [],
+            viewMode: undefined,
             fieldValues: {
               ...testConfigBase.values,
               notInConfig: 'v2',
@@ -2288,7 +2295,8 @@ describe('SearchConfigStore', () => {
         expect(msg.payload.stateToUpdate).toStrictEqual({
           displayedColumnsIds: ['col_2'],
           displayedSearchData: {
-            ...initialState.displayedSearchData,
+            fieldValues: undefined,
+            viewMode: undefined,
             displayedColumnsIds: ['col_2'],
           },
         });
@@ -2322,7 +2330,8 @@ describe('SearchConfigStore', () => {
           currentSearchConfig: undefined,
           selectedGroupKey: 'custom-key',
           displayedSearchData: {
-            ...initialState.displayedSearchData,
+            fieldValues: undefined,
+            viewMode: undefined,
             displayedColumnsIds: [
               ...testConfigBase.columns,
               'new-col-not-in-config',
@@ -2551,7 +2560,8 @@ describe('SearchConfigStore', () => {
             ? basicViewMode
             : advancedViewMode,
           displayedSearchData: {
-            ...initialState.displayedSearchData,
+            fieldValues: undefined,
+            displayedColumnsIds: [],
             viewMode: testConfigBase.isAdvanced
               ? basicViewMode
               : advancedViewMode,
@@ -2574,7 +2584,8 @@ describe('SearchConfigStore', () => {
         expect(msg.payload.stateToUpdate).toStrictEqual({
           viewMode: basicViewMode,
           displayedSearchData: {
-            ...initialState.displayedSearchData,
+            fieldValues: undefined,
+            displayedColumnsIds: [],
             viewMode: basicViewMode,
           },
         });
@@ -2611,7 +2622,7 @@ describe('SearchConfigStore', () => {
       });
     });
 
-    it('should send update message with all changes', (done) => {
+    it('should send update message with changes', (done) => {
       store.patchState({
         ...initialState,
         layout: 'table',
@@ -2623,31 +2634,6 @@ describe('SearchConfigStore', () => {
         expect(msg.payload.storeName).toBe('store-1');
         expect(msg.payload.stateToUpdate).toStrictEqual({
           layout: 'grid',
-          displayedSearchData: {
-            ...initialState.displayedSearchData,
-            layout: 'grid',
-          },
-        });
-        done();
-      });
-    });
-
-    it('should send update message with minimal changes', (done) => {
-      store.patchState({
-        ...initialState,
-        viewMode: advancedViewMode,
-      });
-
-      store.updateViewMode(basicViewMode);
-
-      mockSearchConfigStoreTopic.subscribe((msg) => {
-        expect(msg.payload.storeName).toBe('store-1');
-        expect(msg.payload.stateToUpdate).toStrictEqual({
-          viewMode: basicViewMode,
-          displayedSearchData: {
-            ...initialState.displayedSearchData,
-            viewMode: basicViewMode,
-          },
         });
         done();
       });
@@ -2995,141 +2981,350 @@ describe('SearchConfigStore', () => {
         done();
       });
     });
+  });
 
-    fdescribe('column group selection store reconstruction', () => {
-      beforeEach(() => {
-        store.ngOnDestroy();
-        secondStore.ngOnDestroy();
+  describe('state sync', () => {
+    beforeEach(() => {
+      store.ngOnDestroy();
+      secondStore.ngOnDestroy();
 
-        store = new SearchConfigStore(
-          searchConfigStoreName,
-          mockSearchConfigStoreTopic as any as SearchConfigTopic,
-        );
+      store = new SearchConfigStore(
+        searchConfigStoreName,
+        mockSearchConfigStoreTopic as any as SearchConfigTopic,
+      );
 
-        secondStore = new SearchConfigStore(
-          columngGroupSelectionStoreName,
-          mockSearchConfigStoreTopic as any as SearchConfigTopic,
-        );
-      });
+      secondStore = new SearchConfigStore(
+        columngGroupSelectionStoreName,
+        mockSearchConfigStoreTopic as any as SearchConfigTopic,
+      );
+    });
 
-      it('should initialize reload in search config store', (done) => {
-        store.setState({
-          ...initialState,
-          columnGroupComponentActive: true,
-        });
+    it('should send whole state from search config store if column group is not active', () => {
+      const spy = jest.spyOn(mockSearchConfigStoreTopic, 'publish');
+      store.sendUpdateMessage(
+        {
+          pageName: 'newPageName',
+        },
+        {
+          columnGroupComponentActive: false,
+          pageName: 'pageName',
+          viewMode: advancedViewMode,
+        } as SearchConfigState,
+      );
 
-        const spy = jest.spyOn(store, 'deactivateColumnGroupStore');
-
-        secondStore.activateStore(columngGroupSelectionStoreName);
-
-        store.state$.pipe(take(1)).subscribe(() => {
-          expect(spy).toHaveBeenCalledTimes(1);
-          done();
-        });
-      });
-
-      it('should trigger reload in column group store', (done) => {
-        const searchConfigStoreState = {
-          ...initialState,
-          fieldValues: {
-            asdKey: 'asd',
+      expect(spy).toHaveBeenCalledWith({
+        payload: {
+          storeName: searchConfigStoreName,
+          stateToUpdate: {
+            pageName: 'newPageName',
+            columnGroupComponentActive: false,
+            viewMode: advancedViewMode,
           },
-          displayedColumnsIds: ['col-1', 'col-2'],
-          columnGroupComponentActive: true,
-        };
-
-        store.patchState(searchConfigStoreState);
-
-        const spy = jest.spyOn(secondStore, 'patchState');
-
-        secondStore.activateStore(columngGroupSelectionStoreName);
-
-        secondStore.state$.pipe(take(1)).subscribe(() => {
-          expect(spy).toHaveBeenCalledWith({
-            ...searchConfigStoreState,
-            columnGroupComponentActive: true,
-          });
-          done();
-        });
+          wholeState: true,
+        },
       });
+    });
 
-      it('should not update in search config store when column group is reloading', (done) => {
-        const searchConfigStoreState = {
-          ...initialState,
-          fieldValues: {
-            asdKey: 'asd',
+    it('should send whole state from column group store if search config is not active', () => {
+      const spy = jest.spyOn(mockSearchConfigStoreTopic, 'publish');
+      secondStore.sendUpdateMessage(
+        {
+          customGroupKey: 'new-custom',
+        },
+        {
+          searchConfigComponentActive: false,
+          customGroupKey: 'custom',
+          layout: 'grid',
+        } as SearchConfigState,
+      );
+
+      expect(spy).toHaveBeenCalledWith({
+        payload: {
+          storeName: columngGroupSelectionStoreName,
+          stateToUpdate: {
+            customGroupKey: 'new-custom',
+            searchConfigComponentActive: false,
+            layout: 'grid',
           },
-          displayedColumnsIds: ['col-1', 'col-2'],
-          columnGroupComponentActive: true,
-        };
-
-        store.patchState(searchConfigStoreState);
-
-        // make sure that CG never sends message informing about reinit finish
-        let isSecondStoreActive = false;
-        jest
-          .spyOn(secondStore, 'sendUpdateMessage')
-          .mockImplementation((stateToUpdate) => {
-            if (stateToUpdate.columnGroupComponentActive && isSecondStoreActive)
-              return;
-            isSecondStoreActive = true;
-            mockSearchConfigStoreTopic.publish({
-              payload: {
-                storeName: columngGroupSelectionStoreName,
-                stateToUpdate: stateToUpdate,
-              },
-            });
-          });
-
-        const spy = jest.spyOn(store, 'patchState');
-
-        secondStore.activateStore(columngGroupSelectionStoreName);
-
-        // updating custom group key when reload is ongoing
-        secondStore.setCustomGroupKey('test-custom-key');
-
-        setTimeout(() => {
-          store.setPageName('wait for this');
-        });
-
-        mockSearchConfigStoreTopic.subscribe((msg) => {
-          if (msg.payload.stateToUpdate.pageName === 'wait for this') {
-            expect(spy).toHaveBeenCalledTimes(0);
-            done();
-          }
-        });
+          wholeState: true,
+        },
       });
+    });
 
-      it('should start updating in search config store when column group finishes reload', (done) => {
-        const searchConfigStoreState = {
-          ...initialState,
-          fieldValues: {
-            asdKey: 'asd',
-          },
-          displayedColumnsIds: ['col-1', 'col-2'],
+    it('should send partial state from search config store if column group is active', () => {
+      const spy = jest.spyOn(mockSearchConfigStoreTopic, 'publish');
+      store.sendUpdateMessage(
+        {
+          pageName: 'newPageName',
+        },
+        {
           columnGroupComponentActive: true,
-        };
+          pageName: 'pageName',
+          viewMode: advancedViewMode,
+        } as SearchConfigState,
+      );
 
-        store.patchState(searchConfigStoreState);
+      expect(spy).toHaveBeenCalledWith({
+        payload: {
+          storeName: searchConfigStoreName,
+          stateToUpdate: {
+            pageName: 'newPageName',
+          },
+          wholeState: false,
+        },
+      });
+    });
 
-        const spy = jest.spyOn(store, 'patchState');
+    it('should send partial state from column group store if search config is active', () => {
+      const spy = jest.spyOn(mockSearchConfigStoreTopic, 'publish');
+      secondStore.sendUpdateMessage(
+        {
+          customGroupKey: 'new-custom',
+        },
+        {
+          searchConfigComponentActive: true,
+          customGroupKey: 'custom',
+          layout: 'grid',
+        } as SearchConfigState,
+      );
 
-        secondStore.activateStore(columngGroupSelectionStoreName);
+      expect(spy).toHaveBeenCalledWith({
+        payload: {
+          storeName: columngGroupSelectionStoreName,
+          stateToUpdate: {
+            customGroupKey: 'new-custom',
+          },
+          wholeState: false,
+        },
+      });
+    });
 
-        // updateing custom group key after reload completed
-        secondStore.setCustomGroupKey('my-custom-key');
+    it('should update whole state for search config store', (done) => {
+      const spy = jest.spyOn(store, 'patchState');
 
-        setTimeout(() => {
-          store.setPageName('wait for this');
+      secondStore.sendUpdateMessage(
+        {
+          selectedGroupKey: 'skey',
+        },
+        {
+          ...initialState,
+          selectedGroupKey: 's',
+          customGroupKey: 'c',
+          displayedColumnsIds: ['c1'],
+          layout: 'grid',
+          nonSearchConfigGroupKeys: ['d'],
+          displayedSearchData: {
+            displayedColumnsIds: ['c1'],
+            fieldValues: undefined,
+            viewMode: undefined,
+          },
+        } as SearchConfigState,
+      );
+
+      store.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          ...initialState,
+          columnGroupComponentActive: true,
+          searchConfigComponentActive: true,
+          selectedGroupKey: 'skey',
+          customGroupKey: 'c',
+          displayedColumnsIds: ['c1'],
+          layout: 'grid',
+          nonSearchConfigGroupKeys: ['d'],
+          displayedSearchData: {
+            displayedColumnsIds: ['c1'],
+            fieldValues: undefined,
+            viewMode: undefined,
+          },
         });
+        done();
+      });
+    });
 
-        mockSearchConfigStoreTopic.subscribe((msg) => {
-          if (msg.payload.stateToUpdate.pageName === 'wait for this') {
-            expect(spy).toHaveBeenCalledTimes(2); // activation of column group and custom key patches
-            done();
-          }
+    it('should update whole state for column group store', (done) => {
+      const spy = jest.spyOn(secondStore, 'patchState');
+
+      store.sendUpdateMessage(
+        {
+          pageName: 'pName',
+        },
+        {
+          ...initialState,
+          pageName: 'p',
+          fieldValues: {
+            k: 'v',
+          },
+          viewMode: advancedViewMode,
+          searchConfigs: [testConfigBase],
+          currentSearchConfig: testConfigBase,
+          displayedSearchData: {
+            displayedColumnsIds: [],
+            fieldValues: {
+              k: 'v',
+            },
+            viewMode: advancedViewMode,
+          },
+        } as SearchConfigState,
+      );
+
+      secondStore.state$.pipe(take(1)).subscribe(() => {
+        expect(spy).toHaveBeenCalledWith({
+          ...initialState,
+          columnGroupComponentActive: true,
+          searchConfigComponentActive: true,
+          pageName: 'pName',
+          fieldValues: {
+            k: 'v',
+          },
+          viewMode: advancedViewMode,
+          searchConfigs: [testConfigBase],
+          currentSearchConfig: testConfigBase,
+          displayedSearchData: {
+            displayedColumnsIds: [],
+            fieldValues: {
+              k: 'v',
+            },
+            viewMode: advancedViewMode,
+          },
         });
+        done();
       });
     });
   });
+
+  // xdescribe('column group selection store reconstruction', () => {
+  //   beforeEach(() => {
+  //     store.ngOnDestroy();
+  //     secondStore.ngOnDestroy();
+
+  //     store = new SearchConfigStore(
+  //       searchConfigStoreName,
+  //       mockSearchConfigStoreTopic as any as SearchConfigTopic,
+  //     );
+
+  //     secondStore = new SearchConfigStore(
+  //       columngGroupSelectionStoreName,
+  //       mockSearchConfigStoreTopic as any as SearchConfigTopic,
+  //     );
+  //   });
+
+  // it('should initialize reload in search config store', (done) => {
+  //   store.setState({
+  //     ...initialState,
+  //     columnGroupComponentActive: true,
+  //   });
+
+  //   const spy = jest.spyOn(store, 'deactivateColumnGroupStore');
+
+  //   secondStore.activateStore(columngGroupSelectionStoreName);
+
+  //   store.state$.pipe(take(1)).subscribe(() => {
+  //     expect(spy).toHaveBeenCalledTimes(1);
+  //     done();
+  //   });
+  // });
+
+  // it('should trigger reload in column group store', (done) => {
+  //   const searchConfigStoreState = {
+  //     ...initialState,
+  //     fieldValues: {
+  //       asdKey: 'asd',
+  //     },
+  //     displayedColumnsIds: ['col-1', 'col-2'],
+  //     columnGroupComponentActive: true,
+  //   };
+
+  //   store.patchState(searchConfigStoreState);
+
+  //   const spy = jest.spyOn(secondStore, 'patchState');
+
+  //   secondStore.activateStore(columngGroupSelectionStoreName);
+
+  //   secondStore.state$.pipe(take(1)).subscribe(() => {
+  //     expect(spy).toHaveBeenCalledWith({
+  //       ...searchConfigStoreState,
+  //       columnGroupComponentActive: true,
+  //     });
+  //     done();
+  //   });
+  // });
+
+  // it('should not update in search config store when column group is reloading', (done) => {
+  //   const searchConfigStoreState = {
+  //     ...initialState,
+  //     fieldValues: {
+  //       asdKey: 'asd',
+  //     },
+  //     displayedColumnsIds: ['col-1', 'col-2'],
+  //     columnGroupComponentActive: true,
+  //   };
+
+  //   store.patchState(searchConfigStoreState);
+
+  //   // make sure that CG never sends message informing about reinit finish
+  //   let isSecondStoreActive = false;
+  //   jest
+  //     .spyOn(secondStore, 'sendUpdateMessage')
+  //     .mockImplementation((stateToUpdate) => {
+  //       if (stateToUpdate.columnGroupComponentActive && isSecondStoreActive)
+  //         return;
+  //       isSecondStoreActive = true;
+  //       mockSearchConfigStoreTopic.publish({
+  //         payload: {
+  //           storeName: columngGroupSelectionStoreName,
+  //           stateToUpdate: stateToUpdate,
+  //         },
+  //       });
+  //     });
+
+  //   const spy = jest.spyOn(store, 'patchState');
+
+  //   secondStore.activateStore(columngGroupSelectionStoreName);
+
+  //   // updating custom group key when reload is ongoing
+  //   secondStore.setCustomGroupKey('test-custom-key');
+
+  //   setTimeout(() => {
+  //     store.setPageName('wait for this');
+  //   });
+
+  //   mockSearchConfigStoreTopic.subscribe((msg) => {
+  //     if (msg.payload.stateToUpdate.pageName === 'wait for this') {
+  //       expect(spy).toHaveBeenCalledTimes(0);
+  //       done();
+  //     }
+  //   });
+  // });
+
+  // it('should start updating in search config store when column group finishes reload', (done) => {
+  //   const searchConfigStoreState = {
+  //     ...initialState,
+  //     fieldValues: {
+  //       asdKey: 'asd',
+  //     },
+  //     displayedColumnsIds: ['col-1', 'col-2'],
+  //     columnGroupComponentActive: true,
+  //   };
+
+  //   store.patchState(searchConfigStoreState);
+
+  //   const spy = jest.spyOn(store, 'patchState');
+
+  //   secondStore.activateStore(columngGroupSelectionStoreName);
+
+  //   // updateing custom group key after reload completed
+  //   secondStore.setCustomGroupKey('my-custom-key');
+
+  //   setTimeout(() => {
+  //     store.setPageName('wait for this');
+  //   });
+
+  //   mockSearchConfigStoreTopic.subscribe((msg) => {
+  //     if (msg.payload.stateToUpdate.pageName === 'wait for this') {
+  //       expect(spy).toHaveBeenCalledTimes(2); // activation of column group and custom key patches
+  //       done();
+  //     }
+  //   });
+  // });
+  // });
 });

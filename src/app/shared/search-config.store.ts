@@ -64,9 +64,7 @@ interface SearchConfigComponentState {
 
   pageName: string | undefined;
   fieldValues: FieldValues | undefined;
-  displayedColumnsIds: Array<string>;
   viewMode: basicViewModeType | advancedViewModeType | undefined;
-  layout: 'table' | 'grid' | 'list' | undefined;
 }
 
 interface ColumnGroupSelectionComponentState {
@@ -78,6 +76,8 @@ interface ColumnGroupSelectionComponentState {
   dataToRevert: RevertData | undefined;
   searchConfigs: SearchConfigInfo[];
 
+  displayedColumnsIds: Array<string>;
+  layout: 'table' | 'grid' | 'list' | undefined;
   nonSearchConfigGroupKeys: Array<string>;
   customGroupKey: string | undefined;
 }
