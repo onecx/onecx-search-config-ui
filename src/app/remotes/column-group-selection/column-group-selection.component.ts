@@ -85,7 +85,10 @@ import {
   advancedViewMode,
   columngGroupSelectionStoreName,
 } from 'src/app/shared/constants';
-import { parseFieldValues } from 'src/app/shared/search-config.utils';
+import {
+  hasOnlyColumns,
+  parseFieldValues,
+} from 'src/app/shared/search-config.utils';
 import { TooltipModule } from 'primeng/tooltip';
 
 class MfeTranslationHandler implements MissingTranslationHandler {
@@ -195,6 +198,7 @@ function createMissingTranslationHandler(
 export class OneCXColumnGroupSelectionComponent
   implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit, OnDestroy
 {
+  hasOnlyColumns = hasOnlyColumns;
   @Input() set selectedGroupKey(selectedGroupKey: string | undefined) {
     if (selectedGroupKey === undefined) return;
 

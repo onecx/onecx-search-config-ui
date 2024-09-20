@@ -8,6 +8,37 @@
         class="flex gap-2 align-content-center align-items-center"
         *ngIf="vm$ | async as vm"
       >
+        <ng-container
+          *ngIf="
+            vm.currentConfig &&
+            !vm.currentConfig.isReadonly &&
+            hasValues(vm.currentConfig) &&
+            !vm.editMode
+          "
+        >
+          <button
+            *ocxIfPermission="'SEARCHCONFIG#EDIT'; permissions: permissions"
+            pButton
+            type="button"
+            icon="{{ editIcon }}"
+            [title]="'SEARCH_CONFIG.EDIT' | translate"
+            [pTooltip]="'SEARCH_CONFIG.EDIT_TOOLTIP' | translate"
+            tooltipPosition="top"
+            tooltipEvent="hover"
+            (click)="onSearchConfigEdit($event, vm.currentConfig)"
+          ></button>
+          <button
+            *ocxIfPermission="'SEARCHCONFIG#DELETE'; permissions: permissions"
+            icon="{{ deleteIcon }}"
+            [title]="'SEARCH_CONFIG.DELETE' | translate"
+            pButton
+            type="button"
+            [pTooltip]="'SEARCH_CONFIG.DELETE_TOOLTIP' | translate"
+            tooltipPosition="top"
+            tooltipEvent="hover"
+            (click)="onSearchConfigDelete($event, vm.currentConfig)"
+          ></button>
+        </ng-container>
         <button
           *ngIf="vm.editMode && vm.isInChargeOfEdit"
           [label]="'SEARCH_CONFIG.SAVE_EDIT' | translate"
@@ -84,38 +115,6 @@
               *ngIf="config.id !== addSearchConfigOption.id"
             >
               <div>{{ config.name }}</div>
-              <div *ngIf="!config.isReadonly">
-                <button
-                  *ocxIfPermission="
-                    'SEARCHCONFIG#EDIT';
-                    permissions: permissions
-                  "
-                  pButton
-                  type="button"
-                  class="p-button-rounded font-medium p-button-text p-button-icon-only"
-                  [pTooltip]="'SEARCH_CONFIG.EDIT_TOOLTIP' | translate"
-                  tooltipPosition="top"
-                  tooltipEvent="hover"
-                  (click)="onSearchConfigEdit($event, config)"
-                >
-                  <span class="{{ editIcon }}"></span>
-                </button>
-                <button
-                  *ocxIfPermission="
-                    'SEARCHCONFIG#DELETE';
-                    permissions: permissions
-                  "
-                  pButton
-                  type="button"
-                  class="p-button-rounded font-medium p-button-text p-button-icon-only"
-                  [pTooltip]="'SEARCH_CONFIG.DELETE_TOOLTIP' | translate"
-                  tooltipPosition="top"
-                  tooltipEvent="hover"
-                  (click)="onSearchConfigDelete($event, config)"
-                >
-                  <span class="{{ deleteIcon }}"></span>
-                </button>
-              </div>
             </div>
           </ng-template>
         </p-dropdown>

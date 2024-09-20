@@ -141,6 +141,7 @@ import { TooltipModule } from 'primeng/tooltip';
 export class OneCXSearchConfigComponent
   implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit, OnDestroy
 {
+  hasValues = hasValues;
   @Input() set pageName(pageName: string) {
     setTimeout(() => {
       this.searchConfigStore.setPageName(pageName);
