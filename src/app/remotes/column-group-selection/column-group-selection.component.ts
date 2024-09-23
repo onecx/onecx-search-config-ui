@@ -40,6 +40,7 @@ import {
 } from '@onecx/angular-remote-components';
 import {
   BehaviorSubject,
+  Observable,
   OperatorFunction,
   ReplaySubject,
   Subscription,
@@ -50,7 +51,6 @@ import {
   map,
   mergeMap,
   of,
-  tap,
   withLatestFrom,
 } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -198,6 +198,7 @@ function createMissingTranslationHandler(
 export class OneCXColumnGroupSelectionComponent
   implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit, OnDestroy
 {
+  isInitialized: Observable<boolean>;
   hasOnlyColumns = hasOnlyColumns;
   @Input() set selectedGroupKey(selectedGroupKey: string | undefined) {
     if (selectedGroupKey === undefined) return;
@@ -267,12 +268,13 @@ export class OneCXColumnGroupSelectionComponent
     private portalDialogService: PortalDialogService,
     private portalMessageService: PortalMessageService,
   ) {
-    combineLatest([
+    this.isInitialized = combineLatest([
       this.userService.lang$.asObservable(),
       this.appStateService.currentMfe$.asObservable(),
-    ]).subscribe(([lang, _]) => {
-      this.translateService.use(lang);
-    });
+    ]).pipe(
+      mergeMap(([lang, _]) => this.translateService.use(lang)),
+      map(() => true),
+    );
 
     this.dataRevertSub = this.searchConfigStore.dataToRevert$
       .pipe(
