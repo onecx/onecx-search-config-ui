@@ -161,6 +161,7 @@ export class OneCXSearchConfigComponent
 
   @Input() searchConfigSelected: EventEmitter<
     | {
+        name: string | undefined;
         fieldValues: FieldValues;
         displayedColumnsIds: string[];
         viewMode: basicViewModeType | advancedViewModeType;
@@ -234,6 +235,7 @@ export class OneCXSearchConfigComponent
       .subscribe((dataToRevert) => {
         if (!(dataToRevert.fieldValues && dataToRevert.viewMode)) return;
         this.searchConfigSelected.emit({
+          name: undefined,
           fieldValues: dataToRevert.fieldValues,
           displayedColumnsIds: dataToRevert.displayedColumnsIds,
           viewMode: dataToRevert.viewMode,
@@ -252,6 +254,7 @@ export class OneCXSearchConfigComponent
         this.searchConfigSelected.emit(
           config
             ? {
+                name: config.name,
                 fieldValues: hasValues(config)
                   ? config.values
                   : (currentData.fieldValues ?? {}),
