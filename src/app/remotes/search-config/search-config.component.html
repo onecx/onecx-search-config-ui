@@ -21,48 +21,50 @@
             pButton
             type="button"
             icon="{{ editIcon }}"
-            [title]="'SEARCH_CONFIG.EDIT' | translate"
-            [pTooltip]="'SEARCH_CONFIG.EDIT_TOOLTIP' | translate"
+            [pTooltip]="'SEARCH_CONFIG.EDIT.TOOLTIP' | translate"
             tooltipPosition="top"
             tooltipEvent="hover"
             (click)="onSearchConfigEdit($event, vm.currentConfig)"
+            [attr.aria-label]="'SEARCH_CONFIG.EDIT.ARIA_LABEL' | translate"
           ></button>
           <button
             *ocxIfPermission="'SEARCHCONFIG#DELETE'; permissions: permissions"
             icon="{{ deleteIcon }}"
-            [title]="'SEARCH_CONFIG.DELETE' | translate"
             pButton
             type="button"
-            [pTooltip]="'SEARCH_CONFIG.DELETE_TOOLTIP' | translate"
+            [pTooltip]="'SEARCH_CONFIG.DELETE.TOOLTIP' | translate"
             tooltipPosition="top"
             tooltipEvent="hover"
             (click)="onSearchConfigDelete($event, vm.currentConfig)"
+            [attr.aria-label]="'SEARCH_CONFIG.DELETE.ARIA_LABEL' | translate"
           ></button>
         </ng-container>
         <button
           *ngIf="vm.editMode && vm.isInChargeOfEdit"
-          [label]="'SEARCH_CONFIG.SAVE_EDIT' | translate"
+          [label]="'SEARCH_CONFIG.SAVE_EDIT.LABEL' | translate"
           icon="{{ saveIcon }}"
           pButton
           type="button"
-          [pTooltip]="'SEARCH_CONFIG.SAVE_EDIT_TOOLTIP' | translate"
+          [pTooltip]="'SEARCH_CONFIG.SAVE_EDIT.TOOLTIP' | translate"
           tooltipPosition="top"
           tooltipEvent="hover"
           (click)="onSearchConfigSaveEdit($event, vm)"
+          [attr.aria-label]="'SEARCH_CONFIG.SAVE_EDIT.ARIA_LABEL' | translate"
         ></button>
         <button
           *ngIf="vm.editMode && vm.isInChargeOfEdit"
-          [label]="'SEARCH_CONFIG.CANCEL_EDIT' | translate"
+          [label]="'SEARCH_CONFIG.CANCEL_EDIT.LABEL' | translate"
           icon="{{ stopIcon }}"
           pButton
           type="button"
-          [pTooltip]="'SEARCH_CONFIG.CANCEL_EDIT_TOOLTIP' | translate"
+          [pTooltip]="'SEARCH_CONFIG.CANCEL_EDIT.TOOLTIP' | translate"
           tooltipPosition="top"
           tooltipEvent="hover"
           (click)="onSearchConfigCancelEdit()"
+          [attr.aria-label]="'SEARCH_CONFIG.CANCEL_EDIT.ARIA_LABEL' | translate"
         ></button>
         <p-dropdown
-          id="searchConfigDropdown"
+          inputId="searchConfigDropdown"
           formControlName="searchConfig"
           [options]="baseOptions.concat(vm.searchConfigs)"
           optionLabel="name"
@@ -75,6 +77,7 @@
           [disabled]="vm.editMode"
           (onChange)="onSearchConfigChange($event, vm)"
           appendTo="body"
+          [ariaLabel]="'SEARCH_CONFIG.DROPDOWN_ARIA_LABEL' | translate"
         >
           <ng-template let-config pTemplate="selectedItem">
             <ng-container *ngIf="vm.editMode; else search_config_selected_item">

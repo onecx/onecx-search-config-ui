@@ -8,18 +8,29 @@
       }
     },
     "SEARCH_CONFIG": {
+      "DROPDOWN_ARIA_LABEL": "Suchkonfiguration",
       "DROPDOWN_LABEL": "Suchkonfiguration",
       "CREATE": "Suchkonfiguration hinzufügen",
       "PLACEHOLDER": "Suchkonfiguration auswählen",
       "EDITING": "{{config}} Suchkonfiguration bearbeiten",
-      "SAVE_EDIT": "Suchkonfiguration speichern",
-      "SAVE_EDIT_TOOLTIP": "Aktuell bearbeitete Suchkonfiguration speichern",
-      "CANCEL_EDIT": "Suchkonfiguration abbrechen",
-      "CANCEL_EDIT_TOOLTIP": "Bearbeitung der Suchkonfiguration abbrechen",
-      "EDIT": "Suchkonfiguration bearbeiten",
-      "DELETE": "Suchkonfiguration löschen",
-      "EDIT_TOOLTIP": "Suchkonfiguration bearbeiten",
-      "DELETE_TOOLTIP": "Suchkonfiguration löschen",
+      "SAVE_EDIT": {
+        "LABEL": "Suchkonfiguration speichern",
+        "ARIA_LABEL": "Suchkonfiguration speichern",
+        "TOOLTIP": "Aktuell bearbeitete Suchkonfiguration speichern"
+      },
+      "CANCEL_EDIT": {
+        "LABEL": "Suchkonfiguration abbrechen",
+        "ARIA_LABEL": "Suchkonfiguration abbrechen",
+        "TOOLTIP": "Bearbeitung der Suchkonfiguration abbrechen"
+      },
+      "EDIT": {
+        "ARIA_LABEL": "Suchkonfiguration bearbeiten",
+        "TOOLTIP": "Suchkonfiguration bearbeiten"
+      },
+      "DELETE": {
+        "ARIA_LABEL": "Suchkonfiguration löschen",
+        "TOOLTIP": "Suchkonfiguration löschen"
+      },
       "CREATE_EDIT_PLACEHOLDER": "Bitte den Namen der Suchkonfiguration eingeben",
       "SAVE_COLUMNS_OPTION": "Möchten Sie die angezeigten Spalten speichern?",
       "SAVE_INPUT_FIELDS_OPTION": "Möchten Sie die Eingabewerte aus den Eingabefeldern speichern?",
@@ -46,6 +57,7 @@
       "FETCH_FAILURE": "Fehler beim Laden der Suchkonfiguration"
     },
     "OCX_CUSTOM_GROUP_COLUMN_SELECTOR": {
+      "DROPDOWN_ARIA_LABEL": "Spaltengruppe",
       "DROPDOWN_LABEL": "Spaltengruppe",
       "OPEN_BUTTON_DETAIL": "Dialog zur Auswahl einer benutzerdefinierten Gruppe öffnen",
       "ACTIVE_COLUMNS_LABEL": "Aktive Spalten",

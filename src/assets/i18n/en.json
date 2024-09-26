@@ -8,18 +8,29 @@
       }
     },
     "SEARCH_CONFIG": {
+      "DROPDOWN_ARIA_LABEL": "Search config",
       "DROPDOWN_LABEL": "Search config",
       "CREATE": "Add search config",
       "PLACEHOLDER": "Choose search config",
       "EDITING": "Editing {{config}} search config",
-      "SAVE_EDIT": "Save search config",
-      "SAVE_EDIT_TOOLTIP": "Save currently edited search config",
-      "CANCEL_EDIT": "Cancel search config",
-      "CANCEL_EDIT_TOOLTIP": "Stop editing search config",
-      "EDIT": "Edit search config",
-      "DELETE": "Delete search config",
-      "EDIT_TOOLTIP": "Edit search config",
-      "DELETE_TOOLTIP": "Delete search config",
+      "SAVE_EDIT": {
+        "LABEL": "Save search config",
+        "ARIA_LABEL": "Save search config",
+        "TOOLTIP": "Save currently edited search config"
+      },
+      "CANCEL_EDIT": {
+        "LABEL": "Cancel search config",
+        "ARIA_LABEL": "Cancel search config",
+        "TOOLTIP": "Stop editing search config"
+      },
+      "EDIT": {
+        "ARIA_LABEL": "Edit search config",
+        "TOOLTIP": "Edit search config"
+      },
+      "DELETE": {
+        "ARIA_LABEL": "Delete search config",
+        "TOOLTIP": "Delete search config"
+      },
       "CREATE_EDIT_PLACEHOLDER": "Please enter the name of the search configuration",
       "SAVE_COLUMNS_OPTION": "Do you want to save the shown columns?",
       "SAVE_INPUT_FIELDS_OPTION": "Do you want to save the input values from the input fields?",
@@ -46,6 +57,7 @@
       "FETCH_FAILURE": "Failed to load search config"
     },
     "OCX_CUSTOM_GROUP_COLUMN_SELECTOR": {
+      "DROPDOWN_ARIA_LABEL": "Column group",
       "DROPDOWN_LABEL": "Column group",
       "OPEN_BUTTON_DETAIL": "Open custom group selection dialog",
       "ACTIVE_COLUMNS_LABEL": "Active columns",

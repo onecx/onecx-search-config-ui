@@ -51,6 +51,8 @@ import {
   map,
   mergeMap,
   of,
+  switchMap,
+  tap,
   withLatestFrom,
 } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -95,15 +97,17 @@ class MfeTranslationHandler implements MissingTranslationHandler {
   mfeTranslations = new BehaviorSubject<any>({});
   constructor(
     private httpClient: HttpClient,
-    private userSerivce: UserService,
+    private userService: UserService,
     private translationCacheService: TranslationCacheService,
     private appStateService: AppStateService,
     private translateParser: TranslateParser,
   ) {
-    userSerivce.lang$
+    combineLatest([
+      userService.lang$.asObservable(),
+      appStateService.currentMfe$.asObservable(),
+    ])
       .pipe(
-        withLatestFrom(appStateService.currentMfe$.asObservable()),
-        mergeMap(([lang, mfe]) => {
+        switchMap(([lang, mfe]) => {
           const cachingTranslateLoader = new CachingTranslateLoader(
             translationCacheService,
             httpClient,
@@ -198,7 +202,6 @@ function createMissingTranslationHandler(
 export class OneCXColumnGroupSelectionComponent
   implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit, OnDestroy
 {
-  isInitialized: Observable<boolean>;
   hasOnlyColumns = hasOnlyColumns;
   @Input() set selectedGroupKey(selectedGroupKey: string | undefined) {
     if (selectedGroupKey === undefined) return;
@@ -268,13 +271,16 @@ export class OneCXColumnGroupSelectionComponent
     private portalDialogService: PortalDialogService,
     private portalMessageService: PortalMessageService,
   ) {
-    this.isInitialized = combineLatest([
+    combineLatest([
       this.userService.lang$.asObservable(),
       this.appStateService.currentMfe$.asObservable(),
-    ]).pipe(
-      mergeMap(([lang, _]) => this.translateService.use(lang)),
-      map(() => true),
-    );
+    ])
+      .pipe(
+        tap(([lang, _]) => console.log(lang)),
+        mergeMap(([lang, _]) => this.translateService.use(lang)),
+        map(() => true),
+      )
+      .subscribe(() => {});
 
     this.dataRevertSub = this.searchConfigStore.dataToRevert$
       .pipe(
