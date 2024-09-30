@@ -17,8 +17,10 @@ import {
   TranslateService,
 } from '@ngx-translate/core';
 import {
+  AsyncTranslateLoader,
   CachingTranslateLoader,
   DataTableColumn,
+  TranslateCombinedLoader,
   TranslationCacheService,
   createRemoteComponentTranslateLoader,
 } from '@onecx/angular-accelerator';
@@ -93,54 +95,30 @@ import {
 } from 'src/app/shared/search-config.utils';
 import { TooltipModule } from 'primeng/tooltip';
 
-class MfeTranslationHandler implements MissingTranslationHandler {
-  mfeTranslations = new BehaviorSubject<any>({});
-  constructor(
-    private httpClient: HttpClient,
-    private userService: UserService,
-    private translationCacheService: TranslationCacheService,
-    private appStateService: AppStateService,
-    private translateParser: TranslateParser,
-  ) {
-    combineLatest([
-      userService.lang$.asObservable(),
-      appStateService.currentMfe$.asObservable(),
-    ])
-      .pipe(
-        switchMap(([lang, mfe]) => {
-          const cachingTranslateLoader = new CachingTranslateLoader(
-            translationCacheService,
-            httpClient,
-            Location.joinWithSlash(mfe.remoteBaseUrl, 'assets/i18n/'),
-            '.json',
-          );
-          return cachingTranslateLoader.getTranslation(lang);
-        }),
-      )
-      .subscribe(this.mfeTranslations);
-  }
-
-  handle(params: MissingTranslationHandlerParams) {
-    return this.translateParser.getValue(
-      this.mfeTranslations.getValue(),
-      params.key,
-    );
-  }
-}
-
-function createMissingTranslationHandler(
+export function createTranslateLoader(
   httpClient: HttpClient,
-  userSerivce: UserService,
+  baseUrl: ReplaySubject<string>,
   translationCacheService: TranslationCacheService,
   appStateService: AppStateService,
-  translateParser: TranslateParser,
 ) {
-  return new MfeTranslationHandler(
-    httpClient,
-    userSerivce,
-    translationCacheService,
-    appStateService,
-    translateParser,
+  return new AsyncTranslateLoader(
+    appStateService.currentMfe$.pipe(
+      map((currentMfe) => {
+        return new TranslateCombinedLoader(
+          createRemoteComponentTranslateLoader(
+            httpClient,
+            baseUrl,
+            translationCacheService,
+          ),
+          new CachingTranslateLoader(
+            translationCacheService,
+            httpClient,
+            Location.joinWithSlash(currentMfe.remoteBaseUrl, 'assets/i18n/'),
+            '.json',
+          ),
+        );
+      }),
+    ),
   );
 }
 
@@ -172,19 +150,8 @@ function createMissingTranslationHandler(
       isolate: true,
       loader: {
         provide: TranslateLoader,
-        useFactory: createRemoteComponentTranslateLoader,
-        deps: [HttpClient, BASE_URL, TranslationCacheService],
-      },
-      missingTranslationHandler: {
-        provide: MissingTranslationHandler,
-        useFactory: createMissingTranslationHandler,
-        deps: [
-          HttpClient,
-          UserService,
-          TranslationCacheService,
-          AppStateService,
-          TranslateParser,
-        ],
+        useFactory: createTranslateLoader,
+        deps: [HttpClient, BASE_URL, TranslationCacheService, AppStateService],
       },
     }),
     providePortalDialogService(),
@@ -266,21 +233,11 @@ export class OneCXColumnGroupSelectionComponent
     private userService: UserService,
     private translateService: TranslateService,
     private searchConfigService: SearchConfigAPIService,
-    private appStateService: AppStateService,
     private searchConfigStore: SearchConfigStore,
     private portalDialogService: PortalDialogService,
     private portalMessageService: PortalMessageService,
   ) {
-    combineLatest([
-      this.userService.lang$.asObservable(),
-      this.appStateService.currentMfe$.asObservable(),
-    ])
-      .pipe(
-        tap(([lang, _]) => console.log(lang)),
-        mergeMap(([lang, _]) => this.translateService.use(lang)),
-        map(() => true),
-      )
-      .subscribe(() => {});
+    this.translateService.use(this.userService.lang$.getValue());
 
     this.dataRevertSub = this.searchConfigStore.dataToRevert$
       .pipe(
