@@ -17,6 +17,7 @@
           "
         >
           <button
+            id="sc_search_config_edit_search_config"
             *ocxIfPermission="'SEARCHCONFIG#EDIT'; permissions: permissions"
             pButton
             type="button"
@@ -28,6 +29,7 @@
             [attr.aria-label]="'SEARCH_CONFIG.EDIT.ARIA_LABEL' | translate"
           ></button>
           <button
+            id="sc_search_config_delete_search_config"
             *ocxIfPermission="'SEARCHCONFIG#DELETE'; permissions: permissions"
             icon="{{ deleteIcon }}"
             pButton
@@ -40,6 +42,7 @@
           ></button>
         </ng-container>
         <button
+          id="sc_search_config_save_search_config_edit"
           *ngIf="vm.editMode && vm.isInChargeOfEdit"
           [label]="'SEARCH_CONFIG.SAVE_EDIT.LABEL' | translate"
           icon="{{ saveIcon }}"
@@ -52,6 +55,7 @@
           [attr.aria-label]="'SEARCH_CONFIG.SAVE_EDIT.ARIA_LABEL' | translate"
         ></button>
         <button
+          id="sc_search_config_cancel_search_config_edit"
           *ngIf="vm.editMode && vm.isInChargeOfEdit"
           [label]="'SEARCH_CONFIG.CANCEL_EDIT.LABEL' | translate"
           icon="{{ stopIcon }}"
