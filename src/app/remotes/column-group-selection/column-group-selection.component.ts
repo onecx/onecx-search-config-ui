@@ -16,7 +16,7 @@ import {
 import {
   DataTableColumn,
   TranslationCacheService,
-  createRemoteComponentTranslateLoaderWithMfe,
+  createRemoteComponentAndMfeTranslateLoader,
 } from '@onecx/angular-accelerator';
 import {
   AppStateService,
@@ -113,7 +113,7 @@ import { TooltipModule } from 'primeng/tooltip';
       isolate: true,
       loader: {
         provide: TranslateLoader,
-        useFactory: createRemoteComponentTranslateLoaderWithMfe,
+        useFactory: createRemoteComponentAndMfeTranslateLoader,
         deps: [HttpClient, BASE_URL, TranslationCacheService, AppStateService],
       },
     }),
