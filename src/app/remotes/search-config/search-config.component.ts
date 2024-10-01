@@ -19,7 +19,7 @@ import {
   TranslateModule,
   TranslateService,
 } from '@ngx-translate/core';
-import { createRemoteComponentTranslateLoader } from '@onecx/angular-accelerator';
+import { SearchConfigData, createRemoteComponentTranslateLoader } from '@onecx/angular-accelerator';
 import {
   AppStateService,
   PortalCoreModule,
@@ -160,12 +160,7 @@ export class OneCXSearchConfigComponent
   }
 
   @Input() searchConfigSelected: EventEmitter<
-    | {
-        name: string | undefined;
-        fieldValues: FieldValues;
-        displayedColumnsIds: string[];
-        viewMode: basicViewModeType | advancedViewModeType;
-      }
+    SearchConfigData
     | undefined
   > = new EventEmitter();
 

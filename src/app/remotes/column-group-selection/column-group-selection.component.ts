@@ -17,6 +17,7 @@ import {
   DataTableColumn,
   TranslationCacheService,
   createRemoteComponentAndMfeTranslateLoader,
+  ColumnGroupData,
 } from '@onecx/angular-accelerator';
 import {
   AppStateService,
@@ -160,10 +161,8 @@ export class OneCXColumnGroupSelectionComponent
     });
   }
 
-  @Input() groupSelectionChanged: EventEmitter<{
-    activeColumns: DataTableColumn[];
-    groupKey: string;
-  }> = new EventEmitter();
+  @Input() groupSelectionChanged: EventEmitter<ColumnGroupData> =
+    new EventEmitter();
 
   columns$ = new BehaviorSubject<DataTableColumn[]>([]);
   @Input()
