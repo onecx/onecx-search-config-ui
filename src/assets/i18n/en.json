@@ -55,40 +55,5 @@
       "DELETE_SUCCESS": "Successfully deleted search config",
       "DELETE_FAILURE": "Failed to delete search config",
       "FETCH_FAILURE": "Failed to load search config"
-    },
-    "OCX_CUSTOM_GROUP_COLUMN_SELECTOR": {
-      "DROPDOWN_ARIA_LABEL": "Column group",
-      "DROPDOWN_LABEL": "Column group",
-      "OPEN_BUTTON_DETAIL": "Open custom group selection dialog",
-      "ACTIVE_COLUMNS_LABEL": "Active columns",
-      "INACTIVE_COLUMNS_LABEL": "Inactive columns",
-      "SAVE_BUTTON_LABEL": "Save",
-      "CANCEL_BUTTON_LABEL": "Cancel",
-      "DIALOG_TITLE": "Custom group column selection",
-      "CONFIGURE_ACTION_COLUMN": {
-        "TITLE": "Configure action column",
-        "FREEZE": "Always show action column",
-        "POSITION": "Position of action column",
-        "YES": "Yes",
-        "NO": "No",
-        "LEFT": "Left",
-        "RIGHT": "Right"
-      },
-      "ARIA_LABELS": {
-        "UP": "Move column up",
-        "TOP": "Move column to the top",
-        "DOWN": "Move column down",
-        "BOTTOM": "Move column to the bottom",
-        "RIGHT": "Set column as inactive",
-        "ALL_RIGHT": "Set all columns as inactive",
-        "LEFT": "Set column as active",
-        "ALL_LEFT": "Set all columns as active",
-        "CLOSE": "Close dialog"
-      },
-      "PREDEFINED_GROUP": {
-        "DEFAULT": "Default",
-        "EXTENDED": "Extended",
-        "FULL": "Full"
-      }
     }
   }
