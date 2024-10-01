@@ -9,20 +9,14 @@ import {
   OnInit,
 } from '@angular/core';
 import {
-  MissingTranslationHandler,
-  MissingTranslationHandlerParams,
   TranslateLoader,
   TranslateModule,
-  TranslateParser,
   TranslateService,
 } from '@ngx-translate/core';
 import {
-  AsyncTranslateLoader,
-  CachingTranslateLoader,
   DataTableColumn,
-  TranslateCombinedLoader,
   TranslationCacheService,
-  createRemoteComponentTranslateLoader,
+  createRemoteComponentTranslateLoaderWithMfe,
 } from '@onecx/angular-accelerator';
 import {
   AppStateService,
@@ -42,19 +36,15 @@ import {
 } from '@onecx/angular-remote-components';
 import {
   BehaviorSubject,
-  Observable,
   OperatorFunction,
   ReplaySubject,
   Subscription,
   catchError,
-  combineLatest,
   debounceTime,
   filter,
   map,
   mergeMap,
   of,
-  switchMap,
-  tap,
   withLatestFrom,
 } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -95,33 +85,6 @@ import {
 } from 'src/app/shared/search-config.utils';
 import { TooltipModule } from 'primeng/tooltip';
 
-export function createTranslateLoader(
-  httpClient: HttpClient,
-  baseUrl: ReplaySubject<string>,
-  translationCacheService: TranslationCacheService,
-  appStateService: AppStateService,
-) {
-  return new AsyncTranslateLoader(
-    appStateService.currentMfe$.pipe(
-      map((currentMfe) => {
-        return new TranslateCombinedLoader(
-          createRemoteComponentTranslateLoader(
-            httpClient,
-            baseUrl,
-            translationCacheService,
-          ),
-          new CachingTranslateLoader(
-            translationCacheService,
-            httpClient,
-            Location.joinWithSlash(currentMfe.remoteBaseUrl, 'assets/i18n/'),
-            '.json',
-          ),
-        );
-      }),
-    ),
-  );
-}
-
 @Component({
   selector: 'app-ocx-column-group-selection',
   standalone: true,
@@ -150,7 +113,7 @@ export function createTranslateLoader(
       isolate: true,
       loader: {
         provide: TranslateLoader,
-        useFactory: createTranslateLoader,
+        useFactory: createRemoteComponentTranslateLoaderWithMfe,
         deps: [HttpClient, BASE_URL, TranslationCacheService, AppStateService],
       },
     }),
