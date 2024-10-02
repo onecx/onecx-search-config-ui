@@ -7,6 +7,7 @@ import {
   Input,
   OnDestroy,
   OnInit,
+  ViewChild,
 } from '@angular/core';
 import {
   TranslateLoader,
@@ -49,9 +50,10 @@ import {
   withLatestFrom,
 } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
+import { Button, ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { OverlayPanel, OverlayPanelModule } from 'primeng/overlaypanel';
 import { PrimeIcons } from 'primeng/api';
 import { SharedModule } from 'src/app/shared/shared.module';
 import {
@@ -85,6 +87,7 @@ import {
   parseFieldValues,
 } from 'src/app/shared/search-config.utils';
 import { TooltipModule } from 'primeng/tooltip';
+import { FocusTrapModule } from 'primeng/focustrap';
 
 @Component({
   selector: 'app-ocx-column-group-selection',
@@ -103,6 +106,8 @@ import { TooltipModule } from 'primeng/tooltip';
     DropdownModule,
     FloatLabelModule,
     TooltipModule,
+    OverlayPanelModule,
+    FocusTrapModule,
   ],
   providers: [
     PortalMessageService,
@@ -187,8 +192,12 @@ export class OneCXColumnGroupSelectionComponent
   deleteIcon = PrimeIcons.TRASH;
   stopIcon = PrimeIcons.TIMES;
   saveIcon = PrimeIcons.CHECK;
+  selectIcon = PrimeIcons.CHECK;
 
   permissions: string[] = [];
+
+  @ViewChild('op') op: OverlayPanel | undefined;
+  @ViewChild('manageButton') manageButton: Button | undefined;
 
   constructor(
     @Inject(BASE_URL) private baseUrl: ReplaySubject<string>,
@@ -286,8 +295,42 @@ export class OneCXColumnGroupSelectionComponent
     this.permissions = config.permissions;
   }
 
-  onSearchConfigEdit(event: Event, searchConfig: SearchConfigInfo | undefined) {
-    event.stopPropagation();
+  onColumnGroupChange(key: string) {
+    this.op?.hide();
+
+    setTimeout(() => {
+      this.searchConfigStore.setSelectedGroupKey(key);
+    });
+  }
+
+  focusManageButton() {
+    this.manageButton?.focus();
+  }
+
+  overlayButtonText(vm: ColumnSelectionViewModel): {
+    type: 'config' | 'key';
+    key: string;
+    params?: any;
+  } {
+    if (vm.editMode && vm.currentConfig) {
+      return {
+        type: 'config',
+        key: 'COLUMN_GROUP_SELECTION.EDITING',
+        params: { group: vm.currentConfig.name },
+      };
+    }
+    return {
+      type:
+        vm.selectedGroupKey && this.isConfig(vm.selectedGroupKey, vm)
+          ? 'config'
+          : 'key',
+      key: 'COLUMN_GROUP_SELECTION.ACTIVE',
+      params: { group: vm.selectedGroupKey },
+    };
+  }
+
+  onSearchConfigEdit(searchConfig: SearchConfigInfo | undefined) {
+    this.op?.hide();
 
     if (searchConfig === undefined) {
       return;
@@ -298,9 +341,7 @@ export class OneCXColumnGroupSelectionComponent
     });
   }
 
-  onSearchConfigSaveEdit(event: Event, config: SearchConfigInfo | undefined) {
-    event.stopPropagation();
-
+  onSearchConfigSaveEdit(config: SearchConfigInfo | undefined) {
     if (config === undefined) {
       return;
     }
@@ -403,11 +444,8 @@ export class OneCXColumnGroupSelectionComponent
     });
   }
 
-  onSearchConfigDelete(
-    event: Event,
-    searchConfig: SearchConfigInfo | undefined,
-  ) {
-    event.stopPropagation();
+  onSearchConfigDelete(searchConfig: SearchConfigInfo | undefined) {
+    this.op?.hide();
 
     if (searchConfig === undefined) {
       return;
@@ -458,20 +496,6 @@ export class OneCXColumnGroupSelectionComponent
     );
   }
 
-  changeGroupSelection(event: { value: string }) {
-    if (event.value) {
-      setTimeout(() => {
-        this.searchConfigStore.setSelectedGroupKey(event.value);
-      });
-    }
-  }
-
-  clearGroupSelection() {
-    setTimeout(() => {
-      this.searchConfigStore.setSelectedGroupKey(this.defaultGroupKey);
-    });
-  }
-
   isSearchConfig(name: string, vm: ColumnSelectionViewModel): boolean {
     if (
       name === vm.customGroupKey ||
@@ -481,8 +505,11 @@ export class OneCXColumnGroupSelectionComponent
     return true;
   }
 
-  isReadonly(configs: SearchConfigInfo[], name: string): boolean {
-    return this.getConfigByName(configs, name)?.isReadonly ?? false;
+  isReadonly(name: string, vm: ColumnSelectionViewModel): boolean {
+    return (
+      this.getConfigByName(vm.searchConfigsWithColumns, name)?.isReadonly ??
+      false
+    );
   }
 
   getConfigByName(
@@ -490,5 +517,13 @@ export class OneCXColumnGroupSelectionComponent
     name: string,
   ): SearchConfigInfo | undefined {
     return configs.find((c) => c.name === name);
+  }
+
+  isConfig(key: string, vm: ColumnSelectionViewModel): boolean {
+    return this.getConfigByName(vm.searchConfigsWithColumns, key) !== undefined;
+  }
+
+  allGroupKeysWithoutCustom(vm: ColumnSelectionViewModel) {
+    return vm.allGroupKeys.filter((k) => k !== vm.customGroupKey);
   }
 }

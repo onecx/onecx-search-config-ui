@@ -8,20 +8,31 @@
       }
     },
     "SEARCH_CONFIG": {
-      "DROPDOWN_ARIA_LABEL": "Suchkonfiguration",
-      "DROPDOWN_LABEL": "Suchkonfiguration",
-      "CREATE": "Suchkonfiguration hinzufügen",
-      "PLACEHOLDER": "Suchkonfiguration auswählen",
       "EDITING": "{{config}} Suchkonfiguration bearbeiten",
+      "ACTIVE": "Aktiv: {{config}}",
       "SAVE_EDIT": {
-        "LABEL": "Suchkonfiguration speichern",
+        "LABEL": "Speichern",
         "ARIA_LABEL": "Suchkonfiguration speichern",
         "TOOLTIP": "Aktuell bearbeitete Suchkonfiguration speichern"
       },
       "CANCEL_EDIT": {
-        "LABEL": "Suchkonfiguration abbrechen",
+        "LABEL": "Abbrechen",
         "ARIA_LABEL": "Suchkonfiguration abbrechen",
         "TOOLTIP": "Bearbeitung der Suchkonfiguration abbrechen"
+      },
+      "SELECT": {
+        "LABEL": "Auswählen",
+        "ARIA_LABEL": "Suchkonfiguration auswählen",
+        "TOOLTIP": "Suchkonfiguration auswählen"
+      },
+      "MANAGE": {
+        "LABEL": "Suchkonfigurationen verwalten",
+        "ARIA_LABEL": "Suchkonfigurationen verwalten",
+        "TOOLTIP": "Suchkonfigurationen verwalten"
+      },
+      "ADD": {
+        "ARIA_LABEL": "Suchkonfiguration hinzufügen",
+        "TOOLTIP": "Suchkonfiguration hinzufügen"
       },
       "EDIT": {
         "ARIA_LABEL": "Suchkonfiguration bearbeiten",
@@ -55,5 +66,20 @@
       "DELETE_SUCCESS": "Suchkonfiguration erfolgreich gelöscht",
       "DELETE_FAILURE": "Fehler beim Löschen der Suchkonfiguration",
       "FETCH_FAILURE": "Fehler beim Laden der Suchkonfiguration"
+    },
+    "COLUMN_GROUP_SELECTION": {
+      "EDITING": "{{group}} Suchkonfiguration bearbeiten",
+      "ACTIVE": "Aktiv: {{group}}",
+      "COLUMN_GROUP_LIST": "Säulengruppen",
+      "SELECT": {
+        "LABEL": "Auswählen",
+        "ARIA_LABEL": "Spaltengruppe auswählen",
+        "TOOLTIP": "Spaltengruppe auswählen"
+      },
+      "MANAGE": {
+        "LABEL": "Spaltengruppen verwalten",
+        "ARIA_LABEL": "Spaltengruppen verwalten",
+        "TOOLTIP": "Spaltengruppen verwalten"
+      }
     }
   }

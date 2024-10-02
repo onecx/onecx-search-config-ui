@@ -8,20 +8,32 @@
       }
     },
     "SEARCH_CONFIG": {
-      "DROPDOWN_ARIA_LABEL": "Search config",
-      "DROPDOWN_LABEL": "Search config",
-      "CREATE": "Add search config",
-      "PLACEHOLDER": "Choose search config",
-      "EDITING": "Editing {{config}} search config",
+      "EDITING": "Editing: {{config}}",
+      "ACTIVE": "Active: {{config}}",
+      "SEARCH_CONFIG_LIST": "Search configs",
       "SAVE_EDIT": {
-        "LABEL": "Save search config",
+        "LABEL": "Save",
         "ARIA_LABEL": "Save search config",
         "TOOLTIP": "Save currently edited search config"
       },
       "CANCEL_EDIT": {
-        "LABEL": "Cancel search config",
-        "ARIA_LABEL": "Cancel search config",
+        "LABEL": "Cancel",
+        "ARIA_LABEL": "Cancel search config edit",
         "TOOLTIP": "Stop editing search config"
+      },
+      "SELECT": {
+        "LABEL": "Select",
+        "ARIA_LABEL": "Select search config",
+        "TOOLTIP": "Select search config"
+      },
+      "MANAGE": {
+        "LABEL": "Manage search configs",
+        "ARIA_LABEL": "Manage search configs",
+        "TOOLTIP": "Manage search configs"
+      },
+      "ADD": {
+        "ARIA_LABEL": "Add search config",
+        "TOOLTIP": "Add search config"
       },
       "EDIT": {
         "ARIA_LABEL": "Edit search config",
@@ -55,5 +67,20 @@
       "DELETE_SUCCESS": "Successfully deleted search config",
       "DELETE_FAILURE": "Failed to delete search config",
       "FETCH_FAILURE": "Failed to load search config"
+    },
+    "COLUMN_GROUP_SELECTION": {
+      "EDITING": "Editing: {{group}}",
+      "ACTIVE": "Active: {{group}}",
+      "COLUMN_GROUP_LIST": "Column groups",
+      "SELECT": {
+        "LABEL": "Select",
+        "ARIA_LABEL": "Select column group",
+        "TOOLTIP": "Select column group"
+      },
+      "MANAGE": {
+        "LABEL": "Manage column groups",
+        "ARIA_LABEL": "Manage column groups",
+        "TOOLTIP": "Manage column groups"
+      }
     }
   }

@@ -7,19 +7,24 @@ import {
   ReactiveFormsModule,
 } from '@angular/forms';
 import {
+  AfterViewInit,
   Component,
   EventEmitter,
   Inject,
   Input,
   OnDestroy,
   OnInit,
+  ViewChild,
 } from '@angular/core';
 import {
   TranslateLoader,
   TranslateModule,
   TranslateService,
 } from '@ngx-translate/core';
-import { SearchConfigData, createRemoteComponentTranslateLoader } from '@onecx/angular-accelerator';
+import {
+  SearchConfigData,
+  createRemoteComponentTranslateLoader,
+} from '@onecx/angular-accelerator';
 import {
   AppStateService,
   PortalCoreModule,
@@ -47,6 +52,7 @@ import {
   map,
   mergeMap,
   of,
+  tap,
   withLatestFrom,
 } from 'rxjs';
 import {
@@ -59,12 +65,12 @@ import {
 } from 'src/app/shared/generated';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { environment } from 'src/environments/environment';
-import { ButtonModule } from 'primeng/button';
+import { Button, ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { OverlayPanel, OverlayPanelModule } from 'primeng/overlaypanel';
 import { MfeInfo } from '@onecx/integration-interface';
 import {
-  FieldValues,
   PageData,
   RevertData,
   SEARCH_CONFIG_STORE_NAME,
@@ -92,6 +98,7 @@ import {
   parseFieldValues,
 } from 'src/app/shared/search-config.utils';
 import { TooltipModule } from 'primeng/tooltip';
+import { FocusTrapModule } from 'primeng/focustrap';
 
 @Component({
   selector: 'app-ocx-search-config',
@@ -110,7 +117,9 @@ import { TooltipModule } from 'primeng/tooltip';
     CreateOrEditSearchConfigDialogComponent,
     DropdownModule,
     FloatLabelModule,
+    OverlayPanelModule,
     TooltipModule,
+    FocusTrapModule,
   ],
   providers: [
     PortalMessageService,
@@ -139,7 +148,7 @@ import { TooltipModule } from 'primeng/tooltip';
   ],
 })
 export class OneCXSearchConfigComponent
-  implements ocxRemoteComponent, ocxRemoteWebcomponent, OnInit, OnDestroy
+  implements ocxRemoteComponent, ocxRemoteWebcomponent, OnDestroy
 {
   hasValues = hasValues;
   @Input() set pageName(pageName: string) {
@@ -159,12 +168,8 @@ export class OneCXSearchConfigComponent
     });
   }
 
-  @Input() searchConfigSelected: EventEmitter<
-    SearchConfigData
-    | undefined
-  > = new EventEmitter();
-
-  formGroup: FormGroup | undefined;
+  @Input() searchConfigSelected: EventEmitter<SearchConfigData | undefined> =
+    new EventEmitter();
 
   readonly vm$ = this.searchConfigStore.searchConfigVm$.pipe(debounceTime(50));
 
@@ -172,16 +177,17 @@ export class OneCXSearchConfigComponent
   currentConfigSub: Subscription | undefined;
 
   baseOptions: any[] = [];
-  addSearchConfigOption: any = {
-    id: 'ocx-add-search-config-option',
-  };
   plusIcon = PrimeIcons.PLUS;
   editIcon = PrimeIcons.PENCIL;
   deleteIcon = PrimeIcons.TRASH;
   stopIcon = PrimeIcons.TIMES;
   saveIcon = PrimeIcons.CHECK;
+  selectIcon = PrimeIcons.CHECK;
 
   permissions: string[] = [];
+
+  @ViewChild('op') op: OverlayPanel | undefined;
+  @ViewChild('manageButton') manageButton: Button | undefined;
 
   constructor(
     @Inject(BASE_URL) private baseUrl: ReplaySubject<string>,
@@ -265,20 +271,11 @@ export class OneCXSearchConfigComponent
               }
             : undefined,
         );
-        this.setSearchConfigControl(
-          config && hasValues(config) ? config : null,
-        );
       });
   }
   ngOnDestroy(): void {
     this.currentConfigSub?.unsubscribe();
     this.dataRevertSub?.unsubscribe();
-  }
-
-  ngOnInit(): void {
-    this.formGroup = new FormGroup({
-      searchConfig: new FormControl<SearchConfigInfo | null>(null),
-    });
   }
 
   @Input() set ocxRemoteComponentConfig(config: RemoteComponentConfig) {
@@ -300,26 +297,47 @@ export class OneCXSearchConfigComponent
     }
   }
 
-  onSearchConfigChange(
-    event: {
-      originalEvent: Event;
-      value: SearchConfigInfo;
-    },
-    vm: SearchConfigViewModel,
-  ) {
-    if (event.value.id === this.addSearchConfigOption.id) {
-      setTimeout(() => {
-        this.searchConfigStore.setCurrentConfig(undefined);
-      });
-      return this.onSearchConfigSave(vm);
+  focusManageButton() {
+    this.manageButton?.focus();
+  }
+
+  overlayButtonText(vm: SearchConfigViewModel): {
+    key: string;
+    params?: any;
+  } {
+    if (vm.editMode && vm.currentConfig) {
+      return {
+        key: 'SEARCH_CONFIG.EDITING',
+        params: { config: vm.currentConfig.name },
+      };
     }
+    if (
+      vm.currentConfig &&
+      vm.searchConfigs.find((c) => c.name === vm.currentConfig?.name)
+    ) {
+      return {
+        key: 'SEARCH_CONFIG.ACTIVE',
+        params: { config: vm.currentConfig.name },
+      };
+    }
+    return { key: 'SEARCH_CONFIG.MANAGE.LABEL' };
+  }
+
+  onSearchConfigChange(value: SearchConfigInfo) {
+    this.op?.hide();
 
     setTimeout(() => {
-      this.searchConfigStore.setCurrentConfig(event.value);
+      this.searchConfigStore.setCurrentConfig(value);
     });
   }
 
   onSearchConfigSave(vm: SearchConfigViewModel) {
+    this.op?.hide();
+
+    setTimeout(() => {
+      this.searchConfigStore.setCurrentConfig(undefined);
+    });
+
     this.portalDialogService
       .openDialog<CreateOrEditSearchDialogContent>(
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_HEADER',
@@ -372,29 +390,34 @@ export class OneCXSearchConfigComponent
           const config = response.configs.find(
             (config) => config.id === response.id,
           );
-          config && this.setSearchConfigControl(config);
           setTimeout(() => {
             config && this.searchConfigStore.addSearchConfig(config);
           });
           setTimeout(() => {
             config && this.searchConfigStore.setCurrentConfig(config);
           });
-        } else {
-          this.setSearchConfigControl(null);
         }
       });
   }
 
-  onSearchConfigEdit(event: Event, searchConfig: SearchConfigInfo) {
-    event.stopPropagation();
+  onSearchConfigEdit(searchConfig: SearchConfigInfo) {
+    this.op?.hide();
+
     setTimeout(() => {
       this.searchConfigStore.enterEditMode(searchConfig);
     });
   }
 
-  onSearchConfigSaveEdit(event: Event, vm: SearchConfigViewModel) {
-    event.stopPropagation();
-    const searchConfig = this.getSearchConfigControl();
+  onSearchConfigSaveEdit(vm: SearchConfigViewModel) {
+    const searchConfig = vm.currentConfig;
+
+    if (!searchConfig) {
+      setTimeout(() => {
+        this.searchConfigStore.cancelEdit();
+      });
+      return;
+    }
+
     this.portalDialogService
       .openDialog<CreateOrEditSearchDialogContent>(
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_HEADER',
@@ -450,7 +473,6 @@ export class OneCXSearchConfigComponent
             this.searchConfigStore.saveEdit(config);
           });
         } else {
-          this.setSearchConfigControl(null);
           setTimeout(() => {
             this.searchConfigStore.cancelEdit();
           });
@@ -464,8 +486,8 @@ export class OneCXSearchConfigComponent
     });
   }
 
-  onSearchConfigDelete(event: Event, searchConfig: SearchConfigInfo) {
-    event.stopPropagation();
+  onSearchConfigDelete(searchConfig: SearchConfigInfo) {
+    this.op?.hide();
 
     this.portalDialogService
       .openDialog(
@@ -496,9 +518,6 @@ export class OneCXSearchConfigComponent
           setTimeout(() => {
             this.searchConfigStore.deleteSearchConfig(searchConfig);
           });
-          if (this.getSearchConfigControl() === searchConfig) {
-            this.setSearchConfigControl(null);
-          }
         }
       });
   }
@@ -590,13 +609,5 @@ export class OneCXSearchConfigComponent
         return of(undefined);
       }),
     );
-  }
-
-  private setSearchConfigControl(value: SearchConfigInfo | undefined | null) {
-    this.formGroup?.get('searchConfig')?.setValue(value);
-  }
-
-  private getSearchConfigControl(): SearchConfigInfo {
-    return this.formGroup?.get('searchConfig')?.value;
   }
 }
