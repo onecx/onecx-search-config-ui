@@ -1,16 +1,8 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { OneCXSearchConfigComponent } from './search-config.component';
-import {
-  ReplaySubject,
-  debounceTime,
-  of,
-  take,
-  takeLast,
-  throwError,
-} from 'rxjs';
+import { ReplaySubject, of, throwError } from 'rxjs';
 import { TranslateTestingModule } from 'ngx-translate-testing';
-import { RouterTestingModule } from '@angular/router/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import {
@@ -22,8 +14,6 @@ import {
   AppStateService,
 } from '@onecx/angular-integration-interface';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { DropdownModule } from 'primeng/dropdown';
 import { NO_ERRORS_SCHEMA, NgModule } from '@angular/core';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { OneCXSearchConfigHarness } from './search-config.harness';
@@ -34,15 +24,12 @@ import {
   SearchConfigMessage,
   SearchConfigStore,
 } from 'src/app/shared/search-config.store';
-import { FloatLabelModule } from 'primeng/floatlabel';
 import { CreateOrEditSearchConfigDialogComponent } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
 import { ButtonModule } from 'primeng/button';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   IfPermissionDirective,
   PortalDialogService,
   PortalMessageService,
-  SearchConfigInfo,
 } from '@onecx/portal-integration-angular';
 import {
   Configuration,
@@ -51,6 +38,8 @@ import {
 import { DialogService } from 'primeng/dynamicdialog';
 import { advancedViewMode, basicViewMode } from 'src/app/shared/constants';
 import { TooltipModule } from 'primeng/tooltip';
+import { OverlayPanelModule } from 'primeng/overlaypanel';
+import { FocusTrapModule } from 'primeng/focustrap';
 
 @NgModule({
   imports: [],
@@ -63,7 +52,7 @@ const createSpyObj = (
   baseName: string,
   methodNames: Array<string>,
 ): { [key: string]: any } => {
-  let obj: any = {};
+  const obj: any = {};
 
   for (let i = 0; i < methodNames.length; i++) {
     obj[methodNames[i]] = jest.fn();
@@ -187,10 +176,10 @@ describe('OneCXSearchConfigComponent', () => {
   }
 
   async function selectFirstConfig(harness: OneCXSearchConfigHarness) {
-    const dropdown = await harness.getDropdown();
-    await dropdown?.open();
-    const items = await dropdown?.getDropdownItems();
-    await items?.at(1)?.selectItem();
+    const items = await harness.getItems();
+    const selectButton = await items?.at(0)?.getSelectButton();
+    await selectButton?.click();
+    return items?.at(0);
   }
 
   let baseUrlSubject: ReplaySubject<any>;
@@ -231,13 +220,11 @@ describe('OneCXSearchConfigComponent', () => {
             PortalDependencyModule,
             TranslateTestingModule,
             CommonModule,
-            DropdownModule,
             TooltipModule,
-            FloatLabelModule,
             CreateOrEditSearchConfigDialogComponent,
             ButtonModule,
-            ReactiveFormsModule,
-            FormsModule,
+            OverlayPanelModule,
+            FocusTrapModule,
           ],
           providers: [
             DialogService,
@@ -399,28 +386,26 @@ describe('OneCXSearchConfigComponent', () => {
     }));
   });
 
-  describe('dropdown content', () => {
-    it('should display dropdown with add option', async () => {
-      const { searchConfigHarness } =
+  describe('overlay content', () => {
+    it('should display overlay with add option', async () => {
+      const { component, searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeDefined();
-      expect(await dropdown?.getDefaultText()).toEqual('Choose search config');
-      await dropdown?.open();
-      const items = await dropdown?.getDropdownItems();
-      expect(items?.length).toBe(1);
-      expect(await items?.at(0)?.getText()).toEqual('Add search config');
+      const manageButton = await searchConfigHarness.getManageButton();
+      expect(await manageButton?.getLabel()).toEqual('Manage search configs');
+      const addItem = await searchConfigHarness.getAddItem();
+      expect(addItem).toBeDefined();
+      expect(await addItem?.getIcon()).toEqual(component.plusIcon);
     });
 
-    it('should not display dropdown with no view permission', async () => {
+    it('should not display manage button with no view permission', async () => {
       const { searchConfigHarness } = await setUpWithHarnessAndInit(['']);
 
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeFalsy();
+      const manageButton = await searchConfigHarness.getManageButton();
+      expect(manageButton).toBeFalsy();
     });
 
-    it('should display dropdown with configs that have values', async () => {
+    it('should display overlay with configs that have values', async () => {
       const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config, onlyValuesConfig, onlyColumnsConfig],
@@ -428,10 +413,7 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(viewOnlyPermissions);
 
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeDefined();
-      await dropdown?.open();
-      const items = await dropdown?.getDropdownItems();
+      const items = await searchConfigHarness.getItems();
       expect(items?.length).toBe(2);
       expect(await items?.at(0)?.getText()).toEqual(config.name);
       expect(await items?.at(1)?.getText()).toEqual(onlyValuesConfig.name);
@@ -447,20 +429,11 @@ describe('OneCXSearchConfigComponent', () => {
 
       await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const items = await searchConfigHarness.getItems();
+      const editButton = await items?.at(0)?.getEditButton();
       await editButton?.click();
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(await dropdown?.getSelectedText()).toEqual(
-        'Editing config-1 search config',
-      );
-    });
-    it('should have correct aria label', async () => {
-      const { searchConfigHarness } =
-        await setUpWithHarnessAndInit(allPermissions);
-
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeDefined();
-      expect(await dropdown?.getAriaLabel()).toEqual('Search config');
+      const manageButton = await searchConfigHarness.getManageButton();
+      expect(await manageButton?.getLabel()).toEqual('Editing: config-1');
     });
   });
 
@@ -473,25 +446,12 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
-      const deleteButton = await searchConfigHarness.getDeleteButton();
+      const deleteButton = await item?.getDeleteButton();
       expect(deleteButton).toBeTruthy();
-    });
-    it('should not display edit/delete if config is not selected', async () => {
-      const store = TestBed.inject(SearchConfigStore);
-      store.patchState({
-        searchConfigs: [config],
-      });
-      const { searchConfigHarness } =
-        await setUpWithHarnessAndInit(allPermissions);
-
-      const editButton = await searchConfigHarness.getEditButton();
-      expect(editButton).toBeFalsy();
-      const deleteButton = await searchConfigHarness.getDeleteButton();
-      expect(deleteButton).toBeFalsy();
     });
     it('should not display edit/delete if config is readonly', async () => {
       const store = TestBed.inject(SearchConfigStore);
@@ -505,25 +465,12 @@ describe('OneCXSearchConfigComponent', () => {
       });
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
-      expect(editButton).toBeFalsy();
-      const deleteButton = await searchConfigHarness.getDeleteButton();
-      expect(deleteButton).toBeFalsy();
-    });
-    it('should not display edit/delete if config is columns only', async () => {
-      const store = TestBed.inject(SearchConfigStore);
-      store.patchState({
-        searchConfigs: [onlyColumnsConfig],
-      });
-      const { searchConfigHarness } =
-        await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeFalsy();
-      const deleteButton = await searchConfigHarness.getDeleteButton();
+      const deleteButton = await item?.getDeleteButton();
       expect(deleteButton).toBeFalsy();
     });
     it('should not display edit/delete if no permissions ', async () => {
@@ -533,11 +480,12 @@ describe('OneCXSearchConfigComponent', () => {
       });
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(viewOnlyPermissions);
-      await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const item = await selectFirstConfig(searchConfigHarness);
+
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeFalsy();
-      const deleteButton = await searchConfigHarness.getDeleteButton();
+      const deleteButton = await item?.getDeleteButton();
       expect(deleteButton).toBeFalsy();
     });
   });
@@ -550,8 +498,10 @@ describe('OneCXSearchConfigComponent', () => {
       });
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
-      const editButton = await searchConfigHarness.getEditButton();
+
+      const item = await selectFirstConfig(searchConfigHarness);
+
+      const editButton = await item?.getEditButton();
       await editButton?.click();
 
       const saveEditButton = await searchConfigHarness.getSaveEditButton();
@@ -589,8 +539,8 @@ describe('OneCXSearchConfigComponent', () => {
       await selectFirstConfig(searchConfigHarness);
 
       expect(storeSpy).toHaveBeenCalledWith(config);
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(await dropdown?.getSelectedText()).toEqual(config.name);
+      const manageButton = await searchConfigHarness.getManageButton();
+      expect(await manageButton?.getLabel()).toEqual(`Active: ${config.name}`);
     });
     it('should open dialog if user chose to add new config', async () => {
       const store = TestBed.inject(SearchConfigStore);
@@ -604,11 +554,9 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeDefined();
-      await dropdown?.open();
-      const items = await dropdown?.getDropdownItems();
-      await items?.at(0)?.selectItem();
+      const addItem = await searchConfigHarness.getAddItem();
+      expect(addItem).toBeDefined();
+      await addItem?.click();
 
       expect(dialogServiceSpy).toHaveReturnedTimes(1);
       expect(storeSpy).toHaveBeenCalledWith(undefined);
@@ -627,11 +575,9 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeDefined();
-      await dropdown?.open();
-      const items = await dropdown?.getDropdownItems();
-      await items?.at(0)?.selectItem();
+      const addItem = await searchConfigHarness.getAddItem();
+      expect(addItem).toBeDefined();
+      await addItem?.click();
       expect(dialogServiceSpy).toHaveBeenCalledWith(
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_HEADER',
         {
@@ -660,11 +606,9 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeDefined();
-      await dropdown?.open();
-      const items = await dropdown?.getDropdownItems();
-      await items?.at(0)?.selectItem();
+      const addItem = await searchConfigHarness.getAddItem();
+      expect(addItem).toBeDefined();
+      await addItem?.click();
       expect(dialogServiceSpy).toHaveBeenCalledWith(
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_HEADER',
         {
@@ -694,11 +638,9 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeDefined();
-      await dropdown?.open();
-      const items = await dropdown?.getDropdownItems();
-      await items?.at(0)?.selectItem();
+      const addItem = await searchConfigHarness.getAddItem();
+      expect(addItem).toBeDefined();
+      await addItem?.click();
       expect(dialogServiceSpy).toHaveBeenCalledWith(
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_HEADER',
         {
@@ -743,11 +685,9 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeDefined();
-      await dropdown?.open();
-      const items = await dropdown?.getDropdownItems();
-      await items?.at(0)?.selectItem();
+      const addItem = await searchConfigHarness.getAddItem();
+      expect(addItem).toBeDefined();
+      await addItem?.click();
 
       expect(addSpy).toHaveBeenCalledTimes(0);
       expect(setSpy).toHaveBeenCalledTimes(1);
@@ -785,11 +725,9 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeDefined();
-      await dropdown?.open();
-      const items = await dropdown?.getDropdownItems();
-      await items?.at(0)?.selectItem();
+      const addItem = await searchConfigHarness.getAddItem();
+      expect(addItem).toBeDefined();
+      await addItem?.click();
 
       expect(addSpy).toHaveBeenCalledTimes(0);
       expect(setSpy).toHaveBeenCalledTimes(1);
@@ -833,12 +771,9 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeDefined();
-      await dropdown?.open();
-      const items = await dropdown?.getDropdownItems();
-      await items?.at(0)?.selectItem();
-      expect(items?.length).toBe(1);
+      const addItem = await searchConfigHarness.getAddItem();
+      expect(addItem).toBeDefined();
+      await addItem?.click();
 
       expect(portalMessageSpy.info).toHaveBeenCalledWith({
         summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_SUCCESS',
@@ -885,12 +820,10 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeDefined();
-      await dropdown?.open();
-      const items = await dropdown?.getDropdownItems();
-      await items?.at(0)?.selectItem();
-      expect(items?.length).toBe(1);
+      const addItem = await searchConfigHarness.getAddItem();
+      expect(addItem).toBeDefined();
+      await addItem?.click();
+
       expect(createCallSpy).toHaveBeenCalledWith({
         appId: 'my-app',
         productName: 'my-product',
@@ -942,12 +875,10 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeDefined();
-      await dropdown?.open();
-      const items = await dropdown?.getDropdownItems();
-      await items?.at(0)?.selectItem();
-      expect(items?.length).toBe(1);
+      const addItem = await searchConfigHarness.getAddItem();
+      expect(addItem).toBeDefined();
+      await addItem?.click();
+
       expect(createCallSpy).toHaveBeenCalledWith({
         appId: 'my-app',
         productName: 'my-product',
@@ -995,12 +926,10 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeDefined();
-      await dropdown?.open();
-      const items = await dropdown?.getDropdownItems();
-      await items?.at(0)?.selectItem();
-      expect(items?.length).toBe(1);
+      const addItem = await searchConfigHarness.getAddItem();
+      expect(addItem).toBeDefined();
+      await addItem?.click();
+
       expect(createCallSpy).toHaveBeenCalledWith({
         appId: 'my-app',
         productName: 'my-product',
@@ -1048,12 +977,10 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeDefined();
-      await dropdown?.open();
-      const items = await dropdown?.getDropdownItems();
-      await items?.at(0)?.selectItem();
-      expect(items?.length).toBe(1);
+      const addItem = await searchConfigHarness.getAddItem();
+      expect(addItem).toBeDefined();
+      await addItem?.click();
+
       expect(createCallSpy).toHaveBeenCalledWith({
         appId: 'my-app',
         productName: 'my-product',
@@ -1103,12 +1030,9 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const dropdown = await searchConfigHarness.getDropdown();
-      expect(dropdown).toBeDefined();
-      await dropdown?.open();
-      const items = await dropdown?.getDropdownItems();
-      await items?.at(0)?.selectItem();
-      expect(items?.length).toBe(1);
+      const addItem = await searchConfigHarness.getAddItem();
+      expect(addItem).toBeDefined();
+      await addItem?.click();
 
       expect(portalMessageSpy.error).toHaveBeenCalledWith({
         summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_FAILURE',
@@ -1129,9 +1053,10 @@ describe('OneCXSearchConfigComponent', () => {
       });
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const item = await selectFirstConfig(searchConfigHarness);
+
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
       await editButton?.click();
       expect(editModeSpy).toHaveBeenCalledTimes(1);
@@ -1145,9 +1070,9 @@ describe('OneCXSearchConfigComponent', () => {
       });
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
       await editButton?.click();
       const cancelButton = await searchConfigHarness.getCancelEditButton();
@@ -1166,9 +1091,9 @@ describe('OneCXSearchConfigComponent', () => {
       });
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const deleteButton = await searchConfigHarness.getDeleteButton();
+      const deleteButton = await item?.getDeleteButton();
       expect(deleteButton).toBeTruthy();
       await deleteButton?.click();
 
@@ -1199,24 +1124,18 @@ describe('OneCXSearchConfigComponent', () => {
       jest
         .spyOn(searchConfigServiceSpy, 'deleteSearchConfig')
         .mockReturnValue(of({} as any));
-      const { component, searchConfigHarness } =
+      const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const formControlSpy = jest.spyOn(
-        component.formGroup!.get('searchConfig')!,
-        'setValue',
-      );
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      await selectFirstConfig(searchConfigHarness);
-
-      const deleteButton = await searchConfigHarness.getDeleteButton();
+      const deleteButton = await item?.getDeleteButton();
       expect(deleteButton).toBeTruthy();
       await deleteButton?.click();
 
       expect(portalMessageSpy.info).toHaveBeenCalledWith({
         summaryKey: 'SEARCH_CONFIG.DELETE_SUCCESS',
       });
-      expect(formControlSpy).toHaveBeenCalledWith(null);
       expect(deleteSpy).toHaveBeenCalledWith(config);
     });
     it('should not delete config if dialog was closed', async () => {
@@ -1231,9 +1150,9 @@ describe('OneCXSearchConfigComponent', () => {
         .mockReturnValue(of(undefined as any));
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const deleteButton = await searchConfigHarness.getDeleteButton();
+      const deleteButton = await item?.getDeleteButton();
       expect(deleteButton).toBeTruthy();
       await deleteButton?.click();
 
@@ -1253,9 +1172,9 @@ describe('OneCXSearchConfigComponent', () => {
       );
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const deleteButton = await searchConfigHarness.getDeleteButton();
+      const deleteButton = await item?.getDeleteButton();
       expect(deleteButton).toBeTruthy();
       await deleteButton?.click();
 
@@ -1280,9 +1199,9 @@ describe('OneCXSearchConfigComponent', () => {
         .mockReturnValue(throwError(() => error));
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const deleteButton = await searchConfigHarness.getDeleteButton();
+      const deleteButton = await item?.getDeleteButton();
       expect(deleteButton).toBeTruthy();
       await deleteButton?.click();
 
@@ -1306,9 +1225,9 @@ describe('OneCXSearchConfigComponent', () => {
 
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
       await editButton?.click();
       const saveEditButton = await searchConfigHarness.getSaveEditButton();
@@ -1342,9 +1261,9 @@ describe('OneCXSearchConfigComponent', () => {
 
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
       await editButton?.click();
       const saveEditButton = await searchConfigHarness.getSaveEditButton();
@@ -1380,9 +1299,9 @@ describe('OneCXSearchConfigComponent', () => {
 
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
       await editButton?.click();
       const saveEditButton = await searchConfigHarness.getSaveEditButton();
@@ -1425,9 +1344,9 @@ describe('OneCXSearchConfigComponent', () => {
         .mockReturnValue(of(undefined as any));
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
       await editButton?.click();
       const saveEditButton = await searchConfigHarness.getSaveEditButton();
@@ -1457,9 +1376,9 @@ describe('OneCXSearchConfigComponent', () => {
       );
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
       await editButton?.click();
       const saveEditButton = await searchConfigHarness.getSaveEditButton();
@@ -1501,9 +1420,9 @@ describe('OneCXSearchConfigComponent', () => {
       );
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
       await editButton?.click();
       const saveEditButton = await searchConfigHarness.getSaveEditButton();
@@ -1543,9 +1462,9 @@ describe('OneCXSearchConfigComponent', () => {
 
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
       await editButton?.click();
 
@@ -1601,9 +1520,9 @@ describe('OneCXSearchConfigComponent', () => {
 
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
       await editButton?.click();
 
@@ -1657,9 +1576,9 @@ describe('OneCXSearchConfigComponent', () => {
 
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
       await editButton?.click();
 
@@ -1710,9 +1629,9 @@ describe('OneCXSearchConfigComponent', () => {
 
       const { component, searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
       await editButton?.click();
 
@@ -1755,9 +1674,9 @@ describe('OneCXSearchConfigComponent', () => {
       );
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
       await editButton?.click();
       const saveEditButton = await searchConfigHarness.getSaveEditButton();
@@ -1791,9 +1710,9 @@ describe('OneCXSearchConfigComponent', () => {
       );
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
-      await selectFirstConfig(searchConfigHarness);
+      const item = await selectFirstConfig(searchConfigHarness);
 
-      const editButton = await searchConfigHarness.getEditButton();
+      const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
       await editButton?.click();
       const saveEditButton = await searchConfigHarness.getSaveEditButton();
@@ -1802,6 +1721,21 @@ describe('OneCXSearchConfigComponent', () => {
 
       expect(cancelEditSpy).toHaveBeenCalledTimes(1);
     });
+
+    it('should cancel edit if config is not set', fakeAsync(() => {
+      const store = TestBed.inject(SearchConfigStore);
+      const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
+
+      const { component } = setUp();
+
+      component.onSearchConfigSaveEdit({
+        currentConfig: undefined,
+      } as any);
+
+      tick(500);
+
+      expect(cancelEditSpy).toHaveBeenCalledTimes(1);
+    }));
   });
 
   describe('on dataToRevert change', () => {
@@ -1885,7 +1819,6 @@ describe('OneCXSearchConfigComponent', () => {
       });
 
       const { component } = setUp();
-      component.formGroup?.get('searchConfig')?.setValue(config);
       const emitterSpy = jest.spyOn(component.searchConfigSelected, 'emit');
 
       component.currentFieldValues = { k: 'v_2' };

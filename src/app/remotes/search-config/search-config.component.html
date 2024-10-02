@@ -43,7 +43,11 @@
       [disabled]="vm.editMode"
     ></p-button>
     <p-overlayPanel (onHide)="focusManageButton()" #op>
-      <div pFocusTrap class="flex flex-column gap-3">
+      <div
+        id="sc_search_config_panel_content"
+        pFocusTrap
+        class="flex flex-column gap-3"
+      >
         <div
           class="flex flex-row align-items-center justify-content-between gap-2"
         >
@@ -78,41 +82,43 @@
             <div class="flex align-items-center gap-2 ml-auto">
               <ng-container *ngIf="!config.isReadonly">
                 <button
-                  id="sc_search_config_edit_search_config"
                   *ocxIfPermission="
                     'SEARCHCONFIG#EDIT';
                     permissions: permissions
                   "
+                  class="search_config_edit_button"
                   pButton
                   type="button"
                   icon="{{ editIcon }}"
                   [pTooltip]="'SEARCH_CONFIG.EDIT.TOOLTIP' | translate"
                   tooltipPosition="top"
                   (click)="onSearchConfigEdit(config)"
+                  autofocus="true"
                   [attr.aria-label]="
                     'SEARCH_CONFIG.EDIT.ARIA_LABEL' | translate
                   "
                 ></button>
                 <button
-                  id="sc_search_config_delete_search_config"
                   *ocxIfPermission="
                     'SEARCHCONFIG#DELETE';
                     permissions: permissions
                   "
+                  class="search_config_delete_button"
                   icon="{{ deleteIcon }}"
                   pButton
                   type="button"
                   [pTooltip]="'SEARCH_CONFIG.DELETE.TOOLTIP' | translate"
                   tooltipPosition="top"
                   (click)="onSearchConfigDelete(config)"
+                  autofocus="true"
                   [attr.aria-label]="
                     'SEARCH_CONFIG.DELETE.ARIA_LABEL' | translate
                   "
                 ></button>
               </ng-container>
               <button
-                id="sc_search_config_select_search_config"
                 [label]="'SEARCH_CONFIG.SELECT.LABEL' | translate"
+                class="search_config_select_button"
                 icon="{{ selectIcon }}"
                 pButton
                 type="button"

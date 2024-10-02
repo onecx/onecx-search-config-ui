@@ -47,7 +47,11 @@
           [disabled]="vm.editMode"
         ></p-button>
         <p-overlayPanel (onHide)="focusManageButton()" #op>
-          <div pFocusTrap class="flex flex-column gap-3">
+          <div
+            id="sc_column_group_panel_content"
+            pFocusTrap
+            class="flex flex-column gap-3"
+          >
             <div
               class="flex flex-row align-items-center justify-content-between gap-2"
             >
@@ -75,11 +79,11 @@
                     *ngIf="isConfig(groupKey, vm) && !isReadonly(groupKey, vm)"
                   >
                     <button
-                      id="sc_column_group_selection_edit_search_config"
                       *ocxIfPermission="
                         'SEARCHCONFIG#EDIT';
                         permissions: permissions
                       "
+                      class="search_config_edit_button"
                       pButton
                       type="button"
                       icon="{{ editIcon }}"
@@ -96,11 +100,11 @@
                       "
                     ></button>
                     <button
-                      id="sc_column_group_selection_delete_search_config"
                       *ocxIfPermission="
                         'SEARCHCONFIG#DELETE';
                         permissions: permissions
                       "
+                      class="search_config_delete_button"
                       icon="{{ deleteIcon }}"
                       pButton
                       type="button"
@@ -118,8 +122,8 @@
                     ></button
                   ></ng-container>
                   <button
-                    id="sc_column_group_selection_select_column_group"
                     [label]="'COLUMN_GROUP_SELECTION.SELECT.LABEL' | translate"
+                    class="search_config_select_button"
                     icon="{{ selectIcon }}"
                     pButton
                     type="button"

@@ -1,19 +1,12 @@
 import { CommonModule, Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
-  FormControl,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-} from '@angular/forms';
-import {
-  AfterViewInit,
   Component,
   EventEmitter,
   Inject,
   Input,
   OnDestroy,
-  OnInit,
   ViewChild,
 } from '@angular/core';
 import {
@@ -52,7 +45,6 @@ import {
   map,
   mergeMap,
   of,
-  tap,
   withLatestFrom,
 } from 'rxjs';
 import {
@@ -111,12 +103,8 @@ import { FocusTrapModule } from 'primeng/focustrap';
     PortalCoreModule,
     TranslateModule,
     SharedModule,
-    FormsModule,
-    ReactiveFormsModule,
     ButtonModule,
     CreateOrEditSearchConfigDialogComponent,
-    DropdownModule,
-    FloatLabelModule,
     OverlayPanelModule,
     TooltipModule,
     FocusTrapModule,
