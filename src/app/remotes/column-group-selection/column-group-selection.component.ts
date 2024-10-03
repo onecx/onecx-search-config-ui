@@ -343,6 +343,9 @@ export class OneCXColumnGroupSelectionComponent
 
   onSearchConfigSaveEdit(config: SearchConfigInfo | undefined) {
     if (config === undefined) {
+      setTimeout(() => {
+        this.searchConfigStore.cancelEdit();
+      });
       return;
     }
 
@@ -494,15 +497,6 @@ export class OneCXColumnGroupSelectionComponent
         return of(undefined);
       }),
     );
-  }
-
-  isSearchConfig(name: string, vm: ColumnSelectionViewModel): boolean {
-    if (
-      name === vm.customGroupKey ||
-      vm.nonSearchConfigGroupKeys.includes(name)
-    )
-      return false;
-    return true;
   }
 
   isReadonly(name: string, vm: ColumnSelectionViewModel): boolean {

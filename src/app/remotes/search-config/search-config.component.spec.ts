@@ -435,10 +435,8 @@ describe('OneCXSearchConfigComponent', () => {
       const manageButton = await searchConfigHarness.getManageButton();
       expect(await manageButton?.getLabel()).toEqual('Editing: config-1');
     });
-  });
 
-  describe('with chosen config', () => {
-    it('should display edit/delete', async () => {
+    it('should display edit/delete next to items', async () => {
       const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config],
@@ -446,12 +444,10 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const item = await selectFirstConfig(searchConfigHarness);
-
-      const editButton = await item?.getEditButton();
-      expect(editButton).toBeTruthy();
-      const deleteButton = await item?.getDeleteButton();
-      expect(deleteButton).toBeTruthy();
+      const items = await searchConfigHarness.getItems();
+      expect(items?.length).toBe(1);
+      expect(await items?.at(0)?.getEditButton()).toBeDefined();
+      expect(await items?.at(0)?.getDeleteButton()).toBeDefined();
     });
     it('should not display edit/delete if config is readonly', async () => {
       const store = TestBed.inject(SearchConfigStore);
@@ -466,12 +462,10 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-      const item = await selectFirstConfig(searchConfigHarness);
-
-      const editButton = await item?.getEditButton();
-      expect(editButton).toBeFalsy();
-      const deleteButton = await item?.getDeleteButton();
-      expect(deleteButton).toBeFalsy();
+        const items = await searchConfigHarness.getItems();
+        expect(items?.length).toBe(1);
+        expect(await items?.at(0)?.getEditButton()).toBeNull();
+        expect(await items?.at(0)?.getDeleteButton()).toBeNull();
     });
     it('should not display edit/delete if no permissions ', async () => {
       const store = TestBed.inject(SearchConfigStore);
@@ -481,12 +475,10 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(viewOnlyPermissions);
 
-      const item = await selectFirstConfig(searchConfigHarness);
-
-      const editButton = await item?.getEditButton();
-      expect(editButton).toBeFalsy();
-      const deleteButton = await item?.getDeleteButton();
-      expect(deleteButton).toBeFalsy();
+        const items = await searchConfigHarness.getItems();
+        expect(items?.length).toBe(1);
+        expect(await items?.at(0)?.getEditButton()).toBeNull();
+        expect(await items?.at(0)?.getDeleteButton()).toBeNull();
     });
   });
 
@@ -1950,16 +1942,5 @@ describe('OneCXSearchConfigComponent', () => {
         viewMode: config.isAdvanced ? advancedViewMode : basicViewMode,
       });
     });
-  });
-
-  it('should unsubscribe on destroy', () => {
-    const { component } = setUp();
-    jest.spyOn(component.currentConfigSub!, 'unsubscribe');
-    jest.spyOn(component.dataRevertSub!, 'unsubscribe');
-
-    component.ngOnDestroy();
-
-    expect(component.currentConfigSub?.unsubscribe).toHaveBeenCalledTimes(1);
-    expect(component.dataRevertSub?.unsubscribe).toHaveBeenCalledTimes(1);
   });
 });

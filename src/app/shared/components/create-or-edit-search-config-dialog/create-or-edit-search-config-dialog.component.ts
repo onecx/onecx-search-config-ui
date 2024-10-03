@@ -47,24 +47,15 @@ export class CreateOrEditSearchConfigDialogComponent
   set searchConfigName(value: string | undefined) {
     this.searchConfigFormGroup.controls['searchConfigName'].setValue(value);
   }
-  get searchConfigName(): string | undefined {
-    return this.searchConfigFormGroup.controls['searchConfigName'].value;
-  }
 
   @Input()
   set saveInputValues(value: boolean | undefined) {
     this.searchConfigFormGroup.controls['saveInputValues'].setValue(value);
   }
-  get saveInputValues(): boolean | undefined {
-    return this.searchConfigFormGroup.controls['saveInputValues'].value;
-  }
 
   @Input()
   set saveColumns(value: boolean | undefined) {
     this.searchConfigFormGroup.controls['saveColumns'].setValue(value);
-  }
-  get saveColumns(): boolean | undefined {
-    return this.searchConfigFormGroup.controls['saveColumns'].value;
   }
 
   _frozeColumnSaveOption = false;
