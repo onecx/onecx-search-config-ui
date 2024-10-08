@@ -8,7 +8,6 @@ import {
   BASE_URL,
   RemoteComponentConfig,
 } from '@onecx/angular-remote-components';
-import { AppConfigService } from '@onecx/angular-integration-interface';
 import { CommonModule } from '@angular/common';
 import { DropdownModule } from 'primeng/dropdown';
 import { NO_ERRORS_SCHEMA, NgModule } from '@angular/core';
@@ -31,6 +30,7 @@ import {
   PortalDialogService,
   PortalMessageService,
 } from '@onecx/portal-integration-angular';
+import { AppConfigService } from '@onecx/angular-integration-interface';
 import {
   Configuration,
   SearchConfigAPIService,
@@ -1364,12 +1364,12 @@ describe('OneCXColumnGroupSelectionComponent', () => {
 
       store.patchState({
         selectedGroupKey: 'custom',
-        customGroupKey: 'custom'
+        customGroupKey: 'custom',
       });
 
       tick(500);
 
-      expect(emitterSpy).toHaveBeenCalledTimes(0)
+      expect(emitterSpy).toHaveBeenCalledTimes(0);
     }));
 
     it('should emit if no search config group key was set', async () => {
