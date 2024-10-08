@@ -1,6 +1,5 @@
 import { CommonModule, Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   Component,
   EventEmitter,
@@ -58,8 +57,6 @@ import {
 import { SharedModule } from 'src/app/shared/shared.module';
 import { environment } from 'src/environments/environment';
 import { Button, ButtonModule } from 'primeng/button';
-import { DropdownModule } from 'primeng/dropdown';
-import { FloatLabelModule } from 'primeng/floatlabel';
 import { OverlayPanel, OverlayPanelModule } from 'primeng/overlaypanel';
 import { MfeInfo } from '@onecx/integration-interface';
 import {

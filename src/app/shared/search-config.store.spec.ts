@@ -160,7 +160,7 @@ describe('SearchConfigStore', () => {
 
       store.deactivateColumnGroupStore();
 
-      mockSearchConfigStoreTopic.subscribe((msg) => {
+      mockSearchConfigStoreTopic.subscribe(() => {
         throw new Error();
       });
     });

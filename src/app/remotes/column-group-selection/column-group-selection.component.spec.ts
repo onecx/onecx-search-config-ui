@@ -9,7 +9,6 @@ import {
   RemoteComponentConfig,
 } from '@onecx/angular-remote-components';
 import { CommonModule } from '@angular/common';
-import { DropdownModule } from 'primeng/dropdown';
 import { NO_ERRORS_SCHEMA, NgModule } from '@angular/core';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { OneCXColumnGroupSelectionHarness } from './column-group-selection.harness';
@@ -20,10 +19,8 @@ import {
   SearchConfigMessage,
   SearchConfigStore,
 } from 'src/app/shared/search-config.store';
-import { FloatLabelModule } from 'primeng/floatlabel';
 import { CreateOrEditSearchConfigDialogComponent } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
 import { ButtonModule } from 'primeng/button';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   ColumnType,
   IfPermissionDirective,
@@ -147,16 +144,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     fixture.detectChanges();
 
     return { fixture, component };
-  }
-
-  async function setUpWithHarness() {
-    const { fixture, component } = setUp();
-    const columnGroupHarness =
-      await TestbedHarnessEnvironment.harnessForFixture(
-        fixture,
-        OneCXColumnGroupSelectionHarness,
-      );
-    return { fixture, component, columnGroupHarness };
   }
 
   async function setUpWithHarnessAndInit(permissions: Array<string>) {

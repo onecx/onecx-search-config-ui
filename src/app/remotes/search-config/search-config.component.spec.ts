@@ -148,16 +148,6 @@ describe('OneCXSearchConfigComponent', () => {
     return { fixture, component };
   }
 
-  async function setUpWithHarness() {
-    const { fixture, component } = setUp();
-    const searchConfigHarness =
-      await TestbedHarnessEnvironment.harnessForFixture(
-        fixture,
-        OneCXSearchConfigHarness,
-      );
-    return { fixture, component, searchConfigHarness };
-  }
-
   async function setUpWithHarnessAndInit(permissions: Array<string>) {
     const fixture = TestBed.createComponent(OneCXSearchConfigComponent);
     const component = fixture.componentInstance;
@@ -462,10 +452,10 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
 
-        const items = await searchConfigHarness.getItems();
-        expect(items?.length).toBe(1);
-        expect(await items?.at(0)?.getEditButton()).toBeNull();
-        expect(await items?.at(0)?.getDeleteButton()).toBeNull();
+      const items = await searchConfigHarness.getItems();
+      expect(items?.length).toBe(1);
+      expect(await items?.at(0)?.getEditButton()).toBeNull();
+      expect(await items?.at(0)?.getDeleteButton()).toBeNull();
     });
     it('should not display edit/delete if no permissions ', async () => {
       const store = TestBed.inject(SearchConfigStore);
@@ -475,10 +465,10 @@ describe('OneCXSearchConfigComponent', () => {
       const { searchConfigHarness } =
         await setUpWithHarnessAndInit(viewOnlyPermissions);
 
-        const items = await searchConfigHarness.getItems();
-        expect(items?.length).toBe(1);
-        expect(await items?.at(0)?.getEditButton()).toBeNull();
-        expect(await items?.at(0)?.getDeleteButton()).toBeNull();
+      const items = await searchConfigHarness.getItems();
+      expect(items?.length).toBe(1);
+      expect(await items?.at(0)?.getEditButton()).toBeNull();
+      expect(await items?.at(0)?.getDeleteButton()).toBeNull();
     });
   });
 
@@ -1619,7 +1609,7 @@ describe('OneCXSearchConfigComponent', () => {
         } as any),
       );
 
-      const { component, searchConfigHarness } =
+      const { searchConfigHarness } =
         await setUpWithHarnessAndInit(allPermissions);
       const item = await selectFirstConfig(searchConfigHarness);
 
