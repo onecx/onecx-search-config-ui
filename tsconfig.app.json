@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist/out-tsc",
+    "types": []
+  },
+  "files": [
+    "src/polyfills.ts",
+    "src/main.ts",
+    "src/app/remotes/column-group-selection/column-group-selection.component.main.ts",
+    "src/app/remotes/search-config/search-config.component.main.ts"
+  ],
+  "include": ["src/**/*.d.ts"],
+  "exclude": ["jest.config.ts", "src/**/*.test.ts", "src/**/*.spec.ts"]
+}

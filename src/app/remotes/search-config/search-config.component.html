@@ -1,0 +1,139 @@
+<div
+  class="flex gap-2 justify-content-end align-content-center align-items-center"
+  *ocxIfPermission="'SEARCHCONFIG#VIEW'; permissions: permissions"
+>
+  <div
+    class="flex gap-2 align-content-center align-items-center"
+    *ngIf="vm$ | async as vm"
+  >
+    <button
+      id="sc_search_config_save_search_config_edit"
+      *ngIf="vm.editMode && vm.isInChargeOfEdit"
+      [label]="'SEARCH_CONFIG.SAVE_EDIT.LABEL' | translate"
+      icon="{{ saveIcon }}"
+      pButton
+      type="button"
+      [pTooltip]="'SEARCH_CONFIG.SAVE_EDIT.TOOLTIP' | translate"
+      tooltipPosition="top"
+      (click)="onSearchConfigSaveEdit(vm)"
+      [attr.aria-label]="'SEARCH_CONFIG.SAVE_EDIT.ARIA_LABEL' | translate"
+    ></button>
+    <button
+      id="sc_search_config_cancel_search_config_edit"
+      *ngIf="vm.editMode && vm.isInChargeOfEdit"
+      [label]="'SEARCH_CONFIG.CANCEL_EDIT.LABEL' | translate"
+      icon="{{ stopIcon }}"
+      pButton
+      type="button"
+      [pTooltip]="'SEARCH_CONFIG.CANCEL_EDIT.TOOLTIP' | translate"
+      tooltipPosition="top"
+      (click)="onSearchConfigCancelEdit()"
+      [attr.aria-label]="'SEARCH_CONFIG.CANCEL_EDIT.ARIA_LABEL' | translate"
+    ></button>
+    <p-button
+      #manageButton
+      id="sc_search_config_manage_search_config"
+      *ngIf="overlayButtonText(vm) as buttonData"
+      [label]="buttonData.key | translate: buttonData.params"
+      type="button"
+      [pTooltip]="'SEARCH_CONFIG.MANAGE.TOOLTIP' | translate"
+      tooltipPosition="top"
+      (click)="op.toggle($event)"
+      [ariaLabel]="'SEARCH_CONFIG.MANAGE.ARIA_LABEL' | translate"
+      [disabled]="vm.editMode"
+    ></p-button>
+    <p-overlayPanel (onHide)="focusManageButton()" #op>
+      <div
+        id="sc_search_config_panel_content"
+        pFocusTrap
+        class="flex flex-column gap-3"
+      >
+        <div
+          class="flex flex-row align-items-center justify-content-between gap-2"
+        >
+          <div>
+            <span class="font-bold text-xl block">{{
+              'SEARCH_CONFIG.SEARCH_CONFIG_LIST' | translate
+            }}</span>
+          </div>
+          <div>
+            <button
+              id="sc_search_config_add_search_config"
+              size="small"
+              icon="{{ plusIcon }}"
+              pButton
+              type="button"
+              [pTooltip]="'SEARCH_CONFIG.ADD.TOOLTIP' | translate"
+              tooltipPosition="top"
+              (click)="onSearchConfigSave(vm)"
+              autofocus="true"
+              [attr.aria-label]="'SEARCH_CONFIG.ADD.ARIA_LABEL' | translate"
+            ></button>
+          </div>
+        </div>
+        <ul class="list-none p-0 m-0 flex flex-column gap-3">
+          <li
+            *ngFor="let config of vm.searchConfigs"
+            class="flex align-items-center justify-content-between gap-8"
+          >
+            <div>
+              <span class="font-medium text-lg">{{ config.name }}</span>
+            </div>
+            <div class="flex align-items-center gap-2 ml-auto">
+              <ng-container *ngIf="!config.isReadonly">
+                <button
+                  *ocxIfPermission="
+                    'SEARCHCONFIG#EDIT';
+                    permissions: permissions
+                  "
+                  class="search_config_edit_button"
+                  pButton
+                  type="button"
+                  icon="{{ editIcon }}"
+                  [pTooltip]="'SEARCH_CONFIG.EDIT.TOOLTIP' | translate"
+                  tooltipPosition="top"
+                  (click)="onSearchConfigEdit(config)"
+                  autofocus="true"
+                  [attr.aria-label]="
+                    'SEARCH_CONFIG.EDIT.ARIA_LABEL' | translate
+                  "
+                ></button>
+                <button
+                  *ocxIfPermission="
+                    'SEARCHCONFIG#DELETE';
+                    permissions: permissions
+                  "
+                  class="search_config_delete_button"
+                  icon="{{ deleteIcon }}"
+                  pButton
+                  type="button"
+                  [pTooltip]="'SEARCH_CONFIG.DELETE.TOOLTIP' | translate"
+                  tooltipPosition="top"
+                  (click)="onSearchConfigDelete(config)"
+                  autofocus="true"
+                  [attr.aria-label]="
+                    'SEARCH_CONFIG.DELETE.ARIA_LABEL' | translate
+                  "
+                ></button>
+              </ng-container>
+              <button
+                [label]="'SEARCH_CONFIG.SELECT.LABEL' | translate"
+                class="search_config_select_button"
+                icon="{{ selectIcon }}"
+                pButton
+                type="button"
+                [pTooltip]="'SEARCH_CONFIG.SELECT.TOOLTIP' | translate"
+                tooltipPosition="top"
+                (click)="onSearchConfigChange(config)"
+                [attr.aria-label]="
+                  'SEARCH_CONFIG.SELECT.ARIA_LABEL' | translate
+                "
+                autofocus="true"
+              ></button>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </p-overlayPanel>
+  </div>
+</div>

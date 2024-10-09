@@ -1,0 +1,358 @@
+openapi: '3.0.3'
+info:
+  title: onecx-search-config-bff
+  version: '1.0'
+servers:
+  - url: http://onecx-search-config-bff:8080
+tags:
+  - name: SearchConfig
+    description: Execute Search Config CRUD operations
+paths:
+  /searchConfig/{id}:
+    put:
+      tags:
+        - SearchConfig
+      summary: Updates the search config specified by the id
+      description: Updates the search config and returns the updated list of search configs  by page
+      operationId: updateSearchConfig
+      parameters:
+        - name: id
+          in: path
+          description: Id for the search config to be updated
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Updated values for the specified search config
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSearchConfigRequest'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateSearchConfigResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetailResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetailResponse'
+    delete:
+      tags:
+        - SearchConfig
+      summary: Deletes the search config
+      description: Deletes the search config
+      operationId: deleteSearchConfig
+      parameters:
+        - name: id
+          in: path
+          description: Id for the searchConfig to be deleted
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Config deleted
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetailResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetailResponse'
+    get:
+      tags:
+        - SearchConfig
+      summary: Gets the search config info by its id.
+      description: The search config for specified id is returned.
+      operationId: getSearchConfig
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSearchConfigResponse'
+        '404':
+          description: Not found
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetailResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetailResponse'
+  /searchConfig/infos/:
+    post:
+      tags:
+        - SearchConfig
+      summary: Finds the search config infos for the specified page.
+      description: The search configs for the page, product and app are returned.
+      operationId: getSearchConfigInfos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GetSearchConfigInfosRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSearchConfigInfosResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetailResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetailResponse'
+  /searchConfig/:
+    post:
+      tags:
+        - SearchConfig
+      summary: Creates a new search config
+      description: Creates a new search config and returns the updated list of search configs by page
+      operationId: createSearchConfig
+      requestBody:
+        description: Creates a new search config
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSearchConfigRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSearchConfigResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetailResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetailResponse'
+
+components:
+  schemas:
+    SearchConfigInfo:
+      required:
+        - id
+        - name
+        - columns
+        - values
+        - isReadonly
+        - isAdvanced
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        columns:
+          type: array
+          items:
+            type: string
+        values:
+          type: object
+          additionalProperties:
+            type: string
+        isReadonly:
+          type: boolean
+          description: Defines whether this config can be changed in the UI
+        isAdvanced:
+          type: boolean
+          description: Indicates whether the advanced mode should be displayed
+
+    SearchConfig:
+      allOf:
+        - $ref: '#/components/schemas/SearchConfigInfo'
+      type: object
+      required:
+        - appId
+        - productName
+        - page
+        - modificationCount
+        - fieldListVersion
+      properties:
+        appId:
+          type: string
+        productName:
+          type: string
+        page:
+          type: string
+        modificationCount:
+          type: integer
+        fieldListVersion:
+          type: integer
+          description: Version increment of the fields in the UI which you should use when you are making incompatible changes to those fields.
+
+    SearchConfigInfoList:
+      type: object
+      required:
+        - configs
+      properties:
+        configs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchConfigInfo'
+
+    UpdateSearchConfigRequest:
+      type: object
+      required:
+        - searchConfig
+      properties:
+        searchConfig:
+          $ref: '#/components/schemas/SearchConfig'
+
+    UpdateSearchConfigResponse:
+      allOf:
+        - $ref: '#/components/schemas/SearchConfigInfoList'
+
+    GetSearchConfigResponse:
+      type: object
+      required:
+        - config
+      properties:
+        config:
+          $ref: '#/components/schemas/SearchConfig'
+
+    GetSearchConfigInfosRequest:
+      type: object
+      required:
+        - productName
+        - appId
+        - page
+      properties:
+        productName:
+          type: string
+        appId:
+          type: string
+        page:
+          type: string
+
+    GetSearchConfigInfosResponse:
+      allOf:
+        - $ref: '#/components/schemas/SearchConfigInfoList'
+
+    CreateSearchConfigRequest:
+      type: object
+      required:
+        - productName
+        - appId
+        - page
+        - name
+        - fieldListVersion
+        - isReadonly
+        - isAdvanced
+        - columns
+        - values
+      properties:
+        productName:
+          type: string
+        appId:
+          type: string
+        page:
+          type: string
+        name:
+          type: string
+        fieldListVersion:
+          type: integer
+          description: Version increment of the fields in the UI which you should use when you are making incompatible changes to those fields.
+        isReadonly:
+          type: boolean
+          description: Defines whether this config can be changed in the UI
+        isAdvanced:
+          type: boolean
+          description: Indicates whether the advanced mode should be displayed
+        columns:
+          type: array
+          items:
+            type: string
+        values:
+          type: object
+          additionalProperties:
+            type: string
+
+    CreateSearchConfigResponse:
+      allOf:
+        - $ref: '#/components/schemas/SearchConfigInfoList'
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+
+    ProblemDetailResponse:
+      type: object
+      properties:
+        errorCode:
+          type: string
+        detail:
+          type: string
+        params:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProblemDetailParam'
+        invalidParams:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProblemDetailInvalidParam'
+
+    ProblemDetailParam:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+
+    ProblemDetailInvalidParam:
+      type: object
+      properties:
+        name:
+          type: string
+        message:
+          type: string

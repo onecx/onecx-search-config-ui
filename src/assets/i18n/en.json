@@ -1,0 +1,86 @@
+{
+    "VALIDATION": {
+      "ERRORS": {
+        "EMPTY_REQUIRED_FIELD": "This field is required.",
+        "MAXIMUM_LENGTH": "Only {{chars}} characters are allowed.",
+        "MINIMUM_LENGTH": "At least {{chars}} characters are required.",
+        "PATTERN_ERROR": "The input does not match the required pattern"
+      }
+    },
+    "SEARCH_CONFIG": {
+      "EDITING": "Editing: {{config}}",
+      "ACTIVE": "Active: {{config}}",
+      "SEARCH_CONFIG_LIST": "Search configs",
+      "SAVE_EDIT": {
+        "LABEL": "Save",
+        "ARIA_LABEL": "Save search config",
+        "TOOLTIP": "Save currently edited search config"
+      },
+      "CANCEL_EDIT": {
+        "LABEL": "Cancel",
+        "ARIA_LABEL": "Cancel search config edit",
+        "TOOLTIP": "Stop editing search config"
+      },
+      "SELECT": {
+        "LABEL": "Select",
+        "ARIA_LABEL": "Select search config",
+        "TOOLTIP": "Select search config"
+      },
+      "MANAGE": {
+        "LABEL": "Manage search configs",
+        "ARIA_LABEL": "Manage search configs",
+        "TOOLTIP": "Manage search configs"
+      },
+      "ADD": {
+        "ARIA_LABEL": "Add search config",
+        "TOOLTIP": "Add search config"
+      },
+      "EDIT": {
+        "ARIA_LABEL": "Edit search config",
+        "TOOLTIP": "Edit search config"
+      },
+      "DELETE": {
+        "ARIA_LABEL": "Delete search config",
+        "TOOLTIP": "Delete search config"
+      },
+      "CREATE_EDIT_PLACEHOLDER": "Please enter the name of the search configuration",
+      "SAVE_COLUMNS_OPTION": "Do you want to save the shown columns?",
+      "SAVE_INPUT_FIELDS_OPTION": "Do you want to save the input values from the input fields?",
+      "COLUMN_GROUP_COMPONENT_INACTIVE": "*Column group component is inactive. Enable it to save, load and edit search configs with columns",
+      "TABLE_VIEW_INACTIVE": "*Table view is inactive. Enable it to save, load and edit search configs with columns",
+      "CREATE_EDIT_DIALOG": {
+        "CREATE_HEADER": "Create search config",
+        "EDIT_HEADER": "Edit search config",
+        "CONFIRM": "Confirm",
+        "CANCEL": "Cancel",
+        "CREATE_SUCCESS": "Successfully added search config",
+        "CREATE_FAILURE": "Failed to add search config",
+        "EDIT_SUCCESS": "Successfully edited search config",
+        "EDIT_FAILURE": "Failed to edit search config"
+      },
+      "DELETE_DIALOG": {
+        "HEADER": "Delete search config",
+        "MESSAGE": "Are you sure you want to delete search config {{config}}",
+        "CONFIRM": "Confirm",
+        "CANCEL": "Cancel"
+      },
+      "DELETE_SUCCESS": "Successfully deleted search config",
+      "DELETE_FAILURE": "Failed to delete search config",
+      "FETCH_FAILURE": "Failed to load search config"
+    },
+    "COLUMN_GROUP_SELECTION": {
+      "EDITING": "Editing: {{group}}",
+      "ACTIVE": "Active: {{group}}",
+      "COLUMN_GROUP_LIST": "Column groups",
+      "SELECT": {
+        "LABEL": "Select",
+        "ARIA_LABEL": "Select column group",
+        "TOOLTIP": "Select column group"
+      },
+      "MANAGE": {
+        "LABEL": "Manage column groups",
+        "ARIA_LABEL": "Manage column groups",
+        "TOOLTIP": "Manage column groups"
+      }
+    }
+  }

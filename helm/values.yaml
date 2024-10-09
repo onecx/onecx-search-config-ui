@@ -1,0 +1,45 @@
+app:
+  name: ui
+  image:
+    repository: 'onecx/onecx-search-config-ui'
+  routing:
+    enabled: true
+    path: /mfe/onecxSearchConfig/
+
+  operator:
+    # Microfrontend
+    microfrontend:
+      enabled: true
+      specs:
+        search-config:
+          exposedModule: './OneCXSearchConfigComponent'
+          description: 'Search config component'
+          type: COMPONENT
+          technology: WEBCOMPONENTMODULE
+          remoteName: onecx-search-config
+          tagName: ocx-search-config-component
+        column-group-selection:
+          exposedModule: './OneCXColumnGroupSelectionComponent'
+          description: 'Column group selection component'
+          type: COMPONENT
+          technology: WEBCOMPONENTMODULE
+          remoteName: onecx-search-config
+          tagName: ocx-column-group-selection-component
+    # Permission
+    permission:
+      enabled: true
+      spec:
+        permissions:
+          SEARCHCONFIG:
+            CREATE: Create search config
+            DELETE: Delete search config
+            EDIT: Edit search config
+            VIEW: View search configs
+    # Keycloak
+    keycloak:
+      client:
+        enabled: true
+        spec:
+          kcConfig:
+            clientId: 'onecx-search-config-ui'
+# PIPE Config
