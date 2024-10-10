@@ -10,7 +10,7 @@
       "executor": "@nx/angular:webpack-browser",
       "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/onecx-search-config",
+        "outputPath": "dist/onecx-search-config-ui",
         "index": "./src/index.html",
         "main": "./src/main.ts",
         "polyfills": "src/polyfills.ts",
