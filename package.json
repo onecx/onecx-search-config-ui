@@ -10,7 +10,8 @@
     "lint": "nx lint",
     "lint:fix": "nx lint --fix",
     "test": "nx test",
-    "test:ci": "ng test --watch=false --browsers=ChromeHeadless --code-coverage"
+    "test:ci": "nx test --watch=false --browsers=ChromeHeadless --code-coverage",
+    "sonar": "npx sonarqube-scanner -Dproject.settings=sonar-local-project.properties"
   },
   "private": true,
   "husky": {
