@@ -27,7 +27,6 @@ import {
   PortalDialogService,
   PortalMessageService,
 } from '@onecx/portal-integration-angular';
-import { AppConfigService } from '@onecx/angular-integration-interface';
 import {
   Configuration,
   SearchConfigAPIService,
@@ -73,8 +72,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       dispatchEvent: jest.fn(),
     })),
   });
-
-  const appConfigSpy = createSpyObj('appConfig', []) as AppConfigService;
 
   const searchConfigServiceSpy = {
     ...createSpyObj('searchConfigService', [
@@ -219,10 +216,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
           ],
           providers: [
             DialogService,
-            {
-              provide: AppConfigService,
-              useValue: appConfigSpy,
-            },
             {
               provide: PortalDialogService,
               useValue: portalDialogSpy,

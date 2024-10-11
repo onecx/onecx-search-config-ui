@@ -4,7 +4,7 @@ app:
     repository: 'onecx/onecx-search-config-ui'
   routing:
     enabled: true
-    path: /mfe/onecxSearchConfig/
+    path: /mfe/search-config/
 
   operator:
     # Microfrontend

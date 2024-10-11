@@ -9,10 +9,7 @@ import {
   BASE_URL,
   RemoteComponentConfig,
 } from '@onecx/angular-remote-components';
-import {
-  AppConfigService,
-  AppStateService,
-} from '@onecx/angular-integration-interface';
+import { AppStateService } from '@onecx/angular-integration-interface';
 import { CommonModule } from '@angular/common';
 import { NO_ERRORS_SCHEMA, NgModule } from '@angular/core';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -75,8 +72,6 @@ describe('OneCXSearchConfigComponent', () => {
       dispatchEvent: jest.fn(),
     })),
   });
-
-  const appConfigSpy = createSpyObj('appConfig', []) as AppConfigService;
 
   const searchConfigServiceSpy = {
     ...createSpyObj('searchConfigService', [
@@ -218,10 +213,6 @@ describe('OneCXSearchConfigComponent', () => {
           ],
           providers: [
             DialogService,
-            {
-              provide: AppConfigService,
-              useValue: appConfigSpy,
-            },
             {
               provide: PortalDialogService,
               useValue: portalDialogSpy,
