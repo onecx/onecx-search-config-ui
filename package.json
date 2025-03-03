@@ -49,7 +49,7 @@
     "@onecx/integration-interface": "^5.16.0",
     "@onecx/keycloak-auth": "^5.16.0",
     "@onecx/nx-plugin": "1.8.1",
-    "@onecx/portal-integration-angular": "^5.16.0",
+    "@onecx/portal-integration-angular": "^5.32.1",
     "@onecx/portal-layout-styles": "^5.16.0",
     "@webcomponents/webcomponentsjs": "^2.8.0",
     "keycloak-angular": "^16.0.1",
