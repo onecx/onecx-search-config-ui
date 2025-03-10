@@ -1,8 +1,18 @@
 {
   "root": true,
   "ignorePatterns": ["!**/*"],
-  "plugins": ["@nx"],
+  "plugins": ["@nx", "deprecation"],
   "overrides": [
+    {
+      "files": ["*.ts"],
+      "extends": ["plugin:deprecation/recommended"],
+      "parserOptions": {
+        "project": ["./tsconfig.*?.json"]
+      },
+      "rules": {
+        "deprecation/deprecation": "warn"
+      }
+    },
     {
       "files": ["*.ts", "*.tsx"],
       "extends": ["plugin:@nx/typescript"],
