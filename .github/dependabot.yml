@@ -12,3 +12,9 @@ updates:
       interval: daily
     labels:
       - docker-image
+  - package-ecosystem: "helm"
+    directory: "/helm"
+    schedule:
+      interval: daily
+    labels:
+      - helm
