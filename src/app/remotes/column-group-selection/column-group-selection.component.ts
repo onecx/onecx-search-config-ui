@@ -16,7 +16,6 @@ import {
 } from '@ngx-translate/core';
 import {
   DataTableColumn,
-  TranslationCacheService,
   createRemoteComponentAndMfeTranslateLoader,
   ColumnGroupData,
 } from '@onecx/angular-accelerator';
@@ -88,6 +87,7 @@ import {
 } from 'src/app/shared/search-config.utils';
 import { TooltipModule } from 'primeng/tooltip';
 import { FocusTrapModule } from 'primeng/focustrap';
+import { TranslationCacheService } from '@onecx/angular-utils';
 
 @Component({
   selector: 'app-ocx-column-group-selection',
