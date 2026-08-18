@@ -23,10 +23,10 @@ import { CreateOrEditSearchConfigDialogComponent } from 'src/app/shared/componen
 import { ButtonModule } from 'primeng/button';
 import {
   ColumnType,
-  IfPermissionDirective,
   PortalDialogService,
   PortalMessageService,
 } from '@onecx/portal-integration-angular';
+import { IfPermissionDirective } from '@onecx/angular-accelerator';
 import {
   Configuration,
   SearchConfigAPIService,

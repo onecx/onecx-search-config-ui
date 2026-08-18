@@ -15,8 +15,8 @@ import {
 } from '@ngx-translate/core';
 import {
   SearchConfigData,
-  createRemoteComponentTranslateLoader,
 } from '@onecx/angular-accelerator';
+import { createTranslateLoader } from '@onecx/angular-utils';
 import {
   AppStateService,
   PortalCoreModule,
@@ -116,8 +116,8 @@ import { FocusTrapModule } from 'primeng/focustrap';
       isolate: true,
       loader: {
         provide: TranslateLoader,
-        useFactory: createRemoteComponentTranslateLoader,
-        deps: [HttpClient, BASE_URL],
+        useFactory: createTranslateLoader,
+        deps: [HttpClient],
       },
     }),
     providePortalDialogService(),
