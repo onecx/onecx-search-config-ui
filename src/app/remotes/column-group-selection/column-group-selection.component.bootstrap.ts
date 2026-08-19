@@ -10,7 +10,8 @@ import { bootstrapRemoteComponent } from '@onecx/angular-webcomponents';
 import { environment } from 'src/environments/environment';
 import { OneCXColumnGroupSelectionComponent } from './column-group-selection.component';
 import { UserService } from '@onecx/angular-integration-interface';
-import { provideThemeConfig, provideTranslationPathFromMeta } from '@onecx/angular-utils';
+import { provideThemeConfig, provideTranslationPathFromMeta, REMOTE_COMPONENT_CONFIG, RemoteComponentConfig } from '@onecx/angular-utils';
+import { ReplaySubject } from 'rxjs';
 
 function userProfileInitializer(userService: UserService) {
   return async () => {
@@ -24,6 +25,7 @@ bootstrapRemoteComponent(
   environment.production,
   [
     provideHttpClient(withInterceptorsFromDi()),
+    { provide: REMOTE_COMPONENT_CONFIG, useValue: new ReplaySubject<RemoteComponentConfig>(1) },
     importProvidersFrom(AngularAuthModule),
     importProvidersFrom(BrowserModule),
     importProvidersFrom(BrowserAnimationsModule),

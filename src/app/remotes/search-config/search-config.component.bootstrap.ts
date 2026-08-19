@@ -11,9 +11,11 @@ import { bootstrapRemoteComponent } from '@onecx/angular-webcomponents';
 import { environment } from 'src/environments/environment';
 import { OneCXSearchConfigComponent } from './search-config.component';
 import { UserService } from '@onecx/angular-integration-interface';
-import { createTranslateLoader, provideThemeConfig } from '@onecx/angular-utils';
+import { createTranslateLoader, provideThemeConfig, REMOTE_COMPONENT_CONFIG, RemoteComponentConfig } from '@onecx/angular-utils';
 import { provideTranslateServiceForRoot } from '@onecx/angular-remote-components';
 import { TranslateLoader } from '@ngx-translate/core';
+import { ReplaySubject } from 'rxjs';
+
 function userProfileInitializer(userService: UserService) {
   return async () => {
     await userService.isInitialized;
@@ -26,6 +28,7 @@ bootstrapRemoteComponent(
   environment.production,
   [
     provideHttpClient(withInterceptorsFromDi()),
+    { provide: REMOTE_COMPONENT_CONFIG, useValue: new ReplaySubject<RemoteComponentConfig>(1) },
     importProvidersFrom(AngularAuthModule),
     importProvidersFrom(BrowserModule),
     importProvidersFrom(BrowserAnimationsModule),

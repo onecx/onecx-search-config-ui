@@ -107,10 +107,6 @@ import { FocusTrapModule } from 'primeng/focustrap';
   ],
   providers: [
     PortalMessageService,
-    {
-      provide: REMOTE_COMPONENT_CONFIG,
-      useValue: new ReplaySubject<RemoteComponentConfig>(1),
-    },
     provideTranslateServiceForRoot({
       isolate: true,
       loader: {

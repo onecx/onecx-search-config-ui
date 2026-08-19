@@ -50,7 +50,7 @@ import {
   withLatestFrom,
 } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Button, ButtonModule } from 'primeng/button';
+import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { OverlayPanel, OverlayPanelModule } from 'primeng/overlaypanel';
@@ -112,10 +112,6 @@ import { createTranslateLoader } from '@onecx/angular-utils';
   ],
   providers: [
     PortalMessageService,
-    {
-      provide: REMOTE_COMPONENT_CONFIG,
-      useValue: new ReplaySubject<RemoteComponentConfig>(1),
-    },
     provideTranslateServiceForRoot({
       isolate: true,
       loader: {
