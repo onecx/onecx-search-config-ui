@@ -123,6 +123,14 @@ module.exports = {
     ...config.experiments,
     topLevelAwait: true,
   },
+  module: {
+    ...config.module,
+    parser: {
+      javascript: {
+        importMeta: false,
+      },
+    },
+  },
   optimization: {
     runtimeChunk: false,
     splitChunks: false,

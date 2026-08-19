@@ -81,5 +81,12 @@
         "ARIA_LABEL": "Spaltengruppen verwalten",
         "TOOLTIP": "Spaltengruppen verwalten"
       }
+    },
+    "SCAFFOLD_SEARCH": {
+      "PREDEFINED_GROUP": {
+        "DEFAULT": "Standard",
+        "EXTENDED": "Erweitert",
+        "FULL": "Vollständig"
+      }
     }
   }

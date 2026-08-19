@@ -82,5 +82,12 @@
         "ARIA_LABEL": "Manage column groups",
         "TOOLTIP": "Manage column groups"
       }
+    },
+    "SCAFFOLD_SEARCH": {
+      "PREDEFINED_GROUP": {
+        "DEFAULT": "Default",
+        "EXTENDED": "Extended",
+        "FULL": "Full"
+      }
     }
   }
