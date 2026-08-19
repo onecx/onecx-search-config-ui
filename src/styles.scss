@@ -1,1 +1,6 @@
-/* You can add global styles to this file, and also import other style files */
+/* global styles */
+@use 'primeflex/primeflex.scss';
+@use 'primeicons/primeicons.css';
+
+/* portal core */
+@use 'node_modules/@onecx/angular-accelerator/assets/styles.scss';

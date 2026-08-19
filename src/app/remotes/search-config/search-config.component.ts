@@ -2,6 +2,7 @@ import { CommonModule, Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import {
   Component,
+  ElementRef,
   EventEmitter,
   Inject,
   Input,
@@ -14,25 +15,24 @@ import {
   TranslateService,
 } from '@ngx-translate/core';
 import {
+  AngularAcceleratorModule,
   SearchConfigData,
+  PortalDialogService,
+  providePortalDialogService,
 } from '@onecx/angular-accelerator';
 import { createTranslateLoader } from '@onecx/angular-utils';
 import {
   AppStateService,
-  PortalCoreModule,
-  PortalDialogService,
   PortalMessageService,
-  UserService,
-  providePortalDialogService,
-} from '@onecx/portal-integration-angular';
+  UserService
+} from '@onecx/angular-integration-interface';
 import {
   AngularRemoteComponentsModule,
-  BASE_URL,
-  RemoteComponentConfig,
   ocxRemoteComponent,
   ocxRemoteWebcomponent,
   provideTranslateServiceForRoot,
 } from '@onecx/angular-remote-components';
+import { REMOTE_COMPONENT_CONFIG, RemoteComponentConfig } from '@onecx/angular-utils';
 import {
   OperatorFunction,
   ReplaySubject,
@@ -56,7 +56,7 @@ import {
 } from 'src/app/shared/generated';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { environment } from 'src/environments/environment';
-import { Button, ButtonModule } from 'primeng/button';
+import { ButtonModule } from 'primeng/button';
 import { OverlayPanel, OverlayPanelModule } from 'primeng/overlaypanel';
 import { MfeInfo } from '@onecx/integration-interface';
 import {
@@ -97,11 +97,10 @@ import { FocusTrapModule } from 'primeng/focustrap';
   imports: [
     AngularRemoteComponentsModule,
     CommonModule,
-    PortalCoreModule,
+    AngularAcceleratorModule,
     TranslateModule,
     SharedModule,
     ButtonModule,
-    CreateOrEditSearchConfigDialogComponent,
     OverlayPanelModule,
     TooltipModule,
     FocusTrapModule,
@@ -109,8 +108,8 @@ import { FocusTrapModule } from 'primeng/focustrap';
   providers: [
     PortalMessageService,
     {
-      provide: BASE_URL,
-      useValue: new ReplaySubject<string>(1),
+      provide: REMOTE_COMPONENT_CONFIG,
+      useValue: new ReplaySubject<RemoteComponentConfig>(1),
     },
     provideTranslateServiceForRoot({
       isolate: true,
@@ -172,10 +171,11 @@ export class OneCXSearchConfigComponent
   permissions: string[] = [];
 
   @ViewChild('op') op: OverlayPanel | undefined;
-  @ViewChild('manageButton') manageButton: Button | undefined;
+  @ViewChild('manageButton', { read: ElementRef })
+  manageButton?: ElementRef<HTMLButtonElement>;
 
   constructor(
-    @Inject(BASE_URL) private baseUrl: ReplaySubject<string>,
+    @Inject(REMOTE_COMPONENT_CONFIG) private baseUrl: ReplaySubject<RemoteComponentConfig>,
     private userService: UserService,
     private translateService: TranslateService,
     private searchConfigService: SearchConfigAPIService,
@@ -213,12 +213,12 @@ export class OneCXSearchConfigComponent
     this.dataRevertSub = this.searchConfigStore.dataToRevert$
       .pipe(
         debounceTime(20),
-        filter((data) => data !== undefined) as OperatorFunction<
+        filter((data: RevertData | undefined) => data !== undefined) as OperatorFunction<
           RevertData | undefined,
           RevertData
         >,
       )
-      .subscribe((dataToRevert) => {
+      .subscribe((dataToRevert: RevertData) => {
         if (!(dataToRevert.fieldValues && dataToRevert.viewMode)) return;
         this.searchConfigSelected.emit({
           name: undefined,
@@ -271,7 +271,7 @@ export class OneCXSearchConfigComponent
     this.searchConfigService.configuration = new Configuration({
       basePath: Location.joinWithSlash(config.baseUrl, environment.apiPrefix),
     });
-    this.baseUrl.next(config.baseUrl);
+    this.baseUrl.next(config);
     this.permissions = config.permissions;
     if (config.permissions.includes('SEARCHCONFIG#CREATE')) {
       this.baseOptions = [
@@ -283,7 +283,7 @@ export class OneCXSearchConfigComponent
   }
 
   focusManageButton() {
-    this.manageButton?.focus();
+    this.manageButton?.nativeElement.focus();
   }
 
   overlayButtonText(vm: SearchConfigViewModel): {

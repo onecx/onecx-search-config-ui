@@ -5,10 +5,7 @@ import { ReplaySubject, of, throwError } from 'rxjs';
 import { TranslateTestingModule } from 'ngx-translate-testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
-import {
-  BASE_URL,
-  RemoteComponentConfig,
-} from '@onecx/angular-remote-components';
+import { REMOTE_COMPONENT_CONFIG, RemoteComponentConfig } from '@onecx/angular-utils'
 import { AppStateService } from '@onecx/angular-integration-interface';
 import { CommonModule } from '@angular/common';
 import { NO_ERRORS_SCHEMA, NgModule } from '@angular/core';
@@ -23,10 +20,8 @@ import {
 } from 'src/app/shared/search-config.store';
 import { CreateOrEditSearchConfigDialogComponent } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
 import { ButtonModule } from 'primeng/button';
-import {
-  PortalDialogService,
-  PortalMessageService,
-} from '@onecx/portal-integration-angular';
+import { PortalDialogService } from '@onecx/angular-accelerator';
+import { PortalMessageService } from '@onecx/angular-integration-interface'
 import { IfPermissionDirective } from '@onecx/angular-accelerator';
 import {
   Configuration,
@@ -182,7 +177,7 @@ describe('OneCXSearchConfigComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         {
-          provide: BASE_URL,
+          provide: REMOTE_COMPONENT_CONFIG,
           useValue: baseUrlSubject,
         },
         {

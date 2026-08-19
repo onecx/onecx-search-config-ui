@@ -2,12 +2,12 @@ import { CommonModule } from '@angular/common'
 import { NgModule } from '@angular/core'
 import { FormsModule, ReactiveFormsModule } from '@angular/forms'
 import { TranslateModule, TranslateService } from '@ngx-translate/core'
-import { PortalCoreModule } from '@onecx/portal-integration-angular'
+import { AngularAcceleratorModule } from '@onecx/angular-accelerator'
 import { provideErrorTailorConfig } from '@ngneat/error-tailor'
 
 @NgModule({
   imports: [
-    PortalCoreModule.forMicroFrontend(),
+    AngularAcceleratorModule,
     CommonModule,
     FormsModule,
     ReactiveFormsModule,

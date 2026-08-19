@@ -12,7 +12,7 @@ import {
   DialogPrimaryButtonDisabled,
   DialogResult,
   DialogState,
-} from '@onecx/portal-integration-angular';
+} from '@onecx/angular-accelerator';
 import { CheckboxModule } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { Observable, map, startWith } from 'rxjs';

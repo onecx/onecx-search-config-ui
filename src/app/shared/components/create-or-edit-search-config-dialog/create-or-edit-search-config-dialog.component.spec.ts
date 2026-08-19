@@ -13,7 +13,7 @@ import {
   withInterceptorsFromDi,
 } from '@angular/common/http';
 import { CreateOrEditSearchConfigDialogHarness } from './create-or-edit-search-config-dialog.component.harness';
-import { DialogState, MockAuthModule } from '@onecx/portal-integration-angular';
+import { DialogState } from '@onecx/angular-accelerator';
 
 describe('CreateOrEditSearchConfigDialogComponent', () => {
   let component: CreateOrEditSearchConfigDialogComponent;
@@ -27,7 +27,6 @@ describe('CreateOrEditSearchConfigDialogComponent', () => {
       imports: [
         CheckboxModule,
         CreateOrEditSearchConfigDialogComponent,
-        MockAuthModule,
         TranslateTestingModule.withTranslations({
           en: require('./../../../../assets/i18n/en.json'),
           de: require('./../../../../assets/i18n/de.json'),

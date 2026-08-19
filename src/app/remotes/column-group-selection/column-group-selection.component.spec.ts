@@ -4,10 +4,7 @@ import { ReplaySubject, of, throwError } from 'rxjs';
 import { TranslateTestingModule } from 'ngx-translate-testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
-import {
-  BASE_URL,
-  RemoteComponentConfig,
-} from '@onecx/angular-remote-components';
+import { REMOTE_COMPONENT_CONFIG, RemoteComponentConfig } from '@onecx/angular-utils'
 import { CommonModule } from '@angular/common';
 import { NO_ERRORS_SCHEMA, NgModule } from '@angular/core';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -23,9 +20,9 @@ import { CreateOrEditSearchConfigDialogComponent } from 'src/app/shared/componen
 import { ButtonModule } from 'primeng/button';
 import {
   ColumnType,
-  PortalDialogService,
-  PortalMessageService,
-} from '@onecx/portal-integration-angular';
+  PortalDialogService
+} from '@onecx/angular-accelerator';
+import { PortalMessageService } from '@onecx/angular-integration-interface'
 import { IfPermissionDirective } from '@onecx/angular-accelerator';
 import {
   Configuration,
@@ -185,7 +182,7 @@ describe('OneCXColumnGroupSelectionComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         {
-          provide: BASE_URL,
+          provide: REMOTE_COMPONENT_CONFIG,
           useValue: baseUrlSubject,
         },
         {

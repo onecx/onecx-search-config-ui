@@ -2,6 +2,7 @@ import { CommonModule, Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import {
   Component,
+  ElementRef,
   EventEmitter,
   Inject,
   Input,
@@ -20,20 +21,21 @@ import {
 } from '@onecx/angular-accelerator';
 import {
   AppStateService,
-  PortalCoreModule,
-  PortalDialogService,
   PortalMessageService,
   UserService,
+} from '@onecx/angular-integration-interface';
+import {
+  AngularAcceleratorModule,
+  PortalDialogService,
   providePortalDialogService,
-} from '@onecx/portal-integration-angular';
+} from '@onecx/angular-accelerator'
 import {
   AngularRemoteComponentsModule,
-  BASE_URL,
-  RemoteComponentConfig,
   ocxRemoteComponent,
   ocxRemoteWebcomponent,
   provideTranslateServiceForRoot,
 } from '@onecx/angular-remote-components';
+import { REMOTE_COMPONENT_CONFIG, RemoteComponentConfig } from '@onecx/angular-utils'
 import {
   BehaviorSubject,
   OperatorFunction,
@@ -96,7 +98,7 @@ import { createTranslateLoader } from '@onecx/angular-utils';
   imports: [
     AngularRemoteComponentsModule,
     CommonModule,
-    PortalCoreModule,
+    AngularAcceleratorModule,
     TranslateModule,
     SharedModule,
     FormsModule,
@@ -111,8 +113,8 @@ import { createTranslateLoader } from '@onecx/angular-utils';
   providers: [
     PortalMessageService,
     {
-      provide: BASE_URL,
-      useValue: new ReplaySubject<string>(1),
+      provide: REMOTE_COMPONENT_CONFIG,
+      useValue: new ReplaySubject<RemoteComponentConfig>(1),
     },
     provideTranslateServiceForRoot({
       isolate: true,
@@ -196,10 +198,11 @@ export class OneCXColumnGroupSelectionComponent
   permissions: string[] = [];
 
   @ViewChild('op') op: OverlayPanel | undefined;
-  @ViewChild('manageButton') manageButton: Button | undefined;
+  @ViewChild('manageButton', { read: ElementRef })
+  manageButton?: ElementRef<HTMLButtonElement>;
 
   constructor(
-    @Inject(BASE_URL) private baseUrl: ReplaySubject<string>,
+    @Inject(REMOTE_COMPONENT_CONFIG) private baseUrl: ReplaySubject<RemoteComponentConfig>,
     private userService: UserService,
     private translateService: TranslateService,
     private searchConfigService: SearchConfigAPIService,
@@ -213,10 +216,10 @@ export class OneCXColumnGroupSelectionComponent
       .pipe(
         debounceTime(20),
         filter(
-          (dataToRevert) => dataToRevert !== undefined,
+          (dataToRevert: RevertData | undefined) => dataToRevert !== undefined,
         ) as OperatorFunction<RevertData | undefined, RevertData>,
       )
-      .subscribe((dataToRevert) => {
+      .subscribe((dataToRevert: RevertData) => {
         if (!dataToRevert.columnGroupKey) return;
         this.groupSelectionChanged.emit({
           activeColumns: this.columns.filter((c) =>
@@ -228,7 +231,7 @@ export class OneCXColumnGroupSelectionComponent
 
     this.searchConfigStore.selectedGroupKey$
       .pipe(debounceTime(50), withLatestFrom(this.vm$))
-      .subscribe(([selectedGroupKey, vm]) => {
+      .subscribe(([selectedGroupKey, vm]: [string, ColumnSelectionViewModel]) => {
         const configWithColumns = vm.searchConfigsWithColumns.find(
           (c) => c.name === selectedGroupKey,
         );
@@ -290,7 +293,7 @@ export class OneCXColumnGroupSelectionComponent
     this.searchConfigService.configuration = new Configuration({
       basePath: Location.joinWithSlash(config.baseUrl, environment.apiPrefix),
     });
-    this.baseUrl.next(config.baseUrl);
+    this.baseUrl.next(config);
     this.permissions = config.permissions;
   }
 
@@ -303,7 +306,7 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   focusManageButton() {
-    this.manageButton?.focus();
+    this.manageButton?.nativeElement.focus();
   }
 
   overlayButtonText(vm: ColumnSelectionViewModel): {
