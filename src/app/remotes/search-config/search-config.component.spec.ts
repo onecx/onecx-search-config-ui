@@ -1919,4 +1919,14 @@ describe('OneCXSearchConfigComponent', () => {
       });
     });
   });
+
+  describe('focusManageButton', () => {
+    it('should not throw when manage button is undefined', () => {
+      const { component } = setUp();
+
+      component.manageButton = undefined;
+
+      expect(() => component.focusManageButton()).not.toThrow();
+    });
+  });
 });
