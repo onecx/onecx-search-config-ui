@@ -39,6 +39,7 @@ export class SearchConfigTopic extends Topic<SearchConfigMessage> {
   }
 }
 
+export type LayoutType = 'table' | 'grid' | 'list';
 export type UnparsedFieldValues = { [key: string]: unknown };
 export type FieldValues = { [key: string]: string };
 export type SearchData = {
@@ -51,15 +52,13 @@ export type PageData = SearchData & {
   columnGroupKey: string | undefined;
 };
 
-export type RevertData = PageData;
-
 interface SearchConfigComponentState {
   currentSearchConfig: SearchConfigInfo | undefined;
   selectedGroupKey: string | undefined;
   inChargeOfEdit: string | undefined;
   editMode: boolean;
   preEditStateSnapshot: SearchConfigState | undefined;
-  dataToRevert: RevertData | undefined;
+  dataToRevert: PageData | undefined;
   searchConfigs: SearchConfigInfo[];
 
   pageName: string | undefined;
@@ -73,11 +72,11 @@ interface ColumnGroupSelectionComponentState {
   inChargeOfEdit: string | undefined;
   editMode: boolean;
   preEditStateSnapshot: SearchConfigState | undefined;
-  dataToRevert: RevertData | undefined;
+  dataToRevert: PageData | undefined;
   searchConfigs: SearchConfigInfo[];
 
   displayedColumnsIds: Array<string>;
-  layout: 'table' | 'grid' | 'list' | undefined;
+  layout: LayoutType | undefined;
   nonSearchConfigGroupKeys: Array<string>;
   customGroupKey: string | undefined;
 }
@@ -94,7 +93,7 @@ export interface SearchConfigViewModel {
   searchConfigs: SearchConfigInfo[];
   currentConfig: SearchConfigInfo | undefined;
   isColumnGroupComponentActive: boolean;
-  layout: 'table' | 'grid' | 'list' | undefined;
+  layout: LayoutType | undefined;
 
   editMode: boolean;
   isInChargeOfEdit: boolean;
@@ -109,7 +108,7 @@ export interface ColumnSelectionViewModel {
   searchConfigsWithColumns: SearchConfigInfo[];
   selectedGroupKey: string | undefined;
   currentConfig: SearchConfigInfo | undefined;
-  layout: 'table' | 'grid' | 'list' | undefined;
+  layout: LayoutType | undefined;
 
   editMode: boolean;
   isInChargeOfEdit: boolean;
@@ -150,9 +149,9 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
 
   constructor(
     @Inject(SEARCH_CONFIG_STORE_NAME)
-    private storeName: string,
+    private readonly storeName: string,
     @Inject(SEARCH_CONFIG_TOPIC)
-    private searchConfigTopic$: SearchConfigTopic,
+    private readonly searchConfigTopic$: SearchConfigTopic,
   ) {
     super(initialState);
     this.activateStore(storeName);
@@ -849,10 +848,10 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     if (
       hasValues(state.currentSearchConfig) &&
       change.viewMode &&
-      !(
+      (
         (state.currentSearchConfig.isAdvanced
           ? advancedViewMode
-          : basicViewMode) === change.viewMode
+          : basicViewMode) !== change.viewMode
       )
     )
       return true;
@@ -903,7 +902,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     if (!state.searchConfigComponentActive) return state.currentSearchConfig;
     if (state.editMode) return state.currentSearchConfig;
 
-    const searchConfigForSelectedKey = state.searchConfigs.find(
+    const searchConfigForSelectedKey = state.searchConfigs.some(
       (c) => c.name === state.selectedGroupKey,
     );
 

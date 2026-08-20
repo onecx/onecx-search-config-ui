@@ -32,8 +32,8 @@ import { provideErrorTailorConfig } from '@ngneat/error-tailor'
       },
       //this is required because primeng calendar wraps things in an ugly way
       blurPredicate: (element: Element) => {
-        return ['INPUT', 'TEXTAREA', 'SELECT', 'CUSTOM-DATE', 'P-CALENDAR', 'P-DROPDOWN'].some(
-          (selector) => element.tagName === selector
+        return ['INPUT', 'TEXTAREA', 'SELECT', 'CUSTOM-DATE', 'P-CALENDAR', 'P-DROPDOWN'].includes(
+          element.tagName
         )
       }
     })

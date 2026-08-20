@@ -38,7 +38,8 @@
       type="button"
       [pTooltip]="'SEARCH_CONFIG.MANAGE.TOOLTIP' | translate"
       tooltipPosition="top"
-      (click)="op.toggle($event)"
+      (onClick)="op.toggle($event)"
+      (keydown.enter)="op.toggle($event)"
       [ariaLabel]="'SEARCH_CONFIG.MANAGE.ARIA_LABEL' | translate"
       [disabled]="vm.editMode"
     ></p-button>

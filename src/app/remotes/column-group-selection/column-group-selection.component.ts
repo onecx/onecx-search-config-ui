@@ -16,8 +16,11 @@ import {
   TranslateService,
 } from '@ngx-translate/core';
 import {
-  DataTableColumn,
+  AngularAcceleratorModule,
   ColumnGroupData,
+  DataTableColumn,
+  PortalDialogService,
+  providePortalDialogService
 } from '@onecx/angular-accelerator';
 import {
   AppStateService,
@@ -25,9 +28,6 @@ import {
   UserService,
 } from '@onecx/angular-integration-interface';
 import {
-  AngularAcceleratorModule,
-  PortalDialogService,
-  providePortalDialogService,
 } from '@onecx/angular-accelerator'
 import {
   AngularRemoteComponentsModule,
@@ -35,7 +35,7 @@ import {
   ocxRemoteWebcomponent,
   provideTranslateServiceForRoot,
 } from '@onecx/angular-remote-components';
-import { REMOTE_COMPONENT_CONFIG, RemoteComponentConfig } from '@onecx/angular-utils'
+import { createTranslateLoader, REMOTE_COMPONENT_CONFIG, RemoteComponentConfig } from '@onecx/angular-utils'
 import {
   BehaviorSubject,
   OperatorFunction,
@@ -67,7 +67,6 @@ import { environment } from 'src/environments/environment';
 import {
   ColumnSelectionViewModel,
   PageData,
-  RevertData,
   SEARCH_CONFIG_STORE_NAME,
   SEARCH_CONFIG_TOPIC,
   SearchConfigStore,
@@ -87,7 +86,6 @@ import {
 } from 'src/app/shared/search-config.utils';
 import { TooltipModule } from 'primeng/tooltip';
 import { FocusTrapModule } from 'primeng/focustrap';
-import { createTranslateLoader } from '@onecx/angular-utils';
 
 @Component({
   selector: 'app-ocx-column-group-selection',
@@ -195,13 +193,14 @@ export class OneCXColumnGroupSelectionComponent
   manageButton?: ElementRef<HTMLButtonElement>;
 
   constructor(
-    @Inject(REMOTE_COMPONENT_CONFIG) private baseUrl: ReplaySubject<RemoteComponentConfig>,
-    private userService: UserService,
-    private translateService: TranslateService,
-    private searchConfigService: SearchConfigAPIService,
-    private searchConfigStore: SearchConfigStore,
-    private portalDialogService: PortalDialogService,
-    private portalMessageService: PortalMessageService,
+    @Inject(REMOTE_COMPONENT_CONFIG) 
+    private readonly baseUrl: ReplaySubject<RemoteComponentConfig>,
+    private readonly userService: UserService,
+    private readonly translateService: TranslateService,
+    private readonly searchConfigService: SearchConfigAPIService,
+    private readonly searchConfigStore: SearchConfigStore,
+    private readonly portalDialogService: PortalDialogService,
+    private readonly portalMessageService: PortalMessageService,
   ) {
     this.translateService.use(this.userService.lang$.getValue());
 
@@ -209,10 +208,10 @@ export class OneCXColumnGroupSelectionComponent
       .pipe(
         debounceTime(20),
         filter(
-          (dataToRevert: RevertData | undefined) => dataToRevert !== undefined,
-        ) as OperatorFunction<RevertData | undefined, RevertData>,
+          (dataToRevert: PageData | undefined) => dataToRevert !== undefined,
+        ) as OperatorFunction<PageData | undefined, PageData>,
       )
-      .subscribe((dataToRevert: RevertData) => {
+      .subscribe((dataToRevert: PageData) => {
         if (!dataToRevert.columnGroupKey) return;
         this.groupSelectionChanged.emit({
           activeColumns: this.columns.filter((c) =>
@@ -259,8 +258,7 @@ export class OneCXColumnGroupSelectionComponent
       .pipe(
         map((columns) =>
           columns
-            .map((keys) => keys.predefinedGroupKeys || [])
-            .flat()
+            .flatMap((keys) => keys.predefinedGroupKeys || [])
             .concat([this.defaultGroupKey])
             .filter((value) => !!value)
             .filter(

@@ -8,7 +8,7 @@ import {
 } from '@onecx/angular-testing';
 
 export class OneCXColumnGroupSelectionListItemHarness extends ComponentHarness {
-  static hostSelector = 'li';
+  public static hostSelector = 'li';
 
   getSpan = this.locatorFor('span');
   getEditButton = this.locatorForOptional('button.search_config_edit_button');

@@ -42,7 +42,8 @@
         "ARIA_LABEL": "Suchkonfiguration löschen",
         "TOOLTIP": "Suchkonfiguration löschen"
       },
-      "CREATE_EDIT_PLACEHOLDER": "Bitte den Namen der Suchkonfiguration eingeben",
+      "CREATE_EDIT_TOOLTIP": "Bitte den Namen der Suchkonfiguration eingeben",
+      "SEARCH_CRITERION_NAME": "Suchkriterium-Name",
       "SAVE_COLUMNS_OPTION": "Möchten Sie die angezeigten Spalten speichern?",
       "SAVE_INPUT_FIELDS_OPTION": "Möchten Sie die Eingabewerte aus den Eingabefeldern speichern?",
       "COLUMN_GROUP_COMPONENT_INACTIVE": "*Die Komponente Spaltengruppe ist inaktiv. Aktivieren Sie sie, um Suchkonfigurationen mit Spalten zu speichern, zu laden und zu bearbeiten",

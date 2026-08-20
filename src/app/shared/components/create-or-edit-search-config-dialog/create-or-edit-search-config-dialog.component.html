@@ -1,12 +1,18 @@
 <form [formGroup]="searchConfigFormGroup" [class]="'searchConfigDialog'">
-  <div>
-    <input
-      type="text"
-      pInputText
-      formControlName="searchConfigName"
-      id="searchConfigName"
-      [placeholder]="placeHolderKey | translate"
-    />
+  <div class="mt-2">
+    <p-floatlabel variant="on"> 
+      <input
+        id="searchConfigName"
+        type="text"
+        pInputText
+        formControlName="searchConfigName"
+        [pTooltip]="'SEARCH_CONFIG.CREATE_EDIT_TOOLTIP' | translate"
+        tooltipPosition="top"
+      />
+      <label for="searchConfigName">{{
+          'SEARCH_CONFIG.SEARCH_CRITERION_NAME' | translate
+        }}</label>
+    </p-floatlabel>
   </div>
 
   <div>

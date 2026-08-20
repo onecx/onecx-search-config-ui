@@ -43,7 +43,8 @@
         "ARIA_LABEL": "Delete search config",
         "TOOLTIP": "Delete search config"
       },
-      "CREATE_EDIT_PLACEHOLDER": "Please enter the name of the search configuration",
+      "CREATE_EDIT_TOOLTIP": "Please enter the name of the search configuration",
+      "SEARCH_CRITERION_NAME": "Search criterion name",
       "SAVE_COLUMNS_OPTION": "Do you want to save the shown columns?",
       "SAVE_INPUT_FIELDS_OPTION": "Do you want to save the input values from the input fields?",
       "COLUMN_GROUP_COMPONENT_INACTIVE": "*Column group component is inactive. Enable it to save, load and edit search configs with columns",

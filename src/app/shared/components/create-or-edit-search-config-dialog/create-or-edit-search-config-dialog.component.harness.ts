@@ -5,7 +5,6 @@ import {
 import { InputHarness } from '@onecx/angular-testing';
 
 class CheckboxInputHarness extends ComponentHarness {
-  static hostSelector = '.p-checkbox-input';
 
   async click(): Promise<void> {
     await (await this.host()).click();
@@ -17,15 +16,15 @@ class CheckboxInputHarness extends ComponentHarness {
 }
 
 class SaveInputValuesCheckboxHarness extends CheckboxInputHarness {
-  static override hostSelector = '#saveInputValuesId.p-checkbox-input';
+  public static hostSelector = '#saveInputValuesId.p-checkbox-input';
 }
 
 class SaveColumnsCheckboxHarness extends CheckboxInputHarness {
-  static override hostSelector = '#saveColumnsId.p-checkbox-input';
+  public static hostSelector = '#saveColumnsId.p-checkbox-input';
 }
 
 export class CreateOrEditSearchConfigDialogHarness extends ContentContainerComponentHarness {
-  static hostSelector = 'ocx-create-or-edit-search-config-dialog';
+  public static hostSelector = 'ocx-create-or-edit-search-config-dialog';
 
   getSaveInputValuesCheckboxHarness(): Promise<SaveInputValuesCheckboxHarness> {
     return this.getHarness(SaveInputValuesCheckboxHarness);
