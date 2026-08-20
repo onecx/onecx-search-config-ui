@@ -294,13 +294,14 @@ export class OneCXSearchConfigComponent
         params: { config: vm.currentConfig.name },
       };
     }
+    const currentConfig = vm.currentConfig;
     if (
-      vm.currentConfig &&
-      vm.searchConfigs.some((c) => c.name === vm.currentConfig?.name)
+      currentConfig &&
+      vm.searchConfigs.some((c) => c.name === currentConfig.name)
     ) {
       return {
         key: 'SEARCH_CONFIG.ACTIVE',
-        params: { config: vm.currentConfig.name },
+        params: { config: currentConfig.name },
       };
     }
     return { key: 'SEARCH_CONFIG.MANAGE.LABEL' };

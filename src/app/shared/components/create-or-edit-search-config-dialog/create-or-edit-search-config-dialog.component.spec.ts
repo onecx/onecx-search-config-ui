@@ -84,6 +84,22 @@ describe('CreateOrEditSearchConfigDialogComponent', () => {
     );
   });
 
+  it('should set frozeColumnSaveOptionExplanation to empty string when undefined is provided', () => {
+    component.frozeColumnSaveOptionExplanation = undefined;
+
+    expect(component.frozeColumnSaveOptionExplanation).toBe('');
+  });
+
+  it('should set frozeColumnSaveOption to false when undefined is provided', () => {
+    component.frozeColumnSaveOption = undefined;
+
+    expect(component.frozeColumnSaveOption).toBe(false);
+    expect(
+      component.searchConfigFormGroup.controls['saveColumns'].disabled,
+    ).toBeFalsy();
+  });
+
+
   it('should set the DialogResult of the saveInputValuesId checkbox to true when the saveInputValuesId checkbox is checked', async () => {
     const saveInputValuesCheckbox =
       await dialogHarness.getSaveInputValuesCheckboxHarness();

@@ -1918,6 +1918,44 @@ describe('OneCXSearchConfigComponent', () => {
         viewMode: config.isAdvanced ? advancedViewMode : basicViewMode,
       });
     });
+
+    it('should emit advancedViewMode when selected config is advanced', fakeAsync(() => {
+      const store = TestBed.inject(SearchConfigStore);
+
+      const advancedConfig = {
+        ...config,
+        isAdvanced: true,
+      };
+
+      store.patchState({
+        searchConfigs: [advancedConfig],
+        currentSearchConfig: undefined,
+        columnGroupComponentActive: true,
+        displayedSearchData: {
+          fieldValues: {
+            my_k: 'my_v',
+          },
+          viewMode: basicViewMode,
+          displayedColumnsIds: ['my_col'],
+        },
+      });
+
+      const { component } = setUp();
+      const emitterSpy = jest.spyOn(component.searchConfigSelected, 'emit');
+
+      store.patchState({
+        currentSearchConfig: advancedConfig,
+      });
+
+      tick(500);
+
+      expect(emitterSpy).toHaveBeenCalledWith({
+        name: advancedConfig.name,
+        fieldValues: advancedConfig.values,
+        displayedColumnsIds: advancedConfig.columns,
+        viewMode: advancedViewMode,
+      });
+    }));
   });
 
   describe('focusManageButton', () => {

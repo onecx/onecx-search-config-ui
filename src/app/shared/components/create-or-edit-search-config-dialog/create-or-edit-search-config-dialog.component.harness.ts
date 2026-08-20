@@ -16,15 +16,15 @@ class CheckboxInputHarness extends ComponentHarness {
 }
 
 class SaveInputValuesCheckboxHarness extends CheckboxInputHarness {
-  public static hostSelector = '#saveInputValuesId.p-checkbox-input';
+  public static readonly hostSelector = '#saveInputValuesId.p-checkbox-input';
 }
 
 class SaveColumnsCheckboxHarness extends CheckboxInputHarness {
-  public static hostSelector = '#saveColumnsId.p-checkbox-input';
+  public static readonly hostSelector = '#saveColumnsId.p-checkbox-input';
 }
 
 export class CreateOrEditSearchConfigDialogHarness extends ContentContainerComponentHarness {
-  public static hostSelector = 'ocx-create-or-edit-search-config-dialog';
+  public static readonly hostSelector = 'ocx-create-or-edit-search-config-dialog';
 
   getSaveInputValuesCheckboxHarness(): Promise<SaveInputValuesCheckboxHarness> {
     return this.getHarness(SaveInputValuesCheckboxHarness);

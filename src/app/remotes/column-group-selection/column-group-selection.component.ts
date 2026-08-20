@@ -28,8 +28,6 @@ import {
   UserService,
 } from '@onecx/angular-integration-interface';
 import {
-} from '@onecx/angular-accelerator'
-import {
   AngularRemoteComponentsModule,
   ocxRemoteComponent,
   ocxRemoteWebcomponent,
