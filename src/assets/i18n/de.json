@@ -88,5 +88,8 @@
         "EXTENDED": "Erweitert",
         "FULL": "Vollständig"
       }
+    },
+    "OCX_INTERACTIVE_DATA_VIEW": {
+      "CUSTOM_GROUP": "Benutzerdefinierte Gruppe"
     }
   }
