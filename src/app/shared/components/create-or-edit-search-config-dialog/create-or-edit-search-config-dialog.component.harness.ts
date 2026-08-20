@@ -1,17 +1,38 @@
-import { ContentContainerComponentHarness } from '@angular/cdk/testing';
-import { PCheckboxHarness, InputHarness } from '@onecx/angular-testing';
+import {
+  ComponentHarness,
+  ContentContainerComponentHarness,
+} from '@angular/cdk/testing';
+import { InputHarness } from '@onecx/angular-testing';
+
+class CheckboxInputHarness extends ComponentHarness {
+  static hostSelector = '.p-checkbox-input';
+
+  async click(): Promise<void> {
+    await (await this.host()).click();
+  }
+
+  async isChecked(): Promise<boolean> {
+    return await (await this.host()).getProperty<boolean>('checked');
+  }
+}
+
+class SaveInputValuesCheckboxHarness extends CheckboxInputHarness {
+  static override hostSelector = '#saveInputValuesId.p-checkbox-input';
+}
+
+class SaveColumnsCheckboxHarness extends CheckboxInputHarness {
+  static override hostSelector = '#saveColumnsId.p-checkbox-input';
+}
 
 export class CreateOrEditSearchConfigDialogHarness extends ContentContainerComponentHarness {
   static hostSelector = 'ocx-create-or-edit-search-config-dialog';
 
-  getSaveInputValuesCheckboxHarness() {
-    return this.getHarness(
-      PCheckboxHarness.with({ inputid: 'saveInputValuesId' }),
-    );
+  getSaveInputValuesCheckboxHarness(): Promise<SaveInputValuesCheckboxHarness> {
+    return this.getHarness(SaveInputValuesCheckboxHarness);
   }
 
-  getSaveColumnsCheckboxHarness() {
-    return this.getHarness(PCheckboxHarness.with({ inputid: 'saveColumnsId' }));
+  getSaveColumnsCheckboxHarness(): Promise<SaveColumnsCheckboxHarness> {
+    return this.getHarness(SaveColumnsCheckboxHarness);
   }
 
   getSearchConfigInputHarness() {

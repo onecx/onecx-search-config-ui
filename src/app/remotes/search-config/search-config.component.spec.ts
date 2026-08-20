@@ -300,7 +300,7 @@ describe('OneCXSearchConfigComponent', () => {
       expect(component.ocxInitRemoteComponent).toHaveBeenCalledWith(config);
       expect(searchConfigServiceSpy.configuration.basePath).toEqual('base/bff');
       baseUrlSubject.asObservable().subscribe((item) => {
-        expect(item).toEqual('base');
+        expect(item).toEqual(config);
         done();
       });
     });

@@ -1,7 +1,6 @@
 import { isValidDate } from '@onecx/accelerator';
 import { SearchConfigInfo } from './generated';
 import { FieldValues, UnparsedFieldValues } from './search-config.store';
-import equal from 'fast-deep-equal';
 
 export function hasValues(config: SearchConfigInfo): boolean {
   return Object.keys(config.values).length > 0;
@@ -20,7 +19,7 @@ export function hasOnlyColumns(config: SearchConfigInfo): boolean {
 }
 
 export function areValuesEqual(v1: FieldValues, v2: FieldValues): boolean {
-  return equal(v1, v2);
+  return JSON.stringify(v1) === JSON.stringify(v2);
 }
 
 export function parseFieldValues(values: UnparsedFieldValues): FieldValues {
