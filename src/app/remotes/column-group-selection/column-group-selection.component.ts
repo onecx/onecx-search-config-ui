@@ -51,9 +51,8 @@ import {
 } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { DropdownModule } from 'primeng/dropdown';
 import { FloatLabelModule } from 'primeng/floatlabel';
-import { OverlayPanel, OverlayPanelModule } from 'primeng/overlaypanel';
+import { Popover, PopoverModule } from 'primeng/popover';
 import { PrimeIcons } from 'primeng/api';
 import { SharedModule } from 'src/app/shared/shared.module';
 import {
@@ -94,7 +93,6 @@ import { createTranslateLoader } from '@onecx/angular-utils';
   selector: 'app-ocx-column-group-selection',
   standalone: true,
   templateUrl: './column-group-selection.component.html',
-  styleUrls: ['./column-group-selection.component.scss'],
   imports: [
     AngularRemoteComponentsModule,
     CommonModule,
@@ -104,10 +102,9 @@ import { createTranslateLoader } from '@onecx/angular-utils';
     FormsModule,
     ReactiveFormsModule,
     ButtonModule,
-    DropdownModule,
     FloatLabelModule,
     TooltipModule,
-    OverlayPanelModule,
+    PopoverModule,
     FocusTrapModule,
   ],
   providers: [
@@ -193,7 +190,7 @@ export class OneCXColumnGroupSelectionComponent
 
   permissions: string[] = [];
 
-  @ViewChild('op') op: OverlayPanel | undefined;
+  @ViewChild('op') op: Popover | undefined;
   @ViewChild('manageButton', { read: ElementRef })
   manageButton?: ElementRef<HTMLButtonElement>;
 

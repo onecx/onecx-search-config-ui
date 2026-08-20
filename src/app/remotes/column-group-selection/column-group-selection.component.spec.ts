@@ -31,7 +31,7 @@ import {
 import { DialogService } from 'primeng/dynamicdialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { OneCXColumnGroupSelectionComponent } from './column-group-selection.component';
-import { OverlayPanelModule } from 'primeng/overlaypanel';
+import { PopoverModule } from 'primeng/popover';
 import { FocusTrapModule } from 'primeng/focustrap';
 import { advancedViewMode } from 'src/app/shared/constants';
 
@@ -208,7 +208,7 @@ describe('OneCXColumnGroupSelectionComponent', () => {
             TooltipModule,
             CreateOrEditSearchConfigDialogComponent,
             ButtonModule,
-            OverlayPanelModule,
+            PopoverModule,
             FocusTrapModule,
           ],
           providers: [

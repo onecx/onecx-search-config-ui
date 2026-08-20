@@ -57,7 +57,7 @@ import {
 import { SharedModule } from 'src/app/shared/shared.module';
 import { environment } from 'src/environments/environment';
 import { ButtonModule } from 'primeng/button';
-import { OverlayPanel, OverlayPanelModule } from 'primeng/overlaypanel';
+import { Popover, PopoverModule } from 'primeng/popover';
 import { MfeInfo } from '@onecx/integration-interface';
 import {
   PageData,
@@ -93,7 +93,6 @@ import { FocusTrapModule } from 'primeng/focustrap';
   selector: 'app-ocx-search-config',
   standalone: true,
   templateUrl: './search-config.component.html',
-  styleUrls: ['./search-config.component.scss'],
   imports: [
     AngularRemoteComponentsModule,
     CommonModule,
@@ -101,7 +100,7 @@ import { FocusTrapModule } from 'primeng/focustrap';
     TranslateModule,
     SharedModule,
     ButtonModule,
-    OverlayPanelModule,
+    PopoverModule,
     TooltipModule,
     FocusTrapModule,
   ],
@@ -166,7 +165,7 @@ export class OneCXSearchConfigComponent
 
   permissions: string[] = [];
 
-  @ViewChild('op') op: OverlayPanel | undefined;
+  @ViewChild('op') op: Popover | undefined;
   @ViewChild('manageButton', { read: ElementRef })
   manageButton?: ElementRef<HTMLButtonElement>;
 

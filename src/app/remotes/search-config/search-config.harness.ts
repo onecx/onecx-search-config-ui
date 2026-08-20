@@ -45,7 +45,7 @@ export class OneCXSearchConfigHarness extends ContentContainerComponentHarness {
 
   async getHarnessLoaderForOverlay() {
     return this.documentRootLocatorFactory().harnessLoaderForOptional(
-      '.p-overlaypanel',
+      '.p-popover',
     );
   }
 

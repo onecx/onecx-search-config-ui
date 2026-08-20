@@ -30,7 +30,7 @@ import {
 import { DialogService } from 'primeng/dynamicdialog';
 import { advancedViewMode, basicViewMode } from 'src/app/shared/constants';
 import { TooltipModule } from 'primeng/tooltip';
-import { OverlayPanelModule } from 'primeng/overlaypanel';
+import { PopoverModule } from 'primeng/popover';
 import { FocusTrapModule } from 'primeng/focustrap';
 
 @NgModule({
@@ -203,7 +203,7 @@ describe('OneCXSearchConfigComponent', () => {
             TooltipModule,
             CreateOrEditSearchConfigDialogComponent,
             ButtonModule,
-            OverlayPanelModule,
+            PopoverModule,
             FocusTrapModule,
           ],
           providers: [

@@ -45,7 +45,7 @@ export class OneCXColumnGroupSelectionHarness extends ContentContainerComponentH
 
   async getHarnessLoaderForOverlay() {
     return this.documentRootLocatorFactory().harnessLoaderForOptional(
-      '.p-overlaypanel',
+      '.p-popover',
     );
   }
 
