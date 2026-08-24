@@ -2,6 +2,7 @@ import { CommonModule, Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import {
   Component,
+  ElementRef,
   EventEmitter,
   Inject,
   Input,
@@ -15,26 +16,24 @@ import {
   TranslateService,
 } from '@ngx-translate/core';
 import {
-  DataTableColumn,
-  createRemoteComponentAndMfeTranslateLoader,
+  AngularAcceleratorModule,
   ColumnGroupData,
+  DataTableColumn,
+  PortalDialogService,
+  providePortalDialogService
 } from '@onecx/angular-accelerator';
 import {
   AppStateService,
-  PortalCoreModule,
-  PortalDialogService,
   PortalMessageService,
   UserService,
-  providePortalDialogService,
-} from '@onecx/portal-integration-angular';
+} from '@onecx/angular-integration-interface';
 import {
   AngularRemoteComponentsModule,
-  BASE_URL,
-  RemoteComponentConfig,
   ocxRemoteComponent,
   ocxRemoteWebcomponent,
   provideTranslateServiceForRoot,
 } from '@onecx/angular-remote-components';
+import { createTranslateLoader, REMOTE_COMPONENT_CONFIG, RemoteComponentConfig } from '@onecx/angular-utils'
 import {
   BehaviorSubject,
   OperatorFunction,
@@ -49,10 +48,9 @@ import {
   withLatestFrom,
 } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Button, ButtonModule } from 'primeng/button';
-import { DropdownModule } from 'primeng/dropdown';
+import { ButtonModule } from 'primeng/button';
 import { FloatLabelModule } from 'primeng/floatlabel';
-import { OverlayPanel, OverlayPanelModule } from 'primeng/overlaypanel';
+import { Popover, PopoverModule } from 'primeng/popover';
 import { PrimeIcons } from 'primeng/api';
 import { SharedModule } from 'src/app/shared/shared.module';
 import {
@@ -67,7 +65,6 @@ import { environment } from 'src/environments/environment';
 import {
   ColumnSelectionViewModel,
   PageData,
-  RevertData,
   SEARCH_CONFIG_STORE_NAME,
   SEARCH_CONFIG_TOPIC,
   SearchConfigStore,
@@ -87,40 +84,33 @@ import {
 } from 'src/app/shared/search-config.utils';
 import { TooltipModule } from 'primeng/tooltip';
 import { FocusTrapModule } from 'primeng/focustrap';
-import { TranslationCacheService } from '@onecx/angular-utils';
 
 @Component({
   selector: 'app-ocx-column-group-selection',
   standalone: true,
   templateUrl: './column-group-selection.component.html',
-  styleUrls: ['./column-group-selection.component.scss'],
   imports: [
     AngularRemoteComponentsModule,
     CommonModule,
-    PortalCoreModule,
+    AngularAcceleratorModule,
     TranslateModule,
     SharedModule,
     FormsModule,
     ReactiveFormsModule,
     ButtonModule,
-    DropdownModule,
     FloatLabelModule,
     TooltipModule,
-    OverlayPanelModule,
+    PopoverModule,
     FocusTrapModule,
   ],
   providers: [
     PortalMessageService,
-    {
-      provide: BASE_URL,
-      useValue: new ReplaySubject<string>(1),
-    },
     provideTranslateServiceForRoot({
       isolate: true,
       loader: {
         provide: TranslateLoader,
-        useFactory: createRemoteComponentAndMfeTranslateLoader,
-        deps: [HttpClient, BASE_URL, TranslationCacheService, AppStateService],
+        useFactory: createTranslateLoader,
+        deps: [HttpClient, AppStateService],
       },
     }),
     providePortalDialogService(),
@@ -196,17 +186,19 @@ export class OneCXColumnGroupSelectionComponent
 
   permissions: string[] = [];
 
-  @ViewChild('op') op: OverlayPanel | undefined;
-  @ViewChild('manageButton') manageButton: Button | undefined;
+  @ViewChild('op') op: Popover | undefined;
+  @ViewChild('manageButton', { read: ElementRef })
+  manageButton?: ElementRef<HTMLButtonElement>;
 
   constructor(
-    @Inject(BASE_URL) private baseUrl: ReplaySubject<string>,
-    private userService: UserService,
-    private translateService: TranslateService,
-    private searchConfigService: SearchConfigAPIService,
-    private searchConfigStore: SearchConfigStore,
-    private portalDialogService: PortalDialogService,
-    private portalMessageService: PortalMessageService,
+    @Inject(REMOTE_COMPONENT_CONFIG) 
+    private readonly baseUrl: ReplaySubject<RemoteComponentConfig>,
+    private readonly userService: UserService,
+    private readonly translateService: TranslateService,
+    private readonly searchConfigService: SearchConfigAPIService,
+    private readonly searchConfigStore: SearchConfigStore,
+    private readonly portalDialogService: PortalDialogService,
+    private readonly portalMessageService: PortalMessageService,
   ) {
     this.translateService.use(this.userService.lang$.getValue());
 
@@ -214,10 +206,10 @@ export class OneCXColumnGroupSelectionComponent
       .pipe(
         debounceTime(20),
         filter(
-          (dataToRevert) => dataToRevert !== undefined,
-        ) as OperatorFunction<RevertData | undefined, RevertData>,
+          (dataToRevert: PageData | undefined) => dataToRevert !== undefined,
+        ) as OperatorFunction<PageData | undefined, PageData>,
       )
-      .subscribe((dataToRevert) => {
+      .subscribe((dataToRevert: PageData) => {
         if (!dataToRevert.columnGroupKey) return;
         this.groupSelectionChanged.emit({
           activeColumns: this.columns.filter((c) =>
@@ -229,7 +221,7 @@ export class OneCXColumnGroupSelectionComponent
 
     this.searchConfigStore.selectedGroupKey$
       .pipe(debounceTime(50), withLatestFrom(this.vm$))
-      .subscribe(([selectedGroupKey, vm]) => {
+      .subscribe(([selectedGroupKey, vm]: [string, ColumnSelectionViewModel]) => {
         const configWithColumns = vm.searchConfigsWithColumns.find(
           (c) => c.name === selectedGroupKey,
         );
@@ -264,8 +256,7 @@ export class OneCXColumnGroupSelectionComponent
       .pipe(
         map((columns) =>
           columns
-            .map((keys) => keys.predefinedGroupKeys || [])
-            .flat()
+            .flatMap((keys) => keys.predefinedGroupKeys || [])
             .concat([this.defaultGroupKey])
             .filter((value) => !!value)
             .filter(
@@ -291,7 +282,7 @@ export class OneCXColumnGroupSelectionComponent
     this.searchConfigService.configuration = new Configuration({
       basePath: Location.joinWithSlash(config.baseUrl, environment.apiPrefix),
     });
-    this.baseUrl.next(config.baseUrl);
+    this.baseUrl.next(config);
     this.permissions = config.permissions;
   }
 
@@ -304,7 +295,7 @@ export class OneCXColumnGroupSelectionComponent
   }
 
   focusManageButton() {
-    this.manageButton?.focus();
+    this.manageButton?.nativeElement.focus();
   }
 
   overlayButtonText(vm: ColumnSelectionViewModel): {

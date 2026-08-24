@@ -4,10 +4,7 @@ import { ReplaySubject, of, throwError } from 'rxjs';
 import { TranslateTestingModule } from 'ngx-translate-testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
-import {
-  BASE_URL,
-  RemoteComponentConfig,
-} from '@onecx/angular-remote-components';
+import { REMOTE_COMPONENT_CONFIG, RemoteComponentConfig } from '@onecx/angular-utils'
 import { CommonModule } from '@angular/common';
 import { NO_ERRORS_SCHEMA, NgModule } from '@angular/core';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -23,10 +20,10 @@ import { CreateOrEditSearchConfigDialogComponent } from 'src/app/shared/componen
 import { ButtonModule } from 'primeng/button';
 import {
   ColumnType,
-  IfPermissionDirective,
-  PortalDialogService,
-  PortalMessageService,
-} from '@onecx/portal-integration-angular';
+  PortalDialogService
+} from '@onecx/angular-accelerator';
+import { PortalMessageService } from '@onecx/angular-integration-interface'
+import { IfPermissionDirective } from '@onecx/angular-accelerator';
 import {
   Configuration,
   SearchConfigAPIService,
@@ -34,7 +31,7 @@ import {
 import { DialogService } from 'primeng/dynamicdialog';
 import { TooltipModule } from 'primeng/tooltip';
 import { OneCXColumnGroupSelectionComponent } from './column-group-selection.component';
-import { OverlayPanelModule } from 'primeng/overlaypanel';
+import { PopoverModule } from 'primeng/popover';
 import { FocusTrapModule } from 'primeng/focustrap';
 import { advancedViewMode } from 'src/app/shared/constants';
 
@@ -185,7 +182,7 @@ describe('OneCXColumnGroupSelectionComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         {
-          provide: BASE_URL,
+          provide: REMOTE_COMPONENT_CONFIG,
           useValue: baseUrlSubject,
         },
         {
@@ -211,7 +208,7 @@ describe('OneCXColumnGroupSelectionComponent', () => {
             TooltipModule,
             CreateOrEditSearchConfigDialogComponent,
             ButtonModule,
-            OverlayPanelModule,
+            PopoverModule,
             FocusTrapModule,
           ],
           providers: [
@@ -341,7 +338,7 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       expect(component.ocxInitRemoteComponent).toHaveBeenCalledWith(config);
       expect(searchConfigServiceSpy.configuration.basePath).toEqual('base/bff');
       baseUrlSubject.asObservable().subscribe((item) => {
-        expect(item).toEqual('base');
+        expect(item).toEqual(config);
         done();
       });
     });
@@ -1394,6 +1391,16 @@ describe('OneCXColumnGroupSelectionComponent', () => {
         ],
         groupKey: 'full',
       });
+    });
+  });
+
+  describe('focusManageButton', () => {
+    it('should not throw when manage button is undefined', () => {
+      const { component } = setUp();
+
+      component.manageButton = undefined;
+
+      expect(() => component.focusManageButton()).not.toThrow();
     });
   });
 });

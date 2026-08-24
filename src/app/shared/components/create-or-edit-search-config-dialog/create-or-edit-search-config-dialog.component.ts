@@ -12,9 +12,11 @@ import {
   DialogPrimaryButtonDisabled,
   DialogResult,
   DialogState,
-} from '@onecx/portal-integration-angular';
+} from '@onecx/angular-accelerator';
 import { CheckboxModule } from 'primeng/checkbox';
+import { FloatLabelModule } from 'primeng/floatlabel';
 import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
 import { Observable, map, startWith } from 'rxjs';
 
 export type CreateOrEditSearchDialogContent = {
@@ -34,6 +36,8 @@ export type CreateOrEditSearchDialogContent = {
     ReactiveFormsModule,
     CheckboxModule,
     InputTextModule,
+    FloatLabelModule,
+    TooltipModule,
   ],
 })
 export class CreateOrEditSearchConfigDialogComponent
@@ -61,7 +65,7 @@ export class CreateOrEditSearchConfigDialogComponent
   _frozeColumnSaveOption = false;
   @Input()
   set frozeColumnSaveOption(value: boolean | undefined) {
-    this._frozeColumnSaveOption = value !== undefined ? value : false;
+    this._frozeColumnSaveOption = value ?? false;
     if (value) {
       this.searchConfigFormGroup.controls['saveColumns'].disable();
     } else {
@@ -75,7 +79,7 @@ export class CreateOrEditSearchConfigDialogComponent
   _frozeColumnSaveOptionExplanation = '';
   @Input()
   set frozeColumnSaveOptionExplanation(value: string | undefined) {
-    this._frozeColumnSaveOptionExplanation = value !== undefined ? value : '';
+    this._frozeColumnSaveOptionExplanation = value ?? '';
   }
   get frozeColumnSaveOptionExplanation(): string {
     return this._frozeColumnSaveOptionExplanation;

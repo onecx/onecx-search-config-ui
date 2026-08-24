@@ -12,3 +12,8 @@
   :host ::ng-deep .p-checkbox {
     margin-right: 1em;
   }
+
+  :host ::ng-deep .p-checkbox-box {
+    display: none;
+  }
+  

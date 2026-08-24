@@ -21,21 +21,17 @@
           "./src/assets",
           {
             "glob": "**/*",
-            "input": "./node_modules/@onecx/portal-integration-angular/assets/",
-            "output": "/onecx-portal-lib/assets/"
-          },
-          {
-            "glob": "**/*",
             "input": "./node_modules/@onecx/angular-accelerator/assets/",
             "output": "/onecx-angular-accelerator/assets/"
           }
         ],
         "styles": [
-          "./src/styles.scss",
-          "node_modules/primeicons/primeicons.css",
-          "node_modules/primeng/resources/primeng.min.css",
-          "node_modules/@onecx/portal-integration-angular/assets/styles.scss"
-        ],
+        {
+          "input": "./src/styles.scss",
+          "bundleName": "styles",
+          "inject": true
+        }
+      ],
         "scripts": [
           "node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js"
         ],
