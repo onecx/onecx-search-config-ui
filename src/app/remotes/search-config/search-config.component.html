@@ -38,15 +38,16 @@
       type="button"
       [pTooltip]="'SEARCH_CONFIG.MANAGE.TOOLTIP' | translate"
       tooltipPosition="top"
-      (click)="op.toggle($event)"
+      (onClick)="op.toggle($event)"
+      (keydown.enter)="op.toggle($event)"
       [ariaLabel]="'SEARCH_CONFIG.MANAGE.ARIA_LABEL' | translate"
       [disabled]="vm.editMode"
     ></p-button>
-    <p-overlayPanel (onHide)="focusManageButton()" #op>
+    <p-popover (onHide)="focusManageButton()" #op>
       <div
         id="sc_search_config_panel_content"
         pFocusTrap
-        class="flex flex-column gap-3"
+        class="flex flex-column"
       >
         <div
           class="flex flex-row align-items-center justify-content-between gap-2"
@@ -134,6 +135,6 @@
           </li>
         </ul>
       </div>
-    </p-overlayPanel>
+    </p-popover>
   </div>
 </div>

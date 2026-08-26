@@ -5,7 +5,6 @@ import { TranslateTestingModule } from 'ngx-translate-testing';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TranslateService } from '@ngx-translate/core';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { PCheckboxHarness } from '@onecx/angular-testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import {
@@ -13,7 +12,7 @@ import {
   withInterceptorsFromDi,
 } from '@angular/common/http';
 import { CreateOrEditSearchConfigDialogHarness } from './create-or-edit-search-config-dialog.component.harness';
-import { DialogState, MockAuthModule } from '@onecx/portal-integration-angular';
+import { DialogState } from '@onecx/angular-accelerator';
 
 describe('CreateOrEditSearchConfigDialogComponent', () => {
   let component: CreateOrEditSearchConfigDialogComponent;
@@ -27,7 +26,6 @@ describe('CreateOrEditSearchConfigDialogComponent', () => {
       imports: [
         CheckboxModule,
         CreateOrEditSearchConfigDialogComponent,
-        MockAuthModule,
         TranslateTestingModule.withTranslations({
           en: require('./../../../../assets/i18n/en.json'),
           de: require('./../../../../assets/i18n/de.json'),
@@ -86,10 +84,25 @@ describe('CreateOrEditSearchConfigDialogComponent', () => {
     );
   });
 
+  it('should set frozeColumnSaveOptionExplanation to empty string when undefined is provided', () => {
+    component.frozeColumnSaveOptionExplanation = undefined;
+
+    expect(component.frozeColumnSaveOptionExplanation).toBe('');
+  });
+
+  it('should set frozeColumnSaveOption to false when undefined is provided', () => {
+    component.frozeColumnSaveOption = undefined;
+
+    expect(component.frozeColumnSaveOption).toBe(false);
+    expect(
+      component.searchConfigFormGroup.controls['saveColumns'].disabled,
+    ).toBeFalsy();
+  });
+
+
   it('should set the DialogResult of the saveInputValuesId checkbox to true when the saveInputValuesId checkbox is checked', async () => {
-    const saveInputValuesCheckbox = await dialogHarness.getHarness(
-      PCheckboxHarness.with({ inputid: 'saveInputValuesId' }),
-    );
+    const saveInputValuesCheckbox =
+      await dialogHarness.getSaveInputValuesCheckboxHarness();
     await saveInputValuesCheckbox.click();
     const _state: DialogState<CreateOrEditSearchConfigDialogComponent> = {
       button: 'primary',

@@ -1,1 +1,17 @@
-/* You can add global styles to this file, and also import other style files */
+/* global styles */
+@use 'primeflex/primeflex.scss';
+@use 'primeicons/primeicons.css';
+
+/* portal core */
+@use 'node_modules/@onecx/angular-accelerator/assets/styles.scss';
+
+// fix popover styles, check in next version of primeNG if this is still needed
+.p-popover:before,
+.p-popover:after {
+  margin-left: 0 !important;
+}
+
+.p-popover.column-group-selection-popover:before,
+.p-popover.column-group-selection-popover:after {
+  margin-left: 20rem !important;
+}

@@ -5,6 +5,19 @@ globalThis.ngJest = {
     errorOnUnknownProperties: true,
   },
 };
+
+Object.defineProperty(globalThis, 'matchMedia', {
+  writable: true,
+  value: (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  }),
+});
+
 import 'jest-preset-angular/setup-jest';
 
 // jsdom 20 dispatches postMessage through a timer after its document is disposed.

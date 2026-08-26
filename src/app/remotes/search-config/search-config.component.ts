@@ -2,6 +2,7 @@ import { CommonModule, Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import {
   Component,
+  ElementRef,
   EventEmitter,
   Inject,
   Input,
@@ -14,25 +15,23 @@ import {
   TranslateService,
 } from '@ngx-translate/core';
 import {
+  AngularAcceleratorModule,
   SearchConfigData,
-  createRemoteComponentTranslateLoader,
+  PortalDialogService,
+  providePortalDialogService,
 } from '@onecx/angular-accelerator';
 import {
   AppStateService,
-  PortalCoreModule,
-  PortalDialogService,
   PortalMessageService,
-  UserService,
-  providePortalDialogService,
-} from '@onecx/portal-integration-angular';
+  UserService
+} from '@onecx/angular-integration-interface';
 import {
   AngularRemoteComponentsModule,
-  BASE_URL,
-  RemoteComponentConfig,
   ocxRemoteComponent,
   ocxRemoteWebcomponent,
   provideTranslateServiceForRoot,
 } from '@onecx/angular-remote-components';
+import { createTranslateLoader, REMOTE_COMPONENT_CONFIG, RemoteComponentConfig } from '@onecx/angular-utils';
 import {
   OperatorFunction,
   ReplaySubject,
@@ -56,12 +55,11 @@ import {
 } from 'src/app/shared/generated';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { environment } from 'src/environments/environment';
-import { Button, ButtonModule } from 'primeng/button';
-import { OverlayPanel, OverlayPanelModule } from 'primeng/overlaypanel';
+import { ButtonModule } from 'primeng/button';
+import { Popover, PopoverModule } from 'primeng/popover';
 import { MfeInfo } from '@onecx/integration-interface';
 import {
   PageData,
-  RevertData,
   SEARCH_CONFIG_STORE_NAME,
   SEARCH_CONFIG_TOPIC,
   SearchConfigStore,
@@ -93,31 +91,25 @@ import { FocusTrapModule } from 'primeng/focustrap';
   selector: 'app-ocx-search-config',
   standalone: true,
   templateUrl: './search-config.component.html',
-  styleUrls: ['./search-config.component.scss'],
   imports: [
     AngularRemoteComponentsModule,
     CommonModule,
-    PortalCoreModule,
+    AngularAcceleratorModule,
     TranslateModule,
     SharedModule,
     ButtonModule,
-    CreateOrEditSearchConfigDialogComponent,
-    OverlayPanelModule,
+    PopoverModule,
     TooltipModule,
     FocusTrapModule,
   ],
   providers: [
     PortalMessageService,
-    {
-      provide: BASE_URL,
-      useValue: new ReplaySubject<string>(1),
-    },
     provideTranslateServiceForRoot({
       isolate: true,
       loader: {
         provide: TranslateLoader,
-        useFactory: createRemoteComponentTranslateLoader,
-        deps: [HttpClient, BASE_URL],
+        useFactory: createTranslateLoader,
+        deps: [HttpClient],
       },
     }),
     providePortalDialogService(),
@@ -171,18 +163,20 @@ export class OneCXSearchConfigComponent
 
   permissions: string[] = [];
 
-  @ViewChild('op') op: OverlayPanel | undefined;
-  @ViewChild('manageButton') manageButton: Button | undefined;
+  @ViewChild('op') op: Popover | undefined;
+  @ViewChild('manageButton', { read: ElementRef })
+  manageButton?: ElementRef<HTMLButtonElement>;
 
   constructor(
-    @Inject(BASE_URL) private baseUrl: ReplaySubject<string>,
-    private userService: UserService,
-    private translateService: TranslateService,
-    private searchConfigService: SearchConfigAPIService,
-    private portalDialogService: PortalDialogService,
-    private portalMessageService: PortalMessageService,
-    private appStateService: AppStateService,
-    private searchConfigStore: SearchConfigStore,
+    @Inject(REMOTE_COMPONENT_CONFIG) 
+    private readonly baseUrl: ReplaySubject<RemoteComponentConfig>,
+    private readonly userService: UserService,
+    private readonly translateService: TranslateService,
+    private readonly searchConfigService: SearchConfigAPIService,
+    private readonly portalDialogService: PortalDialogService,
+    private readonly portalMessageService: PortalMessageService,
+    private readonly appStateService: AppStateService,
+    private readonly searchConfigStore: SearchConfigStore,
   ) {
     this.userService.lang$.subscribe((lang) => {
       this.translateService.use(lang);
@@ -213,12 +207,12 @@ export class OneCXSearchConfigComponent
     this.dataRevertSub = this.searchConfigStore.dataToRevert$
       .pipe(
         debounceTime(20),
-        filter((data) => data !== undefined) as OperatorFunction<
-          RevertData | undefined,
-          RevertData
+        filter((data: PageData | undefined) => data !== undefined) as OperatorFunction<
+          PageData | undefined,
+          PageData
         >,
       )
-      .subscribe((dataToRevert) => {
+      .subscribe((dataToRevert: PageData) => {
         if (!(dataToRevert.fieldValues && dataToRevert.viewMode)) return;
         this.searchConfigSelected.emit({
           name: undefined,
@@ -237,6 +231,14 @@ export class OneCXSearchConfigComponent
         ),
       )
       .subscribe(([config, currentData, isColumnGroupActive]) => {
+        let viewMode = currentData.viewMode ?? basicViewMode;
+
+        if (config && hasValues(config)) {
+          viewMode = config.isAdvanced
+            ? advancedViewMode
+            : basicViewMode;
+        }
+
         this.searchConfigSelected.emit(
           config
             ? {
@@ -248,11 +250,7 @@ export class OneCXSearchConfigComponent
                   hasColumns(config) && isColumnGroupActive
                     ? config.columns
                     : currentData.displayedColumnsIds,
-                viewMode: hasValues(config)
-                  ? config.isAdvanced
-                    ? advancedViewMode
-                    : basicViewMode
-                  : (currentData.viewMode ?? basicViewMode),
+                viewMode,
               }
             : undefined,
         );
@@ -271,7 +269,7 @@ export class OneCXSearchConfigComponent
     this.searchConfigService.configuration = new Configuration({
       basePath: Location.joinWithSlash(config.baseUrl, environment.apiPrefix),
     });
-    this.baseUrl.next(config.baseUrl);
+    this.baseUrl.next(config);
     this.permissions = config.permissions;
     if (config.permissions.includes('SEARCHCONFIG#CREATE')) {
       this.baseOptions = [
@@ -283,7 +281,7 @@ export class OneCXSearchConfigComponent
   }
 
   focusManageButton() {
-    this.manageButton?.focus();
+    this.manageButton?.nativeElement.focus();
   }
 
   overlayButtonText(vm: SearchConfigViewModel): {
@@ -296,13 +294,14 @@ export class OneCXSearchConfigComponent
         params: { config: vm.currentConfig.name },
       };
     }
+    const currentConfig = vm.currentConfig;
     if (
-      vm.currentConfig &&
-      vm.searchConfigs.find((c) => c.name === vm.currentConfig?.name)
+      currentConfig &&
+      vm.searchConfigs.some((c) => c.name === currentConfig.name)
     ) {
       return {
         key: 'SEARCH_CONFIG.ACTIVE',
-        params: { config: vm.currentConfig.name },
+        params: { config: currentConfig.name },
       };
     }
     return { key: 'SEARCH_CONFIG.MANAGE.LABEL' };
@@ -323,6 +322,16 @@ export class OneCXSearchConfigComponent
       this.searchConfigStore.setCurrentConfig(undefined);
     });
 
+    let frozeColumnSaveOptionExplanation = '';
+
+    if (!vm.isColumnGroupComponentActive) {
+      frozeColumnSaveOptionExplanation =
+        'SEARCH_CONFIG.COLUMN_GROUP_COMPONENT_INACTIVE';
+    } else if (vm.layout !== 'table') {
+      frozeColumnSaveOptionExplanation =
+        'SEARCH_CONFIG.TABLE_VIEW_INACTIVE';
+    }
+
     this.portalDialogService
       .openDialog<CreateOrEditSearchDialogContent>(
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_HEADER',
@@ -333,14 +342,8 @@ export class OneCXSearchConfigComponent
             saveInputValues: false,
             saveColumns: false,
             frozeColumnSaveOption:
-              vm.isColumnGroupComponentActive && vm.layout === 'table'
-                ? false
-                : true,
-            frozeColumnSaveOptionExplanation: vm.isColumnGroupComponentActive
-              ? vm.layout !== 'table'
-                ? 'SEARCH_CONFIG.TABLE_VIEW_INACTIVE'
-                : ''
-              : 'SEARCH_CONFIG.COLUMN_GROUP_COMPONENT_INACTIVE',
+              !(vm.isColumnGroupComponentActive && vm.layout === 'table'),
+           frozeColumnSaveOptionExplanation,
           },
         },
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
@@ -353,14 +356,16 @@ export class OneCXSearchConfigComponent
           this.searchConfigStore.pageName$,
         ),
         mergeMap(([dialogResult, currentMfe, pageData, pageName]) => {
-          if (!dialogResult || !dialogResult.result) {
+          const result = dialogResult?.result;
+
+          if (!result) {
             return of(undefined);
           }
           if (dialogResult.button !== 'primary') {
             return of(undefined);
           }
           return this.saveSearchConfig(
-            dialogResult.result,
+            result,
             currentMfe,
             pageData,
             pageName,
@@ -368,7 +373,7 @@ export class OneCXSearchConfigComponent
         }),
       )
       .subscribe((response) => {
-        if (response && response.id) {
+        if (response?.id) {
           this.portalMessageService.info({
             summaryKey: 'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CREATE_SUCCESS',
           });
@@ -413,14 +418,9 @@ export class OneCXSearchConfigComponent
             saveInputValues: Object.keys(searchConfig.values ?? {}).length > 0,
             saveColumns: (searchConfig.columns ?? []).length > 0,
             frozeColumnSaveOption:
-              vm.isColumnGroupComponentActive && vm.layout === 'table'
-                ? false
-                : true,
-            frozeColumnSaveOptionExplanation: vm.isColumnGroupComponentActive
-              ? vm.layout !== 'table'
-                ? 'SEARCH_CONFIG.TABLE_VIEW_INACTIVE'
-                : ''
-              : 'SEARCH_CONFIG.COLUMN_GROUP_COMPONENT_INACTIVE',
+              !(vm.isColumnGroupComponentActive && vm.layout === 'table'),
+            frozeColumnSaveOptionExplanation:
+              this.getFrozeColumnSaveOptionExplanation(vm),
           },
         },
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
@@ -569,16 +569,19 @@ export class OneCXSearchConfigComponent
     data: PageData,
     vm: SearchConfigViewModel,
   ) {
+    let columns = config.columns;
+    
+    if (vm.isColumnGroupComponentActive && vm.layout === 'table') {
+      columns = configData?.saveColumns
+        ? data.displayedColumnsIds
+        : [];
+    }
+
     const request: UpdateSearchConfigRequest = {
       searchConfig: {
         ...config,
         name: configData?.searchConfigName ?? config.name ?? '',
-        columns:
-          vm.isColumnGroupComponentActive && vm.layout === 'table'
-            ? configData?.saveColumns
-              ? data.displayedColumnsIds
-              : []
-            : config.columns,
+        columns,
         values: configData?.saveInputValues
           ? parseFieldValues(data.fieldValues ?? {})
           : {},
@@ -594,5 +597,17 @@ export class OneCXSearchConfigComponent
         return of(undefined);
       }),
     );
+  }
+
+  private getFrozeColumnSaveOptionExplanation(
+    vm: SearchConfigViewModel,
+  ): string {
+    if (!vm.isColumnGroupComponentActive) {
+      return 'SEARCH_CONFIG.COLUMN_GROUP_COMPONENT_INACTIVE';
+    }
+    if (vm.layout !== 'table') {
+      return 'SEARCH_CONFIG.TABLE_VIEW_INACTIVE';
+    }
+    return '';
   }
 }

@@ -40,13 +40,14 @@
                 | translate: { group: (buttonData.params.group | translate) })
           "
           type="button"
+          (onClick)="op.toggle($event)"
+          (keydown.enter)="op.toggle($event)"
           [pTooltip]="'COLUMN_GROUP_SELECTION.MANAGE.TOOLTIP' | translate"
           tooltipPosition="top"
-          (click)="op.toggle($event)"
           [ariaLabel]="'COLUMN_GROUP_SELECTION.MANAGE.ARIA_LABEL' | translate"
           [disabled]="vm.editMode"
         ></p-button>
-        <p-overlayPanel (onHide)="focusManageButton()" #op>
+        <p-popover (onHide)="focusManageButton()" #op styleClass="column-group-selection-popover">
           <div
             id="sc_column_group_panel_content"
             pFocusTrap
@@ -141,7 +142,7 @@
               </li>
             </ul>
           </div>
-        </p-overlayPanel>
+        </p-popover>
       </div>
     </div>
   </ng-container>
