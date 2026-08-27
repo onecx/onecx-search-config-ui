@@ -1,3 +1,4 @@
+const webpack = require('webpack');
 const {
   ModifyEntryPlugin,
 } = require('@angular-architects/module-federation/src/utils/modify-entry-plugin');
@@ -120,7 +121,14 @@ const modifyMaterialPlugin = new ModifySourcePlugin({
 
 module.exports = {
   ...config,
-  plugins: [...plugins, modifyPrimeNgPlugin, modifyMaterialPlugin],
+  plugins: [
+    ...plugins,
+    modifyPrimeNgPlugin,
+    modifyMaterialPlugin,
+    new webpack.DefinePlugin({
+      ngDevMode: true,
+    }),
+  ],
   output: {
     uniqueName: 'onecx-search-config-ui',
     publicPath: 'auto',
