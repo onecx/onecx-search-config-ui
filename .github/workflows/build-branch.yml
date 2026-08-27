@@ -14,4 +14,3 @@ jobs:
   branch:
     uses: onecx/ci-angular/.github/workflows/build-branch.yml@v1
     secrets: inherit
-    

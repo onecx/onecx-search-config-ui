@@ -8,8 +8,8 @@
     "build": "nx build && cp dist/onecx-search-config-ui/styles.*.css dist/onecx-search-config-ui/styles.css",
     "postbuild": "mv \"$(find dist/onecx-search-config-ui -maxdepth 1 -type f -name 'styles.*.css' | head -n 1)\" dist/onecx-search-config-ui/styles.css",
     "format": "nx format:write --uncommitted",
-    "lint": "nx lint",
-    "lint:fix": "nx lint --fix",
+    "lint": "nx lint --cache=true && npx prettier -c --cache .",
+    "lint:fix": "npx prettier --write .",
     "test": "nx test",
     "test:ci": "nx test --watch=false --browsers=ChromeHeadless --code-coverage",
     "sonar": "npx sonarqube-scanner -Dproject.settings=sonar-local-project.properties"

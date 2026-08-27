@@ -5,7 +5,6 @@ import {
 import { InputHarness } from '@onecx/angular-testing';
 
 class CheckboxInputHarness extends ComponentHarness {
-
   async click(): Promise<void> {
     await (await this.host()).click();
   }
@@ -24,7 +23,8 @@ class SaveColumnsCheckboxHarness extends CheckboxInputHarness {
 }
 
 export class CreateOrEditSearchConfigDialogHarness extends ContentContainerComponentHarness {
-  public static readonly hostSelector = 'ocx-create-or-edit-search-config-dialog';
+  public static readonly hostSelector =
+    'ocx-create-or-edit-search-config-dialog';
 
   getSaveInputValuesCheckboxHarness(): Promise<SaveInputValuesCheckboxHarness> {
     return this.getHarness(SaveInputValuesCheckboxHarness);

@@ -5,4 +5,3 @@ jobs:
   fix:
     uses: onecx/ci-common/.github/workflows/create-fix-branch.yml@v1
     secrets: inherit
-    

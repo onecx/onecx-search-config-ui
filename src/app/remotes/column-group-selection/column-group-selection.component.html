@@ -47,7 +47,11 @@
           [ariaLabel]="'COLUMN_GROUP_SELECTION.MANAGE.ARIA_LABEL' | translate"
           [disabled]="vm.editMode"
         ></p-button>
-        <p-popover (onHide)="focusManageButton()" #op styleClass="column-group-selection-popover">
+        <p-popover
+          (onHide)="focusManageButton()"
+          #op
+          styleClass="column-group-selection-popover"
+        >
           <div
             id="sc_column_group_panel_content"
             pFocusTrap

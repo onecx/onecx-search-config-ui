@@ -99,7 +99,6 @@ describe('CreateOrEditSearchConfigDialogComponent', () => {
     ).toBeFalsy();
   });
 
-
   it('should set the DialogResult of the saveInputValuesId checkbox to true when the saveInputValuesId checkbox is checked', async () => {
     const saveInputValuesCheckbox =
       await dialogHarness.getSaveInputValuesCheckboxHarness();
