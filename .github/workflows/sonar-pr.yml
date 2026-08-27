@@ -2,7 +2,7 @@ name: Sonar Pull Request
 
 on:
   workflow_run:
-    workflows: ["Build Pull Request"]
+    workflows: ['Build Pull Request']
     types:
       - completed
 

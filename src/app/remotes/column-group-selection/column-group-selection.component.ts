@@ -20,7 +20,7 @@ import {
   ColumnGroupData,
   DataTableColumn,
   PortalDialogService,
-  providePortalDialogService
+  providePortalDialogService,
 } from '@onecx/angular-accelerator';
 import {
   AppStateService,
@@ -33,7 +33,11 @@ import {
   ocxRemoteWebcomponent,
   provideTranslateServiceForRoot,
 } from '@onecx/angular-remote-components';
-import { createTranslateLoader, REMOTE_COMPONENT_CONFIG, RemoteComponentConfig } from '@onecx/angular-utils'
+import {
+  createTranslateLoader,
+  REMOTE_COMPONENT_CONFIG,
+  RemoteComponentConfig,
+} from '@onecx/angular-utils';
 import {
   BehaviorSubject,
   OperatorFunction,
@@ -191,7 +195,7 @@ export class OneCXColumnGroupSelectionComponent
   manageButton?: ElementRef<HTMLButtonElement>;
 
   constructor(
-    @Inject(REMOTE_COMPONENT_CONFIG) 
+    @Inject(REMOTE_COMPONENT_CONFIG)
     private readonly baseUrl: ReplaySubject<RemoteComponentConfig>,
     private readonly userService: UserService,
     private readonly translateService: TranslateService,
@@ -221,30 +225,32 @@ export class OneCXColumnGroupSelectionComponent
 
     this.searchConfigStore.selectedGroupKey$
       .pipe(debounceTime(50), withLatestFrom(this.vm$))
-      .subscribe(([selectedGroupKey, vm]: [string, ColumnSelectionViewModel]) => {
-        const configWithColumns = vm.searchConfigsWithColumns.find(
-          (c) => c.name === selectedGroupKey,
-        );
-        if (configWithColumns) {
-          const activeColumns = this.columns.filter((c) =>
-            configWithColumns.columns.includes(c.id),
+      .subscribe(
+        ([selectedGroupKey, vm]: [string, ColumnSelectionViewModel]) => {
+          const configWithColumns = vm.searchConfigsWithColumns.find(
+            (c) => c.name === selectedGroupKey,
           );
-          this.groupSelectionChanged.emit({
-            activeColumns,
-            groupKey: selectedGroupKey,
-          });
-        } else if (selectedGroupKey === vm.customGroupKey) {
-          return;
-        } else if (vm.nonSearchConfigGroupKeys.includes(selectedGroupKey)) {
-          const activeColumns = this.columns.filter((c) =>
-            c.predefinedGroupKeys?.includes(selectedGroupKey),
-          );
-          this.groupSelectionChanged.emit({
-            activeColumns,
-            groupKey: selectedGroupKey,
-          });
-        }
-      });
+          if (configWithColumns) {
+            const activeColumns = this.columns.filter((c) =>
+              configWithColumns.columns.includes(c.id),
+            );
+            this.groupSelectionChanged.emit({
+              activeColumns,
+              groupKey: selectedGroupKey,
+            });
+          } else if (selectedGroupKey === vm.customGroupKey) {
+            return;
+          } else if (vm.nonSearchConfigGroupKeys.includes(selectedGroupKey)) {
+            const activeColumns = this.columns.filter((c) =>
+              c.predefinedGroupKeys?.includes(selectedGroupKey),
+            );
+            this.groupSelectionChanged.emit({
+              activeColumns,
+              groupKey: selectedGroupKey,
+            });
+          }
+        },
+      );
   }
   ngOnDestroy(): void {
     this.dataRevertSub?.unsubscribe();

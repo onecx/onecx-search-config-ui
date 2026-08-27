@@ -1,19 +1,18 @@
 .searchConfigDialog {
-    display: flex;
-    flex-direction: column;
-    gap: 1em;
-    margin-bottom: 1em;
-  }
-  
-  :host ::ng-deep .p-inputtext {
-    width: 100%;
-  }
-  
-  :host ::ng-deep .p-checkbox {
-    margin-right: 1em;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  margin-bottom: 1em;
+}
 
-  :host ::ng-deep .p-checkbox-box {
-    display: none;
-  }
-  
+:host ::ng-deep .p-inputtext {
+  width: 100%;
+}
+
+:host ::ng-deep .p-checkbox {
+  margin-right: 1em;
+}
+
+:host ::ng-deep .p-checkbox-box {
+  display: none;
+}

@@ -7,4 +7,3 @@ jobs:
   pr:
     uses: onecx/ci-angular/.github/workflows/build-pr-merge.yml@v1
     secrets: inherit
-

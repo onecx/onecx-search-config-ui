@@ -26,12 +26,12 @@
           }
         ],
         "styles": [
-        {
-          "input": "./src/styles.scss",
-          "bundleName": "styles",
-          "inject": true
-        }
-      ],
+          {
+            "input": "./src/styles.scss",
+            "bundleName": "styles",
+            "inject": true
+          }
+        ],
         "scripts": [
           "node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js"
         ],

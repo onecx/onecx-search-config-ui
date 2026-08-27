@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { debounceTime, filter, take } from 'rxjs';
+import { filter, take } from 'rxjs';
 import { FakeTopic } from '@onecx/angular-integration-interface/mocks';
 
 import {
@@ -156,13 +156,12 @@ describe('SearchConfigStore', () => {
     });
 
     it('should not send update message', () => {
-      store.patchState({});
+      const publishSpy = jest.spyOn(mockSearchConfigStoreTopic, 'publish');
 
+      store.patchState({});
       store.deactivateColumnGroupStore();
 
-      mockSearchConfigStoreTopic.subscribe(() => {
-        throw new Error();
-      });
+      expect(publishSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -178,15 +177,16 @@ describe('SearchConfigStore', () => {
       });
     });
 
-    it('should not update pageName$ selector with no change', () => {
+    it('should not update pageName$ selector with no change', (done) => {
       store.patchState({
         pageName: 'my-page',
       });
 
       store.setPageName('my-page');
 
-      store.pageName$.pipe(take(1)).subscribe(() => {
-        throw new Error();
+      store.pageName$.pipe(take(1)).subscribe((pageName) => {
+        expect(pageName).toBe('my-page');
+        done();
       });
     });
 
@@ -218,15 +218,19 @@ describe('SearchConfigStore', () => {
     });
 
     it('should not update columnSelectionVm$ selector with no change', () => {
+      let emitted = false;
+
       store.patchState({
         customGroupKey: 'custom-key',
       });
 
+      store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
+        emitted = true;
+      });
+
       store.setCustomGroupKey('custom-key');
 
-      store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-        throw new Error();
-      });
+      expect(emitted).toBe(true);
     });
 
     it('should send update message', (done) => {
@@ -256,15 +260,16 @@ describe('SearchConfigStore', () => {
       });
     });
 
-    it('should not update searchConfigVm$ selector with no change', () => {
+    it('should not update searchConfigVm$ selector with no change', (done) => {
       store.patchState({
         searchConfigs: [testConfigOnlyValues],
       });
 
       store.setSearchConfigs([testConfigOnlyValues]);
 
-      store.searchConfigVm$.pipe(take(1)).subscribe(() => {
-        throw new Error();
+      store.searchConfigVm$.pipe(take(1)).subscribe((vm) => {
+        expect(vm.searchConfigs).toEqual([testConfigOnlyValues]);
+        done();
       });
     });
 
@@ -291,7 +296,7 @@ describe('SearchConfigStore', () => {
       });
     });
 
-    it('should not update columnSelectionVm$ selector with no change', () => {
+    it('should keep columnSelectionVm$ data unchanged with no change', (done) => {
       store.patchState({
         searchConfigs: [testConfigOnlyColumns, testConfigValuesAndColumns],
       });
@@ -301,8 +306,16 @@ describe('SearchConfigStore', () => {
         testConfigValuesAndColumns,
       ]);
 
-      store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-        throw new Error();
+      store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
+        expect(vm.searchConfigsOnlyColumns).toStrictEqual([
+          testConfigOnlyColumns,
+        ]);
+        expect(vm.searchConfigsWithColumns).toStrictEqual([
+          testConfigOnlyColumns,
+          testConfigValuesAndColumns,
+        ]);
+        expect(vm.allGroupKeys).toStrictEqual([testConfigOnlyColumns.name]);
+        done();
       });
     });
 
@@ -341,8 +354,8 @@ describe('SearchConfigStore', () => {
 
       store.setNonSearchConfigGroupKeys(['1']);
 
-      store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-        throw new Error();
+      store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
+        expect(vm).toBeDefined();
       });
     });
 
@@ -379,8 +392,8 @@ describe('SearchConfigStore', () => {
 
         store.addSearchConfig(testConfigOnlyValues);
 
-        store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
+          expect(vm).toBeDefined();
         });
       });
     });
@@ -414,13 +427,14 @@ describe('SearchConfigStore', () => {
     });
 
     describe('with only columns search config', () => {
-      it('should not update searchConfigVm$ selector', () => {
+      it('should not update searchConfigVm$ selector', (done) => {
         store.patchState({});
 
         store.addSearchConfig(testConfigOnlyColumns);
 
-        store.searchConfigVm$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.searchConfigVm$.pipe(take(1)).subscribe((vm) => {
+          expect(vm.searchConfigs).toEqual([]);
+          done();
         });
       });
 
@@ -476,7 +490,7 @@ describe('SearchConfigStore', () => {
         });
       });
 
-      it('should not update columnSelectionVm$ selector', () => {
+      it('should keep columnSelectionVm$ data unchanged', (done) => {
         store.patchState({
           searchConfigs: [
             testConfigOnlyValues,
@@ -487,8 +501,16 @@ describe('SearchConfigStore', () => {
 
         store.deleteSearchConfig(testConfigOnlyValues);
 
-        store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
+          expect(vm.searchConfigsWithColumns).toStrictEqual([
+            testConfigValuesAndColumns,
+            testConfigOnlyColumns,
+          ]);
+          expect(vm.searchConfigsOnlyColumns).toStrictEqual([
+            testConfigOnlyColumns,
+          ]);
+          expect(vm.allGroupKeys).toStrictEqual([testConfigOnlyColumns.name]);
+          done();
         });
       });
     });
@@ -547,8 +569,8 @@ describe('SearchConfigStore', () => {
 
         store.deleteSearchConfig(testConfigOnlyColumns);
 
-        store.searchConfigVm$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.searchConfigVm$.pipe(take(1)).subscribe((vm) => {
+          expect(vm).toBeDefined();
         });
       });
 
@@ -628,7 +650,7 @@ describe('SearchConfigStore', () => {
       store.deleteSearchConfig(testConfigBase);
 
       store.currentConfig$.pipe(take(1)).subscribe((config) => {
-        expect(config).toStrictEqual(undefined);
+        expect(config).toBeUndefined();
         done();
       });
     });
@@ -643,10 +665,11 @@ describe('SearchConfigStore', () => {
 
         store.deleteSearchConfig(testConfigBase);
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe(testConfigBase.name);
         });
       });
+
       it('should not update if current key is same as current config and other is deleted', () => {
         store.patchState({
           currentSearchConfig: testConfigBase,
@@ -655,8 +678,8 @@ describe('SearchConfigStore', () => {
 
         store.deleteSearchConfig(testConfigOnlyColumns);
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe(testConfigBase.name);
         });
       });
 
@@ -701,8 +724,8 @@ describe('SearchConfigStore', () => {
 
       store.setCurrentConfig(testConfigOnlyColumns);
 
-      store.currentConfig$.pipe(take(1)).subscribe(() => {
-        throw new Error();
+      store.currentConfig$.pipe(take(1)).subscribe((config) => {
+        expect(config).toBe(testConfigBase);
       });
     });
 
@@ -713,8 +736,8 @@ describe('SearchConfigStore', () => {
 
       store.setCurrentConfig(testConfigBase);
 
-      store.currentConfig$.pipe(take(1)).subscribe(() => {
-        throw new Error();
+      store.currentConfig$.pipe(take(1)).subscribe((config) => {
+        expect(config).toBe(testConfigBase);
       });
     });
 
@@ -728,8 +751,8 @@ describe('SearchConfigStore', () => {
 
         store.setCurrentConfig(testConfigValuesAndColumns);
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe(testConfigBase.name);
         });
       });
 
@@ -741,8 +764,8 @@ describe('SearchConfigStore', () => {
 
         store.setCurrentConfig(testConfigBase);
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe(testConfigBase.name);
         });
       });
 
@@ -787,8 +810,8 @@ describe('SearchConfigStore', () => {
 
         store.setCurrentConfig(testConfigOnlyValues);
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((key) => {
+          expect(key).toBe('default-key');
         });
       });
 
@@ -809,7 +832,7 @@ describe('SearchConfigStore', () => {
         });
       });
 
-      it('should not update if config is not defined and key is not search config', () => {
+      it('should not update if config is not defined and key is not search config', (done) => {
         store.patchState({
           searchConfigs: [testConfigOnlyValues, testConfigOnlyColumns],
           currentSearchConfig: testConfigOnlyValues,
@@ -818,8 +841,9 @@ describe('SearchConfigStore', () => {
 
         store.setCurrentConfig(undefined);
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe('default-key');
+          done();
         });
       });
 
@@ -899,15 +923,16 @@ describe('SearchConfigStore', () => {
       });
     });
 
-    it('should not update searchConfigVm$ selector with no change', () => {
+    it('should not update searchConfigVm$ selector with no change', (done) => {
       store.patchState({
         searchConfigs: [testConfigBase],
       });
 
       store.editSearchConfig(testConfigBase);
 
-      store.searchConfigVm$.pipe(take(1)).subscribe(() => {
-        throw new Error();
+      store.searchConfigVm$.pipe(take(1)).subscribe((vm) => {
+        expect(vm.searchConfigs).toEqual([testConfigBase]);
+        done();
       });
     });
 
@@ -939,15 +964,16 @@ describe('SearchConfigStore', () => {
       });
     });
 
-    it('should not update columnSelectionVm$ selector with no change', () => {
+    it('should not update columnSelectionVm$ selector with no change', (done) => {
       store.patchState({
         searchConfigs: [testConfigOnlyColumns],
       });
 
       store.editSearchConfig(testConfigOnlyColumns);
 
-      store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-        throw new Error();
+      store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
+        expect(vm).toBeDefined();
+        done();
       });
     });
 
@@ -985,8 +1011,8 @@ describe('SearchConfigStore', () => {
 
         store.setSelectedGroupKey('1');
 
-        store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
+          expect(vm).toBeDefined();
         });
       });
 
@@ -1018,7 +1044,7 @@ describe('SearchConfigStore', () => {
         store.setSelectedGroupKey('default');
 
         store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
-          expect(vm.currentConfig).toBe(undefined);
+          expect(vm.currentConfig).toBeUndefined();
           done();
         });
       });
@@ -1036,7 +1062,7 @@ describe('SearchConfigStore', () => {
         store.setSelectedGroupKey('custom-key');
 
         store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
-          expect(vm.currentConfig).toBe(undefined);
+          expect(vm.currentConfig).toBeUndefined();
           done();
         });
       });
@@ -1058,7 +1084,7 @@ describe('SearchConfigStore', () => {
         });
       });
 
-      it('should not update if no config was chosen and new key is predefined', () => {
+      it('should not update if no config was chosen and new key is predefined', (done) => {
         store.patchState({
           selectedGroupKey: 'default',
           currentSearchConfig: undefined,
@@ -1068,8 +1094,9 @@ describe('SearchConfigStore', () => {
 
         store.setSelectedGroupKey('extended');
 
-        store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
+          expect(vm.currentConfig).toBeUndefined();
+          done();
         });
       });
 
@@ -1084,22 +1111,23 @@ describe('SearchConfigStore', () => {
 
         store.setSelectedGroupKey('custom-key');
 
-        store.columnSelectionVm$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
+          expect(vm).toBeDefined();
         });
       });
     });
 
     describe('currentConfig$ selector', () => {
-      it('should not update in edit mode', () => {
+      it('should not update in edit mode', (done) => {
         store.patchState({
           editMode: true,
         });
 
         store.setSelectedGroupKey('any');
 
-        store.currentConfig$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBeUndefined();
+          done();
         });
       });
 
@@ -1115,7 +1143,7 @@ describe('SearchConfigStore', () => {
         store.setSelectedGroupKey('default');
 
         store.currentConfig$.pipe(take(1)).subscribe((config) => {
-          expect(config).toBe(undefined);
+          expect(config).toBeUndefined();
           done();
         });
       });
@@ -1133,7 +1161,7 @@ describe('SearchConfigStore', () => {
         store.setSelectedGroupKey('custom-key');
 
         store.currentConfig$.pipe(take(1)).subscribe((config) => {
-          expect(config).toBe(undefined);
+          expect(config).toBeUndefined();
           done();
         });
       });
@@ -1165,12 +1193,12 @@ describe('SearchConfigStore', () => {
 
         store.setSelectedGroupKey('extended');
 
-        store.currentConfig$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBeUndefined();
         });
       });
 
-      it('should not update if no config was chosen and new key is custom group key', () => {
+      it('should not update if no config was chosen and new key is custom group key', (done) => {
         store.patchState({
           selectedGroupKey: 'default',
           currentSearchConfig: undefined,
@@ -1181,8 +1209,9 @@ describe('SearchConfigStore', () => {
 
         store.setSelectedGroupKey('custom-key');
 
-        store.currentConfig$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBeUndefined();
+          done();
         });
       });
     });
@@ -1195,8 +1224,8 @@ describe('SearchConfigStore', () => {
 
         store.setSelectedGroupKey('1');
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe('1');
         });
       });
 
@@ -1324,7 +1353,8 @@ describe('SearchConfigStore', () => {
           filter((state) => state.dataToRevert === undefined),
           take(1),
         )
-        .subscribe(() => {
+        .subscribe((state) => {
+          expect(state.dataToRevert).toBeUndefined();
           done();
         });
     });
@@ -1436,8 +1466,8 @@ describe('SearchConfigStore', () => {
 
       store.revertData();
 
-      store.dataToRevert$.pipe(take(1)).subscribe(() => {
-        throw new Error();
+      store.dataToRevert$.pipe(take(1)).subscribe((dataToRevert) => {
+        expect(dataToRevert).toBeUndefined();
       });
     });
 
@@ -1526,24 +1556,25 @@ describe('SearchConfigStore', () => {
       store.revertData();
 
       store.currentConfig$.pipe(take(1)).subscribe((config) => {
-        expect(config).toBe(undefined);
+        expect(config).toBeUndefined();
         done();
       });
     });
 
-    it('should not update currentConfig$ when same config was chosen before edit ', () => {
+    it('should not update currentConfig$ when same config was chosen before edit', (done) => {
       const state = {
         preEditStateSnapshot: {
           currentSearchConfig: testConfigOnlyColumns,
         },
         currentSearchConfig: testConfigOnlyColumns,
       };
-      store.setState(state as any);
 
+      store.setState(state as any);
       store.revertData();
 
-      store.currentConfig$.pipe(take(1)).subscribe(() => {
-        throw new Error();
+      store.currentConfig$.pipe(take(1)).subscribe((config) => {
+        expect(config).toBe(testConfigOnlyColumns);
+        done();
       });
     });
 
@@ -1569,7 +1600,7 @@ describe('SearchConfigStore', () => {
         });
       });
 
-      it('should not update selectedGroupKey$ selector on config with values edit', () => {
+      it('should not update selectedGroupKey$ selector on config with values edit', (done) => {
         const state = {
           preEditStateSnapshot: {
             currentSearchConfig: undefined,
@@ -1581,11 +1612,11 @@ describe('SearchConfigStore', () => {
         };
 
         store.setState(state as any);
-
         store.revertData();
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe('preEditVal');
+          done();
         });
       });
     });
@@ -1633,7 +1664,7 @@ describe('SearchConfigStore', () => {
         });
       });
 
-      it('should not update selectedGroupKey$ selector when edited config was saved', () => {
+      it('should not update selectedGroupKey$ selector when edited config was saved', (done) => {
         const state = {
           preEditStateSnapshot: {
             currentSearchConfig: testConfigOnlyColumns,
@@ -1645,11 +1676,11 @@ describe('SearchConfigStore', () => {
         };
 
         store.setState(state as any);
-
         store.revertData();
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe(testConfigOnlyColumns.name);
+          done();
         });
       });
     });
@@ -1667,11 +1698,10 @@ describe('SearchConfigStore', () => {
         };
 
         store.setState(state as any);
-
         store.revertData();
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe('preEditVal');
         });
       });
 
@@ -1752,16 +1782,15 @@ describe('SearchConfigStore', () => {
         };
 
         store.setState(state as any);
-
         store.revertData();
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe(testConfigValuesAndColumns.name);
         });
       });
     });
 
-    it('should update currentConfig$ when same config was chosen before edit ', () => {
+    it('should update currentConfig$ when same config was chosen before edit', (done) => {
       const state = {
         preEditStateSnapshot: {
           currentSearchConfig: testConfigOnlyValues,
@@ -1769,12 +1798,13 @@ describe('SearchConfigStore', () => {
         },
         currentSearchConfig: testConfigOnlyColumns,
       };
-      store.setState(state as any);
 
+      store.setState(state as any);
       store.revertData();
 
-      store.currentConfig$.pipe(take(1)).subscribe(() => {
-        throw new Error();
+      store.currentConfig$.pipe(take(1)).subscribe((config) => {
+        expect(config).toBe(testConfigOnlyValues);
+        done();
       });
     });
 
@@ -1850,19 +1880,19 @@ describe('SearchConfigStore', () => {
         });
 
         store.updateFieldValues({
-          values: {
-            key: 'v1',
-          },
+          key: 'v1',
         });
 
-        store.currentPageData$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentPageData$.pipe(take(1)).subscribe((data) => {
+          expect(data.fieldValues).toEqual({
+            key: 'v1',
+          });
         });
       });
     });
 
     describe('currentConfig$ selector', () => {
-      it('should not update on edit mode', () => {
+      it('should not update on edit mode', (done) => {
         store.patchState({
           fieldValues: testConfigBase.values,
           currentSearchConfig: testConfigBase,
@@ -1870,17 +1900,16 @@ describe('SearchConfigStore', () => {
         });
 
         store.updateFieldValues({
-          values: {
-            key: 'v2',
-          },
+          key: 'v2',
         });
 
-        store.currentConfig$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBe(testConfigBase);
+          done();
         });
       });
 
-      it('should not update if current config was undefined', () => {
+      it('should not update if current config was undefined', (done) => {
         store.patchState({
           fieldValues: {
             key: 'v1',
@@ -1889,13 +1918,12 @@ describe('SearchConfigStore', () => {
         });
 
         store.updateFieldValues({
-          values: {
-            key: 'v2',
-          },
+          key: 'v2',
         });
 
-        store.currentConfig$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBeUndefined();
+          done();
         });
       });
 
@@ -1906,14 +1934,12 @@ describe('SearchConfigStore', () => {
         });
 
         store.updateFieldValues({
-          values: {
-            ...testConfigOnlyValues.values,
-            key_1: 'val_1-update',
-          },
+          ...testConfigOnlyValues.values,
+          key_1: 'val_1-update',
         });
 
         store.currentConfig$.pipe(take(1)).subscribe((config) => {
-          expect(config).toBe(undefined);
+          expect(config).toBeUndefined();
           done();
         });
       });
@@ -1925,13 +1951,11 @@ describe('SearchConfigStore', () => {
         });
 
         store.updateFieldValues({
-          values: {
-            ...testConfigOnlyValues.values,
-          },
+          ...testConfigOnlyValues.values,
         });
 
-        store.currentConfig$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBe(testConfigOnlyValues);
         });
       });
     });
@@ -1948,14 +1972,12 @@ describe('SearchConfigStore', () => {
         });
 
         store.updateFieldValues({
-          values: {
-            ...testConfigBase.values,
-            key: 'v2',
-          },
+          ...testConfigBase.values,
+          key: 'v2',
         });
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe('deafult-key');
         });
       });
 
@@ -1969,17 +1991,15 @@ describe('SearchConfigStore', () => {
         });
 
         store.updateFieldValues({
-          values: {
-            key: 'v2',
-          },
+          key: 'v2',
         });
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe('deafult-key');
         });
       });
 
-      it('should not update if config with only inputs is unset', () => {
+      it('should not update if config with only inputs is unset', (done) => {
         store.patchState({
           fieldValues: {
             ...testConfigOnlyValues.values,
@@ -1989,14 +2009,13 @@ describe('SearchConfigStore', () => {
         });
 
         store.updateFieldValues({
-          values: {
-            ...testConfigOnlyValues.values,
-            key_1: 'val_1-update',
-          },
+          ...testConfigOnlyValues.values,
+          key_1: 'val_1-update',
         });
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((key) => {
+          expect(key).toBe('default-key');
+          done();
         });
       });
 
@@ -2013,10 +2032,8 @@ describe('SearchConfigStore', () => {
         });
 
         store.updateFieldValues({
-          values: {
-            ...testConfigValuesAndColumns.values,
-            key_1: 'val_1-update',
-          },
+          ...testConfigValuesAndColumns.values,
+          key_1: 'val_1-update',
         });
 
         store.selectedGroupKey$.pipe(take(1)).subscribe((key) => {
@@ -2035,13 +2052,11 @@ describe('SearchConfigStore', () => {
         });
 
         store.updateFieldValues({
-          values: {
-            ...testConfigOnlyValues.values,
-          },
+          ...testConfigOnlyValues.values,
         });
 
-        store.currentConfig$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBe(testConfigOnlyValues);
         });
       });
     });
@@ -2132,21 +2147,22 @@ describe('SearchConfigStore', () => {
         });
       });
 
-      it('should not update if columns did not change', () => {
+      it('should not update if columns did not change', (done) => {
         store.patchState({
           displayedColumnsIds: ['col_1'],
         });
 
         store.updateDisplayedColumnsIds(['col_1']);
 
-        store.currentPageData$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentPageData$.pipe(take(1)).subscribe((pageData) => {
+          expect(pageData.displayedColumnsIds).toEqual(['col_1']);
+          done();
         });
       });
     });
 
     describe('currentConfig$ selector', () => {
-      it('should not update on edit mode', () => {
+      it('should not update on edit mode', (done) => {
         store.patchState({
           displayedColumnsIds: testConfigBase.columns,
           currentSearchConfig: testConfigBase,
@@ -2155,8 +2171,9 @@ describe('SearchConfigStore', () => {
 
         store.updateDisplayedColumnsIds(['col_2']);
 
-        store.currentConfig$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBe(testConfigBase);
+          done();
         });
       });
 
@@ -2168,8 +2185,8 @@ describe('SearchConfigStore', () => {
 
         store.updateDisplayedColumnsIds(['col_2']);
 
-        store.currentConfig$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBeUndefined();
         });
       });
 
@@ -2183,12 +2200,12 @@ describe('SearchConfigStore', () => {
         store.updateDisplayedColumnsIds(['col_2']);
 
         store.currentConfig$.pipe(take(1)).subscribe((config) => {
-          expect(config).toBe(undefined);
+          expect(config).toBeUndefined();
           done();
         });
       });
 
-      it('should not update if current config has values equal to new ones', () => {
+      it('should not update if current config has values equal to new ones', (done) => {
         store.patchState({
           displayedColumnsIds: testConfigValuesAndColumns.columns,
           currentSearchConfig: testConfigValuesAndColumns,
@@ -2196,14 +2213,15 @@ describe('SearchConfigStore', () => {
 
         store.updateDisplayedColumnsIds(testConfigValuesAndColumns.columns);
 
-        store.currentConfig$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBe(testConfigValuesAndColumns);
+          done();
         });
       });
     });
 
     describe('selectedGroupKey$ selector', () => {
-      it('should not update in edit mode', () => {
+      it('should not update in edit mode', (done) => {
         store.patchState({
           displayedColumnsIds: testConfigBase.columns,
           currentSearchConfig: testConfigBase,
@@ -2213,12 +2231,13 @@ describe('SearchConfigStore', () => {
 
         store.updateDisplayedColumnsIds([...testConfigBase.columns, 'newCol']);
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((key) => {
+          expect(key).toBe('deafult-key');
+          done();
         });
       });
 
-      it('should not update if current config was undefined', () => {
+      it('should not update if current config was undefined', (done) => {
         store.patchState({
           displayedColumnsIds: ['col_1'],
           currentSearchConfig: undefined,
@@ -2227,8 +2246,9 @@ describe('SearchConfigStore', () => {
 
         store.updateDisplayedColumnsIds(['col_2']);
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe('deafult-key');
+          done();
         });
       });
 
@@ -2241,8 +2261,8 @@ describe('SearchConfigStore', () => {
 
         store.updateDisplayedColumnsIds([...testConfigBase.columns, 'newCol']);
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe('default-key');
         });
       });
 
@@ -2276,8 +2296,8 @@ describe('SearchConfigStore', () => {
 
         store.updateDisplayedColumnsIds(testConfigValuesAndColumns.columns);
 
-        store.currentConfig$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBe(testConfigOnlyValues);
         });
       });
     });
@@ -2365,8 +2385,8 @@ describe('SearchConfigStore', () => {
 
         store.updateViewMode(advancedViewMode);
 
-        store.currentPageData$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentPageData$.pipe(take(1)).subscribe((data) => {
+          expect(data.viewMode).toBe(advancedViewMode);
         });
       });
     });
@@ -2383,12 +2403,12 @@ describe('SearchConfigStore', () => {
 
         store.updateViewMode(advancedViewMode);
 
-        store.currentConfig$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBe(testConfigBase);
         });
       });
 
-      it('should not update if current config was undefined', () => {
+      it('should not update if current config was undefined', (done) => {
         store.patchState({
           viewMode: basicViewMode,
           currentSearchConfig: undefined,
@@ -2396,8 +2416,9 @@ describe('SearchConfigStore', () => {
 
         store.updateViewMode(advancedViewMode);
 
-        store.currentConfig$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBeUndefined();
+          done();
         });
       });
 
@@ -2416,12 +2437,12 @@ describe('SearchConfigStore', () => {
         );
 
         store.currentConfig$.pipe(take(1)).subscribe((config) => {
-          expect(config).toBe(undefined);
+          expect(config).toBeUndefined();
           done();
         });
       });
 
-      it('should not update if current config has values equal to new ones', () => {
+      it('should not update if current config has values equal to new ones', (done) => {
         store.patchState({
           viewMode: testConfigValuesAndColumns.isAdvanced
             ? advancedViewMode
@@ -2435,14 +2456,15 @@ describe('SearchConfigStore', () => {
             : basicViewMode,
         );
 
-        store.currentConfig$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toEqual(testConfigValuesAndColumns);
+          done();
         });
       });
     });
 
     describe('selectedGroupKey$ selector', () => {
-      it('should not update in edit mode', () => {
+      it('should not update in edit mode', (done) => {
         store.patchState({
           viewMode: testConfigBase.isAdvanced
             ? advancedViewMode
@@ -2456,8 +2478,9 @@ describe('SearchConfigStore', () => {
           testConfigBase.isAdvanced ? basicViewMode : advancedViewMode,
         );
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe('deafult-key');
+          done();
         });
       });
 
@@ -2470,12 +2493,12 @@ describe('SearchConfigStore', () => {
 
         store.updateViewMode(advancedViewMode);
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe('deafult-key');
         });
       });
 
-      it('should not update if config with only inputs is unset', () => {
+      it('should not update if config with only inputs is unset', (done) => {
         store.patchState({
           viewMode: testConfigOnlyValues.isAdvanced
             ? advancedViewMode
@@ -2488,8 +2511,9 @@ describe('SearchConfigStore', () => {
           testConfigOnlyValues.isAdvanced ? basicViewMode : advancedViewMode,
         );
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe('default-key');
+          done();
         });
       });
 
@@ -2530,8 +2554,8 @@ describe('SearchConfigStore', () => {
           testConfigOnlyValues.isAdvanced ? advancedViewMode : basicViewMode,
         );
 
-        store.currentConfig$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.currentConfig$.pipe(take(1)).subscribe((config) => {
+          expect(config).toBe(testConfigOnlyValues);
         });
       });
     });
@@ -2603,8 +2627,8 @@ describe('SearchConfigStore', () => {
 
       store.updateLayout('table');
 
-      store.searchConfigVm$.pipe(take(1)).subscribe(() => {
-        throw new Error();
+      store.searchConfigVm$.pipe(take(1)).subscribe((vm) => {
+        expect(vm).toBeDefined();
       });
     });
 
@@ -2651,7 +2675,7 @@ describe('SearchConfigStore', () => {
       store.setSelectedGroupKey('1');
 
       store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
-        expect(vm.allGroupKeys.length).toEqual(3);
+        expect(vm.allGroupKeys).toHaveLength(3);
         expect(vm.allGroupKeys.includes('1')).toBeTruthy();
         expect(vm.allGroupKeys.includes('non-1')).toBeTruthy();
         expect(
@@ -2671,7 +2695,7 @@ describe('SearchConfigStore', () => {
       store.setSelectedGroupKey('non-1');
 
       store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
-        expect(vm.allGroupKeys.length).toEqual(2);
+        expect(vm.allGroupKeys).toHaveLength(2);
         expect(vm.allGroupKeys.includes('non-1')).toBeTruthy();
         expect(
           vm.allGroupKeys.includes(testConfigOnlyColumns.name),
@@ -2814,8 +2838,8 @@ describe('SearchConfigStore', () => {
           columns: [],
         });
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe('default');
         });
       });
 
@@ -2864,8 +2888,8 @@ describe('SearchConfigStore', () => {
           columns: ['any-col'],
         });
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe(testConfigOnlyColumns.name);
         });
       });
 
@@ -2897,7 +2921,7 @@ describe('SearchConfigStore', () => {
     });
 
     describe('edit values and columns config', () => {
-      it('should not update selectedGroupKey$ selector if columns still defined', () => {
+      it('should not update selectedGroupKey$ selector if columns still defined', (done) => {
         store.patchState({
           currentSearchConfig: testConfigValuesAndColumns,
           searchConfigs: [
@@ -2916,8 +2940,9 @@ describe('SearchConfigStore', () => {
           columns: ['any-col'],
         });
 
-        store.selectedGroupKey$.pipe(take(1)).subscribe(() => {
-          throw new Error();
+        store.selectedGroupKey$.pipe(take(1)).subscribe((selectedGroupKey) => {
+          expect(selectedGroupKey).toBe(testConfigValuesAndColumns.name);
+          done();
         });
       });
 
@@ -3191,140 +3216,4 @@ describe('SearchConfigStore', () => {
       });
     });
   });
-
-  // xdescribe('column group selection store reconstruction', () => {
-  //   beforeEach(() => {
-  //     store.ngOnDestroy();
-  //     secondStore.ngOnDestroy();
-
-  //     store = new SearchConfigStore(
-  //       searchConfigStoreName,
-  //       mockSearchConfigStoreTopic as any as SearchConfigTopic,
-  //     );
-
-  //     secondStore = new SearchConfigStore(
-  //       columngGroupSelectionStoreName,
-  //       mockSearchConfigStoreTopic as any as SearchConfigTopic,
-  //     );
-  //   });
-
-  // it('should initialize reload in search config store', (done) => {
-  //   store.setState({
-  //     ...initialState,
-  //     columnGroupComponentActive: true,
-  //   });
-
-  //   const spy = jest.spyOn(store, 'deactivateColumnGroupStore');
-
-  //   secondStore.activateStore(columngGroupSelectionStoreName);
-
-  //   store.state$.pipe(take(1)).subscribe(() => {
-  //     expect(spy).toHaveBeenCalledTimes(1);
-  //     done();
-  //   });
-  // });
-
-  // it('should trigger reload in column group store', (done) => {
-  //   const searchConfigStoreState = {
-  //     ...initialState,
-  //     fieldValues: {
-  //       asdKey: 'asd',
-  //     },
-  //     displayedColumnsIds: ['col-1', 'col-2'],
-  //     columnGroupComponentActive: true,
-  //   };
-
-  //   store.patchState(searchConfigStoreState);
-
-  //   const spy = jest.spyOn(secondStore, 'patchState');
-
-  //   secondStore.activateStore(columngGroupSelectionStoreName);
-
-  //   secondStore.state$.pipe(take(1)).subscribe(() => {
-  //     expect(spy).toHaveBeenCalledWith({
-  //       ...searchConfigStoreState,
-  //       columnGroupComponentActive: true,
-  //     });
-  //     done();
-  //   });
-  // });
-
-  // it('should not update in search config store when column group is reloading', (done) => {
-  //   const searchConfigStoreState = {
-  //     ...initialState,
-  //     fieldValues: {
-  //       asdKey: 'asd',
-  //     },
-  //     displayedColumnsIds: ['col-1', 'col-2'],
-  //     columnGroupComponentActive: true,
-  //   };
-
-  //   store.patchState(searchConfigStoreState);
-
-  //   // make sure that CG never sends message informing about reinit finish
-  //   let isSecondStoreActive = false;
-  //   jest
-  //     .spyOn(secondStore, 'sendUpdateMessage')
-  //     .mockImplementation((stateToUpdate) => {
-  //       if (stateToUpdate.columnGroupComponentActive && isSecondStoreActive)
-  //         return;
-  //       isSecondStoreActive = true;
-  //       mockSearchConfigStoreTopic.publish({
-  //         payload: {
-  //           storeName: columngGroupSelectionStoreName,
-  //           stateToUpdate: stateToUpdate,
-  //         },
-  //       });
-  //     });
-
-  //   const spy = jest.spyOn(store, 'patchState');
-
-  //   secondStore.activateStore(columngGroupSelectionStoreName);
-
-  //   // updating custom group key when reload is ongoing
-  //   secondStore.setCustomGroupKey('test-custom-key');
-
-  //   setTimeout(() => {
-  //     store.setPageName('wait for this');
-  //   });
-
-  //   mockSearchConfigStoreTopic.subscribe((msg) => {
-  //     if (msg.payload.stateToUpdate.pageName === 'wait for this') {
-  //       expect(spy).toHaveBeenCalledTimes(0);
-  //       done();
-  //     }
-  //   });
-  // });
-
-  // it('should start updating in search config store when column group finishes reload', (done) => {
-  //   const searchConfigStoreState = {
-  //     ...initialState,
-  //     fieldValues: {
-  //       asdKey: 'asd',
-  //     },
-  //     displayedColumnsIds: ['col-1', 'col-2'],
-  //     columnGroupComponentActive: true,
-  //   };
-
-  //   store.patchState(searchConfigStoreState);
-
-  //   const spy = jest.spyOn(store, 'patchState');
-
-  //   secondStore.activateStore(columngGroupSelectionStoreName);
-
-  //   // updateing custom group key after reload completed
-  //   secondStore.setCustomGroupKey('my-custom-key');
-
-  //   setTimeout(() => {
-  //     store.setPageName('wait for this');
-  //   });
-
-  //   mockSearchConfigStoreTopic.subscribe((msg) => {
-  //     if (msg.payload.stateToUpdate.pageName === 'wait for this') {
-  //       expect(spy).toHaveBeenCalledTimes(2); // activation of column group and custom key patches
-  //       done();
-  //     }
-  //   });
-  // });
-  // });
 });

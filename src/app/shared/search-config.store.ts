@@ -82,8 +82,7 @@ interface ColumnGroupSelectionComponentState {
 }
 
 export interface SearchConfigState
-  extends SearchConfigComponentState,
-    ColumnGroupSelectionComponentState {
+  extends SearchConfigComponentState, ColumnGroupSelectionComponentState {
   searchConfigComponentActive: boolean;
   displayedSearchData: SearchData | undefined;
   columnGroupComponentActive: boolean;
@@ -584,15 +583,12 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       currentSearchConfig,
   );
 
-  readonly currentPageData$ = this.select(
-    this.state$,
-    (state): PageData => ({
-      fieldValues: state.fieldValues,
-      viewMode: state.viewMode,
-      displayedColumnsIds: state.displayedColumnsIds,
-      columnGroupKey: state.selectedGroupKey,
-    }),
-  );
+  readonly currentPageData$ = this.select(this.state$, (state): PageData => ({
+    fieldValues: state.fieldValues,
+    viewMode: state.viewMode,
+    displayedColumnsIds: state.displayedColumnsIds,
+    columnGroupKey: state.selectedGroupKey,
+  }));
 
   readonly currentDisplayedData$ = this.select(
     ({ displayedSearchData }) => displayedSearchData,
@@ -848,11 +844,9 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
     if (
       hasValues(state.currentSearchConfig) &&
       change.viewMode &&
-      (
-        (state.currentSearchConfig.isAdvanced
-          ? advancedViewMode
-          : basicViewMode) !== change.viewMode
-      )
+      (state.currentSearchConfig.isAdvanced
+        ? advancedViewMode
+        : basicViewMode) !== change.viewMode
     )
       return true;
 

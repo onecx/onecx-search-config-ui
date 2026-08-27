@@ -23,7 +23,7 @@ import {
 import {
   AppStateService,
   PortalMessageService,
-  UserService
+  UserService,
 } from '@onecx/angular-integration-interface';
 import {
   AngularRemoteComponentsModule,
@@ -31,7 +31,11 @@ import {
   ocxRemoteWebcomponent,
   provideTranslateServiceForRoot,
 } from '@onecx/angular-remote-components';
-import { createTranslateLoader, REMOTE_COMPONENT_CONFIG, RemoteComponentConfig } from '@onecx/angular-utils';
+import {
+  createTranslateLoader,
+  REMOTE_COMPONENT_CONFIG,
+  RemoteComponentConfig,
+} from '@onecx/angular-utils';
 import {
   OperatorFunction,
   ReplaySubject,
@@ -168,7 +172,7 @@ export class OneCXSearchConfigComponent
   manageButton?: ElementRef<HTMLButtonElement>;
 
   constructor(
-    @Inject(REMOTE_COMPONENT_CONFIG) 
+    @Inject(REMOTE_COMPONENT_CONFIG)
     private readonly baseUrl: ReplaySubject<RemoteComponentConfig>,
     private readonly userService: UserService,
     private readonly translateService: TranslateService,
@@ -207,10 +211,9 @@ export class OneCXSearchConfigComponent
     this.dataRevertSub = this.searchConfigStore.dataToRevert$
       .pipe(
         debounceTime(20),
-        filter((data: PageData | undefined) => data !== undefined) as OperatorFunction<
-          PageData | undefined,
-          PageData
-        >,
+        filter(
+          (data: PageData | undefined) => data !== undefined,
+        ) as OperatorFunction<PageData | undefined, PageData>,
       )
       .subscribe((dataToRevert: PageData) => {
         if (!(dataToRevert.fieldValues && dataToRevert.viewMode)) return;
@@ -234,9 +237,7 @@ export class OneCXSearchConfigComponent
         let viewMode = currentData.viewMode ?? basicViewMode;
 
         if (config && hasValues(config)) {
-          viewMode = config.isAdvanced
-            ? advancedViewMode
-            : basicViewMode;
+          viewMode = config.isAdvanced ? advancedViewMode : basicViewMode;
         }
 
         this.searchConfigSelected.emit(
@@ -328,8 +329,7 @@ export class OneCXSearchConfigComponent
       frozeColumnSaveOptionExplanation =
         'SEARCH_CONFIG.COLUMN_GROUP_COMPONENT_INACTIVE';
     } else if (vm.layout !== 'table') {
-      frozeColumnSaveOptionExplanation =
-        'SEARCH_CONFIG.TABLE_VIEW_INACTIVE';
+      frozeColumnSaveOptionExplanation = 'SEARCH_CONFIG.TABLE_VIEW_INACTIVE';
     }
 
     this.portalDialogService
@@ -341,9 +341,10 @@ export class OneCXSearchConfigComponent
             searchConfigName: '',
             saveInputValues: false,
             saveColumns: false,
-            frozeColumnSaveOption:
-              !(vm.isColumnGroupComponentActive && vm.layout === 'table'),
-           frozeColumnSaveOptionExplanation,
+            frozeColumnSaveOption: !(
+              vm.isColumnGroupComponentActive && vm.layout === 'table'
+            ),
+            frozeColumnSaveOptionExplanation,
           },
         },
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
@@ -364,12 +365,7 @@ export class OneCXSearchConfigComponent
           if (dialogResult.button !== 'primary') {
             return of(undefined);
           }
-          return this.saveSearchConfig(
-            result,
-            currentMfe,
-            pageData,
-            pageName,
-          );
+          return this.saveSearchConfig(result, currentMfe, pageData, pageName);
         }),
       )
       .subscribe((response) => {
@@ -417,8 +413,9 @@ export class OneCXSearchConfigComponent
             searchConfigName: searchConfig.name,
             saveInputValues: Object.keys(searchConfig.values ?? {}).length > 0,
             saveColumns: (searchConfig.columns ?? []).length > 0,
-            frozeColumnSaveOption:
-              !(vm.isColumnGroupComponentActive && vm.layout === 'table'),
+            frozeColumnSaveOption: !(
+              vm.isColumnGroupComponentActive && vm.layout === 'table'
+            ),
             frozeColumnSaveOptionExplanation:
               this.getFrozeColumnSaveOptionExplanation(vm),
           },
@@ -570,11 +567,9 @@ export class OneCXSearchConfigComponent
     vm: SearchConfigViewModel,
   ) {
     let columns = config.columns;
-    
+
     if (vm.isColumnGroupComponentActive && vm.layout === 'table') {
-      columns = configData?.saveColumns
-        ? data.displayedColumnsIds
-        : [];
+      columns = configData?.saveColumns ? data.displayedColumnsIds : [];
     }
 
     const request: UpdateSearchConfigRequest = {
