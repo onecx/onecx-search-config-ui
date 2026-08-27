@@ -650,7 +650,7 @@ describe('SearchConfigStore', () => {
       store.deleteSearchConfig(testConfigBase);
 
       store.currentConfig$.pipe(take(1)).subscribe((config) => {
-        expect(config).toStrictEqual(undefined);
+        expect(config).toBeUndefined();
         done();
       });
     });
@@ -1044,7 +1044,7 @@ describe('SearchConfigStore', () => {
         store.setSelectedGroupKey('default');
 
         store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
-          expect(vm.currentConfig).toBe(undefined);
+          expect(vm.currentConfig).toBeUndefined();
           done();
         });
       });
@@ -1062,7 +1062,7 @@ describe('SearchConfigStore', () => {
         store.setSelectedGroupKey('custom-key');
 
         store.columnSelectionVm$.pipe(take(1)).subscribe((vm) => {
-          expect(vm.currentConfig).toBe(undefined);
+          expect(vm.currentConfig).toBeUndefined();
           done();
         });
       });
