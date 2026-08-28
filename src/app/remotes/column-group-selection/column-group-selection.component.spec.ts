@@ -36,6 +36,7 @@ import {
 import { CreateOrEditSearchConfigDialogComponent } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
 import { OneCXColumnGroupSelectionHarness } from './column-group-selection.harness';
 import { OneCXColumnGroupSelectionComponent } from './column-group-selection.component';
+import { AsyncPipe } from '@angular/common';
 
 @NgModule({
   imports: [],
@@ -204,6 +205,7 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       .overrideComponent(OneCXColumnGroupSelectionComponent, {
         set: {
           imports: [
+            AsyncPipe,
             PortalDependencyModule,
             TranslateTestingModule,
             TooltipModule,
