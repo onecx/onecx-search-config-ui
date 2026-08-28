@@ -37,9 +37,9 @@
       <ng-container>
         {{ 'SEARCH_CONFIG.SAVE_COLUMNS_OPTION' | translate }}
       </ng-container>
-      <ng-container *ngIf="frozeColumnSaveOption">
+      @if (frozeColumnSaveOption) {
         {{ frozeColumnSaveOptionExplanation | translate }}
-      </ng-container>
+      }
     </label>
   </div>
 </form>
