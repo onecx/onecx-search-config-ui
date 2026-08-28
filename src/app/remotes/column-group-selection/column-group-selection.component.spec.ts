@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NgModule } from '@angular/core';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
@@ -207,7 +206,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
           imports: [
             PortalDependencyModule,
             TranslateTestingModule,
-            CommonModule,
             TooltipModule,
             CreateOrEditSearchConfigDialogComponent,
             ButtonModule,

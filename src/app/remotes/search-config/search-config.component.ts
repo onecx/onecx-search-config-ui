@@ -1,4 +1,4 @@
-import { CommonModule, Location } from '@angular/common';
+import { AsyncPipe, Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import {
   Component,
@@ -99,7 +99,7 @@ import { environment } from 'src/environments/environment';
   templateUrl: './search-config.component.html',
   imports: [
     AngularRemoteComponentsModule,
-    CommonModule,
+    AsyncPipe,
     AngularAcceleratorModule,
     TranslateModule,
     ButtonModule,

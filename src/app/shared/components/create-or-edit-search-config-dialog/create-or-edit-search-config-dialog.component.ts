@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import {
   FormControl,
@@ -32,7 +31,6 @@ export type CreateOrEditSearchDialogContent = {
   styleUrls: ['./create-or-edit-search-config-dialog.component.scss'],
   standalone: true,
   imports: [
-    CommonModule,
     TranslateModule,
     FormsModule,
     ReactiveFormsModule,
