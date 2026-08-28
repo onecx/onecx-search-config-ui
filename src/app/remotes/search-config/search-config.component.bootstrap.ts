@@ -13,7 +13,7 @@ import {
 import { TranslateLoader } from '@ngx-translate/core';
 import { ReplaySubject } from 'rxjs';
 
-import { providePortalDialogService } from '@onecx/angular-accelerator';
+import { AngularAcceleratorModule, providePortalDialogService } from '@onecx/angular-accelerator';
 import { AngularAuthModule } from '@onecx/angular-auth';
 import { bootstrapRemoteComponent } from '@onecx/angular-webcomponents';
 import { UserService } from '@onecx/angular-integration-interface';
@@ -45,6 +45,7 @@ bootstrapRemoteComponent(
       provide: REMOTE_COMPONENT_CONFIG,
       useValue: new ReplaySubject<RemoteComponentConfig>(1),
     },
+    importProvidersFrom(AngularAcceleratorModule),
     importProvidersFrom(AngularAuthModule),
     importProvidersFrom(BrowserModule),
     importProvidersFrom(BrowserAnimationsModule),
