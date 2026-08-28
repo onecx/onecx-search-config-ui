@@ -1,6 +1,7 @@
 import { AsyncPipe, Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import {
+  ChangeDetectionStrategy,
   Component,
   ElementRef,
   EventEmitter,
@@ -95,6 +96,7 @@ import {
   selector: 'app-ocx-column-group-selection',
   standalone: true,
   templateUrl: './column-group-selection.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AngularRemoteComponentsModule,
     AsyncPipe,

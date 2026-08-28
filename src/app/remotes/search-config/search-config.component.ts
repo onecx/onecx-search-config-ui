@@ -8,6 +8,7 @@ import {
   Input,
   OnDestroy,
   ViewChild,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import {
   TranslateLoader,
@@ -97,6 +98,7 @@ import { environment } from 'src/environments/environment';
   selector: 'app-ocx-search-config',
   standalone: true,
   templateUrl: './search-config.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AngularRemoteComponentsModule,
     AsyncPipe,
