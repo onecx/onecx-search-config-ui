@@ -3,7 +3,6 @@ import {
   provideHttpClient,
   withInterceptorsFromDi,
 } from '@angular/common/http';
-import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import {
   importProvidersFrom,
@@ -50,7 +49,6 @@ bootstrapRemoteComponent(
     },
     importProvidersFrom(AngularAcceleratorModule),
     importProvidersFrom(AngularAuthModule),
-    importProvidersFrom(BrowserModule),
     importProvidersFrom(BrowserAnimationsModule),
     providePortalDialogService(),
     provideAppInitializer(() => {
