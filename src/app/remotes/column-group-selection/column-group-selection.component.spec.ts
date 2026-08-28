@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { NO_ERRORS_SCHEMA, NgModule } from '@angular/core';
+import { NgModule } from '@angular/core';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -229,7 +229,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
               useValue: searchConfigServiceSpy,
             },
           ],
-          schemas: [NO_ERRORS_SCHEMA],
         },
       })
       .compileComponents();
