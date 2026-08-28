@@ -18,7 +18,7 @@
     "start": "nx serve --host 0.0.0.0 --disable-host-check",
     "build": "nx build",
     "postbuild": "mv \"$(find dist/onecx-search-config-ui -maxdepth 1 -type f -name 'styles.*.css' | head -n 1)\" dist/onecx-search-config-ui/styles.css",
-    "clean": "npm cache clean --force && nx reset && rm -rf *.log dist reports .angular .eslintcache ./node_modules/.cache/prettier/.prettier-cache",
+    "clean": "npm cache clean --force && nx reset && rm -rf *.log dist reports .nx .angular .eslintcache ./node_modules/.cache/prettier/.prettier-cache",
     "lint": "nx lint --cache=true && npx prettier -c --cache .",
     "lint-fix": "npx prettier --write .",
     "eslint": "eslint --quiet --ext .js,.ts src",
