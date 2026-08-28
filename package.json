@@ -1,7 +1,15 @@
 {
   "name": "onecx-search-config-ui",
+  "private": true,
   "version": "0.0.0",
-  "license": "MIT",
+  "license": "Apache-2.0",
+  "contributors": [
+    "OneCX Development Team <onecx_dev@1000kit.org>"
+  ],
+  "config": {
+    "openapiYaml": "src/assets/api/openapi-bff.yaml",
+    "openapiOutput": "src/app/shared/generated"
+  },
   "scripts": {
     "apigen-cleanup": "rm -rf $npm_package_config_openapiOutput",
     "apigen-format": "npx prettier $npm_package_config_openapiYaml --write && npx prettier $npm_package_config_openapiOutput/**/* --write",
