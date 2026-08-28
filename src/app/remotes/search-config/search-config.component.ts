@@ -66,7 +66,6 @@ import {
   SearchConfigInfo,
   UpdateSearchConfigRequest,
 } from 'src/app/shared/generated';
-import { SharedModule } from 'src/app/shared/shared.module';
 import {
   PageData,
   SEARCH_CONFIG_STORE_NAME,
@@ -103,7 +102,6 @@ import { environment } from 'src/environments/environment';
     CommonModule,
     AngularAcceleratorModule,
     TranslateModule,
-    SharedModule,
     ButtonModule,
     PopoverModule,
     TooltipModule,

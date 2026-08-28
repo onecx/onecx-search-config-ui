@@ -61,7 +61,6 @@ import {
   RemoteComponentConfig,
 } from '@onecx/angular-utils';
 
-import { SharedModule } from 'src/app/shared/shared.module';
 import {
   Configuration,
   SearchConfig,
@@ -101,7 +100,6 @@ import {
     CommonModule,
     AngularAcceleratorModule,
     TranslateModule,
-    SharedModule,
     FormsModule,
     ReactiveFormsModule,
     ButtonModule,
