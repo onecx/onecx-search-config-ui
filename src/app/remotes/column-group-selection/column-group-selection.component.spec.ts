@@ -1,39 +1,42 @@
+import { CommonModule } from '@angular/common';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { NgModule } from '@angular/core';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { ReplaySubject, of, throwError } from 'rxjs';
-import { TranslateTestingModule } from 'ngx-translate-testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
+import { TranslateTestingModule } from 'ngx-translate-testing';
+import { ReplaySubject, of, throwError } from 'rxjs';
+
+import { ButtonModule } from 'primeng/button';
+import { DialogService } from 'primeng/dynamicdialog';
+import { TooltipModule } from 'primeng/tooltip';
+import { PopoverModule } from 'primeng/popover';
+import { FocusTrapModule } from 'primeng/focustrap';
+
 import {
   REMOTE_COMPONENT_CONFIG,
   RemoteComponentConfig,
 } from '@onecx/angular-utils';
-import { CommonModule } from '@angular/common';
-import { NO_ERRORS_SCHEMA, NgModule } from '@angular/core';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { OneCXColumnGroupSelectionHarness } from './column-group-selection.harness';
 import { FakeTopic } from '@onecx/angular-integration-interface/mocks';
+import { ColumnType, PortalDialogService } from '@onecx/angular-accelerator';
+import { PortalMessageService } from '@onecx/angular-integration-interface';
+import { IfPermissionDirective } from '@onecx/angular-accelerator';
+
 import {
   SEARCH_CONFIG_STORE_NAME,
   SEARCH_CONFIG_TOPIC,
   SearchConfigMessage,
   SearchConfigStore,
 } from 'src/app/shared/search-config.store';
-import { CreateOrEditSearchConfigDialogComponent } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
-import { ButtonModule } from 'primeng/button';
-import { ColumnType, PortalDialogService } from '@onecx/angular-accelerator';
-import { PortalMessageService } from '@onecx/angular-integration-interface';
-import { IfPermissionDirective } from '@onecx/angular-accelerator';
+import { advancedViewMode } from 'src/app/shared/constants';
 import {
   Configuration,
   SearchConfigAPIService,
 } from 'src/app/shared/generated';
-import { DialogService } from 'primeng/dynamicdialog';
-import { TooltipModule } from 'primeng/tooltip';
+import { CreateOrEditSearchConfigDialogComponent } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
+import { OneCXColumnGroupSelectionHarness } from './column-group-selection.harness';
 import { OneCXColumnGroupSelectionComponent } from './column-group-selection.component';
-import { PopoverModule } from 'primeng/popover';
-import { FocusTrapModule } from 'primeng/focustrap';
-import { advancedViewMode } from 'src/app/shared/constants';
 
 @NgModule({
   imports: [],
@@ -226,7 +229,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
               useValue: searchConfigServiceSpy,
             },
           ],
-          schemas: [NO_ERRORS_SCHEMA],
         },
       })
       .compileComponents();

@@ -10,11 +10,33 @@ import {
   OnInit,
   ViewChild,
 } from '@angular/core';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import {
   TranslateLoader,
   TranslateModule,
   TranslateService,
 } from '@ngx-translate/core';
+import {
+  BehaviorSubject,
+  OperatorFunction,
+  ReplaySubject,
+  Subscription,
+  catchError,
+  debounceTime,
+  filter,
+  map,
+  mergeMap,
+  of,
+  withLatestFrom,
+} from 'rxjs';
+
+import { ButtonModule } from 'primeng/button';
+import { FloatLabelModule } from 'primeng/floatlabel';
+import { Popover, PopoverModule } from 'primeng/popover';
+import { PrimeIcons } from 'primeng/api';
+import { TooltipModule } from 'primeng/tooltip';
+import { FocusTrapModule } from 'primeng/focustrap';
+
 import {
   AngularAcceleratorModule,
   ColumnGroupData,
@@ -38,24 +60,7 @@ import {
   REMOTE_COMPONENT_CONFIG,
   RemoteComponentConfig,
 } from '@onecx/angular-utils';
-import {
-  BehaviorSubject,
-  OperatorFunction,
-  ReplaySubject,
-  Subscription,
-  catchError,
-  debounceTime,
-  filter,
-  map,
-  mergeMap,
-  of,
-  withLatestFrom,
-} from 'rxjs';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
-import { FloatLabelModule } from 'primeng/floatlabel';
-import { Popover, PopoverModule } from 'primeng/popover';
-import { PrimeIcons } from 'primeng/api';
+
 import { SharedModule } from 'src/app/shared/shared.module';
 import {
   Configuration,
@@ -73,7 +78,7 @@ import {
   SEARCH_CONFIG_TOPIC,
   SearchConfigStore,
   SearchConfigTopic,
-} from '../../shared/search-config.store';
+} from 'src/app/shared/search-config.store';
 import {
   CreateOrEditSearchConfigDialogComponent,
   CreateOrEditSearchDialogContent,
@@ -86,8 +91,6 @@ import {
   hasOnlyColumns,
   parseFieldValues,
 } from 'src/app/shared/search-config.utils';
-import { TooltipModule } from 'primeng/tooltip';
-import { FocusTrapModule } from 'primeng/focustrap';
 
 @Component({
   selector: 'app-ocx-column-group-selection',

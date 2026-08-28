@@ -15,28 +15,6 @@ import {
   TranslateService,
 } from '@ngx-translate/core';
 import {
-  AngularAcceleratorModule,
-  SearchConfigData,
-  PortalDialogService,
-  providePortalDialogService,
-} from '@onecx/angular-accelerator';
-import {
-  AppStateService,
-  PortalMessageService,
-  UserService,
-} from '@onecx/angular-integration-interface';
-import {
-  AngularRemoteComponentsModule,
-  ocxRemoteComponent,
-  ocxRemoteWebcomponent,
-  provideTranslateServiceForRoot,
-} from '@onecx/angular-remote-components';
-import {
-  createTranslateLoader,
-  REMOTE_COMPONENT_CONFIG,
-  RemoteComponentConfig,
-} from '@onecx/angular-utils';
-import {
   OperatorFunction,
   ReplaySubject,
   Subscription,
@@ -49,6 +27,37 @@ import {
   of,
   withLatestFrom,
 } from 'rxjs';
+
+import { ButtonModule } from 'primeng/button';
+import { Popover, PopoverModule } from 'primeng/popover';
+import { PrimeIcons } from 'primeng/api';
+import { TooltipModule } from 'primeng/tooltip';
+import { FocusTrapModule } from 'primeng/focustrap';
+
+import {
+  AngularAcceleratorModule,
+  SearchConfigData,
+  PortalDialogService,
+  providePortalDialogService,
+} from '@onecx/angular-accelerator';
+import {
+  AppStateService,
+  PortalMessageService,
+  UserService,
+} from '@onecx/angular-integration-interface';
+import { MfeInfo } from '@onecx/integration-interface';
+import {
+  AngularRemoteComponentsModule,
+  ocxRemoteComponent,
+  ocxRemoteWebcomponent,
+  provideTranslateServiceForRoot,
+} from '@onecx/angular-remote-components';
+import {
+  createTranslateLoader,
+  REMOTE_COMPONENT_CONFIG,
+  RemoteComponentConfig,
+} from '@onecx/angular-utils';
+
 import {
   Configuration,
   CreateSearchConfigRequest,
@@ -58,10 +67,6 @@ import {
   UpdateSearchConfigRequest,
 } from 'src/app/shared/generated';
 import { SharedModule } from 'src/app/shared/shared.module';
-import { environment } from 'src/environments/environment';
-import { ButtonModule } from 'primeng/button';
-import { Popover, PopoverModule } from 'primeng/popover';
-import { MfeInfo } from '@onecx/integration-interface';
 import {
   PageData,
   SEARCH_CONFIG_STORE_NAME,
@@ -70,8 +75,7 @@ import {
   SearchConfigTopic,
   SearchConfigViewModel,
   UnparsedFieldValues,
-} from '../../shared/search-config.store';
-import { PrimeIcons } from 'primeng/api';
+} from 'src/app/shared/search-config.store';
 import {
   CreateOrEditSearchConfigDialogComponent,
   CreateOrEditSearchDialogContent,
@@ -88,8 +92,7 @@ import {
   hasValues,
   parseFieldValues,
 } from 'src/app/shared/search-config.utils';
-import { TooltipModule } from 'primeng/tooltip';
-import { FocusTrapModule } from 'primeng/focustrap';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-ocx-search-config',

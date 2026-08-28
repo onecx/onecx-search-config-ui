@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { filter, take } from 'rxjs';
+
 import { FakeTopic } from '@onecx/angular-integration-interface/mocks';
 
 import {

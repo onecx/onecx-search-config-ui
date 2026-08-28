@@ -1,18 +1,21 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { CreateOrEditSearchConfigDialogComponent } from './create-or-edit-search-config-dialog.component';
-import { CheckboxModule } from 'primeng/checkbox';
-import { TranslateTestingModule } from 'ngx-translate-testing';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { TranslateService } from '@ngx-translate/core';
-import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { ReactiveFormsModule } from '@angular/forms';
-import { InputTextModule } from 'primeng/inputtext';
 import {
   provideHttpClient,
   withInterceptorsFromDi,
 } from '@angular/common/http';
-import { CreateOrEditSearchConfigDialogHarness } from './create-or-edit-search-config-dialog.component.harness';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { ReactiveFormsModule } from '@angular/forms';
+import { TranslateService } from '@ngx-translate/core';
+import { TranslateTestingModule } from 'ngx-translate-testing';
+
+import { CheckboxModule } from 'primeng/checkbox';
+import { InputTextModule } from 'primeng/inputtext';
+
 import { DialogState } from '@onecx/angular-accelerator';
+
+import { CreateOrEditSearchConfigDialogHarness } from './create-or-edit-search-config-dialog.component.harness';
+import { CreateOrEditSearchConfigDialogComponent } from './create-or-edit-search-config-dialog.component';
 
 describe('CreateOrEditSearchConfigDialogComponent', () => {
   let component: CreateOrEditSearchConfigDialogComponent;

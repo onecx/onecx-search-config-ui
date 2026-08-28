@@ -1,4 +1,5 @@
 import { isValidDate } from '@onecx/accelerator';
+
 import { SearchConfigInfo } from './generated';
 import { FieldValues, UnparsedFieldValues } from './search-config.store';
 
