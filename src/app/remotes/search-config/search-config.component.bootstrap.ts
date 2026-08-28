@@ -13,7 +13,10 @@ import {
 import { TranslateLoader } from '@ngx-translate/core';
 import { ReplaySubject } from 'rxjs';
 
-import { AngularAcceleratorModule, providePortalDialogService } from '@onecx/angular-accelerator';
+import {
+  AngularAcceleratorModule,
+  providePortalDialogService,
+} from '@onecx/angular-accelerator';
 import { AngularAuthModule } from '@onecx/angular-auth';
 import { bootstrapRemoteComponent } from '@onecx/angular-webcomponents';
 import { UserService } from '@onecx/angular-integration-interface';
