@@ -47,7 +47,11 @@ bootstrapRemoteComponent(
       provide: REMOTE_COMPONENT_CONFIG,
       useValue: new ReplaySubject<RemoteComponentConfig>(1),
     },
-    importProvidersFrom(AngularAcceleratorModule, AngularAuthModule, BrowserAnimationsModule),
+    importProvidersFrom(
+      AngularAcceleratorModule,
+      AngularAuthModule,
+      BrowserAnimationsModule,
+    ),
     provideAppInitializer(() => {
       const initializerFn = userProfileInitializer(inject(UserService));
       return initializerFn();
