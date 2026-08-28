@@ -2,8 +2,9 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { AngularAcceleratorModule } from '@onecx/angular-accelerator';
 import { provideErrorTailorConfig } from '@ngneat/error-tailor';
+
+import { AngularAcceleratorModule } from '@onecx/angular-accelerator';
 
 @NgModule({
   imports: [

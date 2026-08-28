@@ -1,20 +1,29 @@
+import { CommonModule } from '@angular/common';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { NO_ERRORS_SCHEMA, NgModule } from '@angular/core';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
-import { OneCXSearchConfigComponent } from './search-config.component';
-import { ReplaySubject, of, throwError } from 'rxjs';
-import { TranslateTestingModule } from 'ngx-translate-testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
+import { ReplaySubject, of, throwError } from 'rxjs';
+import { TranslateTestingModule } from 'ngx-translate-testing';
+
+import { DialogService } from 'primeng/dynamicdialog';
+import { ButtonModule } from 'primeng/button';
+import { TooltipModule } from 'primeng/tooltip';
+import { PopoverModule } from 'primeng/popover';
+import { FocusTrapModule } from 'primeng/focustrap';
+
+import { PortalDialogService } from '@onecx/angular-accelerator';
+import { PortalMessageService } from '@onecx/angular-integration-interface';
+import { IfPermissionDirective } from '@onecx/angular-accelerator';
+import { AppStateService } from '@onecx/angular-integration-interface';
+import { FakeTopic } from '@onecx/angular-integration-interface/mocks';
 import {
   REMOTE_COMPONENT_CONFIG,
   RemoteComponentConfig,
 } from '@onecx/angular-utils';
-import { AppStateService } from '@onecx/angular-integration-interface';
-import { CommonModule } from '@angular/common';
-import { NO_ERRORS_SCHEMA, NgModule } from '@angular/core';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { OneCXSearchConfigHarness } from './search-config.harness';
-import { FakeTopic } from '@onecx/angular-integration-interface/mocks';
+
 import {
   SEARCH_CONFIG_STORE_NAME,
   SEARCH_CONFIG_TOPIC,
@@ -22,19 +31,13 @@ import {
   SearchConfigStore,
 } from 'src/app/shared/search-config.store';
 import { CreateOrEditSearchConfigDialogComponent } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
-import { ButtonModule } from 'primeng/button';
-import { PortalDialogService } from '@onecx/angular-accelerator';
-import { PortalMessageService } from '@onecx/angular-integration-interface';
-import { IfPermissionDirective } from '@onecx/angular-accelerator';
 import {
   Configuration,
   SearchConfigAPIService,
 } from 'src/app/shared/generated';
-import { DialogService } from 'primeng/dynamicdialog';
 import { advancedViewMode, basicViewMode } from 'src/app/shared/constants';
-import { TooltipModule } from 'primeng/tooltip';
-import { PopoverModule } from 'primeng/popover';
-import { FocusTrapModule } from 'primeng/focustrap';
+import { OneCXSearchConfigComponent } from './search-config.component';
+import { OneCXSearchConfigHarness } from './search-config.harness';
 
 @NgModule({
   imports: [],

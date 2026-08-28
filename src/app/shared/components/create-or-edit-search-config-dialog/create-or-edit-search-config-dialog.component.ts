@@ -7,17 +7,19 @@ import {
   ReactiveFormsModule,
 } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
+import { Observable, map, startWith } from 'rxjs';
+
+import { CheckboxModule } from 'primeng/checkbox';
+import { FloatLabelModule } from 'primeng/floatlabel';
+import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
+
 import {
   DialogButtonClicked,
   DialogPrimaryButtonDisabled,
   DialogResult,
   DialogState,
 } from '@onecx/angular-accelerator';
-import { CheckboxModule } from 'primeng/checkbox';
-import { FloatLabelModule } from 'primeng/floatlabel';
-import { InputTextModule } from 'primeng/inputtext';
-import { TooltipModule } from 'primeng/tooltip';
-import { Observable, map, startWith } from 'rxjs';
 
 export type CreateOrEditSearchDialogContent = {
   searchConfigName: string;

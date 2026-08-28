@@ -2,6 +2,7 @@ import {
   ComponentHarness,
   ContentContainerComponentHarness,
 } from '@angular/cdk/testing';
+
 import { InputHarness } from '@onecx/angular-testing';
 
 class CheckboxInputHarness extends ComponentHarness {
