@@ -52,11 +52,7 @@
             [disabled]="vm.editMode"
           ></p-button>
         }
-        <p-popover
-          (onHide)="focusManageButton()"
-          #op
-          styleClass="column-group-selection-popover"
-        >
+        <p-popover (onHide)="focusManageButton()" #op>
           <div
             id="sc_column_group_panel_content"
             pFocusTrap

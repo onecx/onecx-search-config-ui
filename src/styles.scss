@@ -8,10 +8,5 @@
 // fix popover styles, check in next version of primeNG if this is still needed
 .p-popover:before,
 .p-popover:after {
-  margin-left: 0 !important;
-}
-
-.p-popover.column-group-selection-popover:before,
-.p-popover.column-group-selection-popover:after {
-  margin-left: 20rem !important;
+  right: 1rem !important;
 }
