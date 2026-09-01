@@ -175,7 +175,8 @@ describe('OneCXSearchConfigComponent', () => {
       declarations: [],
       imports: [
         TranslateTestingModule.withTranslations({
-          en: require('../../../assets/i18n/en.json'),
+          en: require('./src/assets/i18n/en.json'),
+          de: require('./src/assets/i18n/de.json')
         }).withDefaultLanguage('en'),
         NoopAnimationsModule,
       ],
