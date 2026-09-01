@@ -15,7 +15,7 @@
             [pTooltip]="'SEARCH_CONFIG.SAVE_EDIT.TOOLTIP' | translate"
             tooltipPosition="top"
             (click)="onSearchConfigSaveEdit(vm.currentConfig)"
-            (onKeydown.enter)="onSearchConfigSaveEdit(vm.currentConfig)"
+            (keydown.enter)="onSearchConfigSaveEdit(vm.currentConfig)"
             [ariaLabel]="'SEARCH_CONFIG.SAVE_EDIT.ARIA_LABEL' | translate"
           ></p-button>
         }
@@ -29,7 +29,7 @@
             [pTooltip]="'SEARCH_CONFIG.CANCEL_EDIT.TOOLTIP' | translate"
             tooltipPosition="top"
             (click)="onSearchConfigCancelEdit()"
-            (onKeydown.enter)="onSearchConfigCancelEdit()"
+            (keydown.enter)="onSearchConfigCancelEdit()"
             [ariaLabel]="'SEARCH_CONFIG.CANCEL_EDIT.ARIA_LABEL' | translate"
           ></p-button>
         }
@@ -45,7 +45,7 @@
             "
             type="button"
             (onClick)="op.toggle($event)"
-            (onKeydown.enter)="op.toggle($event)"
+            (keydown.enter)="op.toggle($event)"
             [pTooltip]="'COLUMN_GROUP_SELECTION.MANAGE.TOOLTIP' | translate"
             tooltipPosition="top"
             [ariaLabel]="'COLUMN_GROUP_SELECTION.MANAGE.ARIA_LABEL' | translate"
@@ -106,7 +106,7 @@
                               )
                             )
                           "
-                          (onKeydown.enter)="
+                          (keydown.enter)="
                             onSearchConfigEdit(
                               getConfigByName(
                                 vm.searchConfigsWithColumns,
@@ -140,7 +140,7 @@
                               )
                             )
                           "
-                          (onKeydown.enter)="
+                          (keydown.enter)="
                             onSearchConfigDelete(
                               getConfigByName(
                                 vm.searchConfigsWithColumns,
@@ -168,7 +168,7 @@
                       "
                       tooltipPosition="top"
                       (click)="onColumnGroupChange(groupKey)"
-                      (onKeydown.enter)="onColumnGroupChange(groupKey)"
+                      (keydown.enter)="onColumnGroupChange(groupKey)"
                       [ariaLabel]="
                         'COLUMN_GROUP_SELECTION.SELECT.ARIA_LABEL' | translate
                       "
