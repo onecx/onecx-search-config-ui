@@ -25,14 +25,14 @@ export class OneCXSearchConfigListItemHarness extends ComponentHarness {
 export class OneCXSearchConfigHarness extends ContentContainerComponentHarness {
   static readonly hostSelector = 'app-ocx-search-config';
 
-  private _saveEditPButton = this.locatorForOptional(
+  private readonly _saveEditPButton = this.locatorForOptional(
     PButtonHarness.with({ id: 'sc_search_config_save_search_config_edit' }),
   );
-  private _cancelEditPButton = this.locatorForOptional(
+  private readonly _cancelEditPButton = this.locatorForOptional(
     PButtonHarness.with({ id: 'sc_search_config_cancel_search_config_edit' }),
   );
 
-  private _managePButton = this.locatorForOptional(
+  private readonly _managePButton = this.locatorForOptional(
     PButtonHarness.with({ id: 'sc_search_config_manage_search_config' }),
   );
 

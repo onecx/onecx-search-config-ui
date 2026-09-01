@@ -25,17 +25,17 @@ export class OneCXColumnGroupSelectionListItemHarness extends ComponentHarness {
 export class OneCXColumnGroupSelectionHarness extends ContentContainerComponentHarness {
   static readonly hostSelector = 'app-ocx-column-group-selection';
 
-  private _saveEditPButton = this.locatorForOptional(
+  private readonly _saveEditPButton = this.locatorForOptional(
     PButtonHarness.with({
       id: 'sc_column_group_selection_save_search_config_edit',
     }),
   );
-  private _cancelEditPButton = this.locatorForOptional(
+  private readonly _cancelEditPButton = this.locatorForOptional(
     PButtonHarness.with({
       id: 'sc_column_group_selection_cancel_search_config_edit',
     }),
   );
-  private _managePButton = this.locatorForOptional(
+  private readonly _managePButton = this.locatorForOptional(
     PButtonHarness.with({
       id: 'sc_column_group_selection_manage_column_group',
     }),

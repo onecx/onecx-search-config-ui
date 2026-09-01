@@ -14,6 +14,7 @@
           [pTooltip]="'SEARCH_CONFIG.SAVE_EDIT.TOOLTIP' | translate"
           tooltipPosition="top"
           (click)="onSearchConfigSaveEdit(vm)"
+          (onKeydown.enter)="onSearchConfigSaveEdit(vm)"
           [ariaLabel]="'SEARCH_CONFIG.SAVE_EDIT.ARIA_LABEL' | translate"
         ></p-button>
       }
@@ -27,6 +28,7 @@
           [pTooltip]="'SEARCH_CONFIG.CANCEL_EDIT.TOOLTIP' | translate"
           tooltipPosition="top"
           (click)="onSearchConfigCancelEdit()"
+          (onKeydown.enter)="onSearchConfigCancelEdit()"
           [ariaLabel]="'SEARCH_CONFIG.CANCEL_EDIT.ARIA_LABEL' | translate"
         ></p-button>
       }
@@ -39,7 +41,7 @@
           [pTooltip]="'SEARCH_CONFIG.MANAGE.TOOLTIP' | translate"
           tooltipPosition="top"
           (onClick)="op.toggle($event)"
-          (keydown.enter)="op.toggle($event)"
+          (onKeydown.enter)="op.toggle($event)"
           [ariaLabel]="'SEARCH_CONFIG.MANAGE.ARIA_LABEL' | translate"
           [disabled]="vm.editMode"
         ></p-button>
@@ -68,6 +70,7 @@
                 [pTooltip]="'SEARCH_CONFIG.ADD.TOOLTIP' | translate"
                 tooltipPosition="top"
                 (click)="onSearchConfigSave(vm)"
+                (onKeydown.enter)="onSearchConfigSave(vm)"
                 autofocus="true"
                 [ariaLabel]="'SEARCH_CONFIG.ADD.ARIA_LABEL' | translate"
               ></p-button>
@@ -94,6 +97,7 @@
                         [pTooltip]="'SEARCH_CONFIG.EDIT.TOOLTIP' | translate"
                         tooltipPosition="top"
                         (click)="onSearchConfigEdit(config)"
+                        (onKeydown.enter)="onSearchConfigEdit(config)"
                         autofocus="true"
                         [ariaLabel]="
                           'SEARCH_CONFIG.EDIT.ARIA_LABEL' | translate
@@ -111,6 +115,7 @@
                         [pTooltip]="'SEARCH_CONFIG.DELETE.TOOLTIP' | translate"
                         tooltipPosition="top"
                         (click)="onSearchConfigDelete(config)"
+                        (onKeydown.enter)="onSearchConfigDelete(config)"
                         autofocus="true"
                         [ariaLabel]="
                           'SEARCH_CONFIG.DELETE.ARIA_LABEL' | translate
@@ -127,6 +132,7 @@
                     [pTooltip]="'SEARCH_CONFIG.SELECT.TOOLTIP' | translate"
                     tooltipPosition="top"
                     (click)="onSearchConfigChange(config)"
+                    (onKeydown.enter)="onSearchConfigChange(config)"
                     [ariaLabel]="'SEARCH_CONFIG.SELECT.ARIA_LABEL' | translate"
                     autofocus="true"
                   ></p-button>
