@@ -6,7 +6,7 @@
     >
       <div class="flex gap-2 align-content-center align-items-center">
         @if (vm.editMode && vm.isInChargeOfEdit) {
-          <button
+          <p-button
             id="sc_column_group_selection_save_search_config_edit"
             [label]="'SEARCH_CONFIG.SAVE_EDIT.LABEL' | translate"
             icon="{{ saveIcon }}"
@@ -15,11 +15,11 @@
             [pTooltip]="'SEARCH_CONFIG.SAVE_EDIT.TOOLTIP' | translate"
             tooltipPosition="top"
             (click)="onSearchConfigSaveEdit(vm.currentConfig)"
-            [attr.aria-label]="'SEARCH_CONFIG.SAVE_EDIT.ARIA_LABEL' | translate"
-          ></button>
+            [ariaLabel]="'SEARCH_CONFIG.SAVE_EDIT.ARIA_LABEL' | translate"
+          ></p-button>
         }
         @if (vm.editMode && vm.isInChargeOfEdit) {
-          <button
+          <p-button
             id="sc_column_group_selection_cancel_search_config_edit"
             [label]="'SEARCH_CONFIG.CANCEL_EDIT.LABEL' | translate"
             icon="{{ stopIcon }}"
@@ -28,10 +28,8 @@
             [pTooltip]="'SEARCH_CONFIG.CANCEL_EDIT.TOOLTIP' | translate"
             tooltipPosition="top"
             (click)="onSearchConfigCancelEdit()"
-            [attr.aria-label]="
-              'SEARCH_CONFIG.CANCEL_EDIT.ARIA_LABEL' | translate
-            "
-          ></button>
+            [ariaLabel]="'SEARCH_CONFIG.CANCEL_EDIT.ARIA_LABEL' | translate"
+          ></p-button>
         }
         @if (overlayButtonText(vm); as buttonData) {
           <p-button
@@ -87,7 +85,7 @@
                   <div class="flex align-items-center gap-2 ml-auto">
                     @if (isConfig(groupKey, vm) && !isReadonly(groupKey, vm)) {
                       <ng-container>
-                        <button
+                        <p-button
                           *ocxIfPermission="
                             'SEARCHCONFIG#EDIT';
                             permissions: permissions
@@ -107,11 +105,11 @@
                             )
                           "
                           autofocus="true"
-                          [attr.aria-label]="
+                          [ariaLabel]="
                             'SEARCH_CONFIG.EDIT.ARIA_LABEL' | translate
                           "
-                        ></button>
-                        <button
+                        ></p-button>
+                        <p-button
                           *ocxIfPermission="
                             'SEARCHCONFIG#DELETE';
                             permissions: permissions
@@ -133,13 +131,13 @@
                             )
                           "
                           autofocus="true"
-                          [attr.aria-label]="
+                          [ariaLabel]="
                             'SEARCH_CONFIG.DELETE.ARIA_LABEL' | translate
                           "
-                        ></button>
+                        ></p-button>
                       </ng-container>
                     }
-                    <button
+                    <p-button
                       [label]="
                         'COLUMN_GROUP_SELECTION.SELECT.LABEL' | translate
                       "
@@ -152,11 +150,11 @@
                       "
                       tooltipPosition="top"
                       (click)="onColumnGroupChange(groupKey)"
-                      [attr.aria-label]="
+                      [ariaLabel]="
                         'COLUMN_GROUP_SELECTION.SELECT.ARIA_LABEL' | translate
                       "
                       autofocus="true"
-                    ></button>
+                    ></p-button>
                   </div>
                 </li>
               }
