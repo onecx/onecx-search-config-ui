@@ -1,12 +1,17 @@
 import { AsyncPipe } from '@angular/common';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NgModule } from '@angular/core';
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import {
+  ComponentFixture,
+  TestBed,
+  fakeAsync,
+  tick,
+} from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
-import { ReplaySubject, of, throwError } from 'rxjs';
 import { TranslateTestingModule } from 'ngx-translate-testing';
+import { ReplaySubject, of, throwError } from 'rxjs';
 
 import { DialogService } from 'primeng/dynamicdialog';
 import { ButtonModule } from 'primeng/button';
@@ -60,6 +65,10 @@ const createSpyObj = (
 };
 
 describe('OneCXSearchConfigComponent', () => {
+  let component: OneCXSearchConfigComponent;
+  let fixture: ComponentFixture<OneCXSearchConfigComponent>;
+  let store: SearchConfigStore;
+
   const searchConfigServiceSpy = {
     ...createSpyObj('searchConfigService', [
       'getSearchConfigInfos',
@@ -121,14 +130,6 @@ describe('OneCXSearchConfigComponent', () => {
     isReadonly: false,
     isAdvanced: false,
   };
-
-  function setUp() {
-    const fixture = TestBed.createComponent(OneCXSearchConfigComponent);
-    const component = fixture.componentInstance;
-    fixture.detectChanges();
-
-    return { fixture, component };
-  }
 
   async function setUpWithHarnessAndInit(permissions: Array<string>) {
     const fixture = TestBed.createComponent(OneCXSearchConfigComponent);
@@ -228,20 +229,20 @@ describe('OneCXSearchConfigComponent', () => {
       of({
         configs: [],
       } as any);
+
+    fixture = TestBed.createComponent(OneCXSearchConfigComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    store = TestBed.inject(SearchConfigStore);
   });
 
   it('should create', () => {
-    const { component } = setUp();
-
     expect(component).toBeTruthy();
   });
 
   it('should update store on pageName input set', fakeAsync(() => {
-    const store = TestBed.inject(SearchConfigStore);
     const spy = jest.spyOn(store, 'setPageName');
-
-    const { component } = setUp();
-
     component.pageName = 'my-page';
     tick(500);
 
@@ -249,10 +250,7 @@ describe('OneCXSearchConfigComponent', () => {
   }));
 
   it('should update store on current field values input set', fakeAsync(() => {
-    const store = TestBed.inject(SearchConfigStore);
     const spy = jest.spyOn(store, 'updateFieldValues');
-
-    const { component } = setUp();
 
     const values = {
       key: 'value',
@@ -264,10 +262,7 @@ describe('OneCXSearchConfigComponent', () => {
   }));
 
   it('should update store on view mode input set', fakeAsync(() => {
-    const store = TestBed.inject(SearchConfigStore);
     const spy = jest.spyOn(store, 'updateViewMode');
-
-    const { component } = setUp();
 
     component.viewMode = basicViewMode;
     tick(500);
@@ -284,7 +279,6 @@ describe('OneCXSearchConfigComponent', () => {
         baseUrl: 'base',
       };
 
-      const { component } = setUp();
       jest.spyOn(component, 'ocxInitRemoteComponent');
       component.ocxRemoteComponentConfig = config;
 
@@ -305,7 +299,6 @@ describe('OneCXSearchConfigComponent', () => {
         baseUrl: 'base',
       };
 
-      const { component } = setUp();
       jest.spyOn(component, 'ocxInitRemoteComponent');
       component.ocxRemoteComponentConfig = config;
 
@@ -317,7 +310,6 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should set search configs on page info update', fakeAsync(() => {
-      const store = TestBed.inject(SearchConfigStore);
       const appState = TestBed.inject(AppStateService);
       const configs = [
         {
@@ -328,7 +320,6 @@ describe('OneCXSearchConfigComponent', () => {
         },
       ];
 
-      const setSearchConfigsSpy = jest.spyOn(store, 'setSearchConfigs');
       jest.spyOn(appState.currentMfe$, 'asObservable').mockReturnValue(
         of({
           appId: 'appId',
@@ -343,7 +334,10 @@ describe('OneCXSearchConfigComponent', () => {
           } as any),
         );
 
-      const { component } = setUp();
+      const localFixture = TestBed.createComponent(OneCXSearchConfigComponent);
+      localFixture.detectChanges();
+
+      const setSearchConfigsSpy = jest.spyOn(store, 'setSearchConfigs');
 
       baseUrlSubject.next('base_url');
       component.pageName = 'page_name';
@@ -397,7 +391,6 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should display overlay with configs that have values', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config, onlyValuesConfig, onlyColumnsConfig],
       });
@@ -411,7 +404,6 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should display editing message on edit mode', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config],
       });
@@ -428,7 +420,6 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should display edit/delete next to items', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config],
       });
@@ -441,7 +432,6 @@ describe('OneCXSearchConfigComponent', () => {
       expect(await items?.at(0)?.getDeleteButton()).toBeDefined();
     });
     it('should not display edit/delete if config is readonly', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [
           {
@@ -459,7 +449,6 @@ describe('OneCXSearchConfigComponent', () => {
       expect(await items?.at(0)?.getDeleteButton()).toBeNull();
     });
     it('should not display edit/delete if no permissions ', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config],
       });
@@ -475,7 +464,6 @@ describe('OneCXSearchConfigComponent', () => {
 
   describe('on edit mode', () => {
     it('should display save/cancel options', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config],
       });
@@ -493,7 +481,6 @@ describe('OneCXSearchConfigComponent', () => {
       expect(cancelEditButton).toBeTruthy();
     });
     it('should not display save/cancel options when not in charge of edit', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config],
         editMode: true,
@@ -512,7 +499,6 @@ describe('OneCXSearchConfigComponent', () => {
 
   describe('on config change', () => {
     it('should set current config', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config],
       });
@@ -526,7 +512,6 @@ describe('OneCXSearchConfigComponent', () => {
       expect(await manageButton?.getLabel()).toEqual(`Active: ${config.name}`);
     });
     it('should open dialog if user chose to add new config', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const dialogServiceSpy = jest
         .spyOn(portalDialogSpy, 'openDialog')
         .mockReturnValue(of(undefined as any));
@@ -548,7 +533,6 @@ describe('OneCXSearchConfigComponent', () => {
 
   describe('on config save', () => {
     it('should allow column saving when on table view and column group component is active', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         columnGroupComponentActive: true,
         layout: 'table',
@@ -579,7 +563,6 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should provide explanation for column freeze when column group component is inactive', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         columnGroupComponentActive: false,
         layout: 'table',
@@ -611,7 +594,6 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should provide explanation for column freeze when layout is not table', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         columnGroupComponentActive: true,
         layout: 'list',
@@ -643,7 +625,6 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should not add config and reset if dialog was closed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const appState = TestBed.inject(AppStateService);
       const addSpy = jest.spyOn(store, 'addSearchConfig');
       const setSpy = jest.spyOn(store, 'setCurrentConfig');
@@ -678,7 +659,6 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should not add config and reset if create was not confirmed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const appState = TestBed.inject(AppStateService);
       const addSpy = jest.spyOn(store, 'addSearchConfig');
       const setSpy = jest.spyOn(store, 'setCurrentConfig');
@@ -718,7 +698,6 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should add and set config if create was confirmed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const appState = TestBed.inject(AppStateService);
       const addSpy = jest.spyOn(store, 'addSearchConfig');
       const setSpy = jest.spyOn(store, 'setCurrentConfig');
@@ -768,7 +747,6 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should save inputs and viewMode', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const appState = TestBed.inject(AppStateService);
       const createCallSpy = jest
         .spyOn(searchConfigServiceSpy, 'createSearchConfig')
@@ -823,7 +801,6 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should not save inputs and viewMode', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const appState = TestBed.inject(AppStateService);
       const createCallSpy = jest
         .spyOn(searchConfigServiceSpy, 'createSearchConfig')
@@ -876,7 +853,6 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should save columns', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const appState = TestBed.inject(AppStateService);
       const createCallSpy = jest
         .spyOn(searchConfigServiceSpy, 'createSearchConfig')
@@ -927,7 +903,6 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should not save columns', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const appState = TestBed.inject(AppStateService);
       const createCallSpy = jest
         .spyOn(searchConfigServiceSpy, 'createSearchConfig')
@@ -979,7 +954,6 @@ describe('OneCXSearchConfigComponent', () => {
 
     it('should not add config and reset if create call failed', async () => {
       const error = new Error('my-error');
-      const store = TestBed.inject(SearchConfigStore);
       const appState = TestBed.inject(AppStateService);
       const addSpy = jest.spyOn(store, 'addSearchConfig');
       const setSpy = jest.spyOn(store, 'setCurrentConfig');
@@ -1029,7 +1003,6 @@ describe('OneCXSearchConfigComponent', () => {
 
   describe('on edit actions', () => {
     it('should set edit mode on edit button click', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const editModeSpy = jest.spyOn(store, 'enterEditMode');
       store.patchState({
         searchConfigs: [config],
@@ -1046,7 +1019,6 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should cancel edit mode on edit cancel button click', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
       store.patchState({
         searchConfigs: [config],
@@ -1067,7 +1039,6 @@ describe('OneCXSearchConfigComponent', () => {
 
   describe('on delete actions', () => {
     it('should open confirmation dialog on delete button click', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const dialogSpy = jest.spyOn(portalDialogSpy, 'openDialog');
       store.patchState({
         searchConfigs: [config],
@@ -1093,7 +1064,6 @@ describe('OneCXSearchConfigComponent', () => {
       );
     });
     it('should delete config', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const deleteSpy = jest.spyOn(store, 'deleteSearchConfig');
       store.patchState({
         searchConfigs: [config],
@@ -1122,7 +1092,6 @@ describe('OneCXSearchConfigComponent', () => {
       expect(deleteSpy).toHaveBeenCalledWith(config);
     });
     it('should not delete config if dialog was closed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const deleteSpy = jest.spyOn(store, 'deleteSearchConfig');
       store.patchState({
         searchConfigs: [config],
@@ -1142,7 +1111,6 @@ describe('OneCXSearchConfigComponent', () => {
       expect(deleteSpy).toHaveBeenCalledTimes(0);
     });
     it('should not delete config if secondary button was chosen', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const deleteSpy = jest.spyOn(store, 'deleteSearchConfig');
       store.patchState({
         searchConfigs: [config],
@@ -1164,7 +1132,6 @@ describe('OneCXSearchConfigComponent', () => {
       expect(deleteSpy).toHaveBeenCalledTimes(0);
     });
     it('should not delete config if delete call failed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const deleteSpy = jest.spyOn(store, 'deleteSearchConfig');
       const consoleSpy = jest.spyOn(console, 'error');
       const error = new Error('my-error-msg');
@@ -1198,7 +1165,6 @@ describe('OneCXSearchConfigComponent', () => {
 
   describe('on edit save', () => {
     it('should use config info to fill dialog', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config],
         layout: 'table',
@@ -1234,7 +1200,6 @@ describe('OneCXSearchConfigComponent', () => {
       );
     });
     it('should provide explanation for column freeze when column group component is inactive', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config],
         layout: 'table',
@@ -1272,7 +1237,6 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should provide explanation for column freeze when layout is not table', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config],
         layout: 'list',
@@ -1309,7 +1273,6 @@ describe('OneCXSearchConfigComponent', () => {
       );
     });
     it('should cancel edit if dialog was closed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
       store.patchState({
         searchConfigs: [config],
@@ -1339,7 +1302,6 @@ describe('OneCXSearchConfigComponent', () => {
       expect(cancelEditSpy).toHaveBeenCalledTimes(1);
     });
     it('should cancel edit if edit was not confirmed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
       store.patchState({
         searchConfigs: [config],
@@ -1371,7 +1333,6 @@ describe('OneCXSearchConfigComponent', () => {
       expect(cancelEditSpy).toHaveBeenCalledTimes(1);
     });
     it('should save edit config if edit was confirmed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const saveEditSpy = jest.spyOn(store, 'saveEdit');
       const updatedConfig = {
         ...config,
@@ -1418,7 +1379,6 @@ describe('OneCXSearchConfigComponent', () => {
       expect(saveEditSpy).toHaveBeenCalledWith(updatedConfig);
     });
     it('should save inputs and viewMode', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const updateSpy = jest
         .spyOn(searchConfigServiceSpy, 'updateSearchConfig')
         .mockReturnValue(of(undefined as any));
@@ -1476,7 +1436,6 @@ describe('OneCXSearchConfigComponent', () => {
       });
     });
     it('should not save inputs and viewMode', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const updateSpy = jest
         .spyOn(searchConfigServiceSpy, 'updateSearchConfig')
         .mockReturnValue(of(undefined as any));
@@ -1532,7 +1491,6 @@ describe('OneCXSearchConfigComponent', () => {
       });
     });
     it('should save columns', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const updateSpy = jest
         .spyOn(searchConfigServiceSpy, 'updateSearchConfig')
         .mockReturnValue(of(undefined as any));
@@ -1585,7 +1543,6 @@ describe('OneCXSearchConfigComponent', () => {
       });
     });
     it('should not save columns', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const updateSpy = jest
         .spyOn(searchConfigServiceSpy, 'updateSearchConfig')
         .mockReturnValue(of(undefined as any));
@@ -1638,7 +1595,6 @@ describe('OneCXSearchConfigComponent', () => {
       });
     });
     it('should cancel edit if get search config call failed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
       const error = new Error('my-msg');
       store.patchState({
@@ -1669,7 +1625,6 @@ describe('OneCXSearchConfigComponent', () => {
       expect(cancelEditSpy).toHaveBeenCalledTimes(1);
     });
     it('should cancel edit if update search config call failed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
       store.patchState({
         searchConfigs: [config],
@@ -1706,10 +1661,7 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should cancel edit if config is not set', fakeAsync(() => {
-      const store = TestBed.inject(SearchConfigStore);
       const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
-
-      const { component } = setUp();
 
       component.onSearchConfigSaveEdit({
         currentConfig: undefined,
@@ -1723,9 +1675,6 @@ describe('OneCXSearchConfigComponent', () => {
 
   describe('on dataToRevert change', () => {
     it('should not emit if data does not contain fieldValues', fakeAsync(() => {
-      const store = TestBed.inject(SearchConfigStore);
-
-      const { component } = setUp();
       const emitterSpy = jest.spyOn(component.searchConfigSelected, 'emit');
 
       store.patchState({
@@ -1742,9 +1691,6 @@ describe('OneCXSearchConfigComponent', () => {
       expect(emitterSpy).toHaveBeenCalledTimes(0);
     }));
     it('should not emit if data does not contain viewMode', fakeAsync(() => {
-      const store = TestBed.inject(SearchConfigStore);
-
-      const { component } = setUp();
       const emitterSpy = jest.spyOn(component.searchConfigSelected, 'emit');
 
       store.patchState({
@@ -1763,9 +1709,6 @@ describe('OneCXSearchConfigComponent', () => {
       expect(emitterSpy).toHaveBeenCalledTimes(0);
     }));
     it('should emit searchConfigSelected', fakeAsync(() => {
-      const store = TestBed.inject(SearchConfigStore);
-
-      const { component } = setUp();
       const emitterSpy = jest.spyOn(component.searchConfigSelected, 'emit');
 
       store.patchState({
@@ -1794,23 +1737,28 @@ describe('OneCXSearchConfigComponent', () => {
 
   describe('on currentConfig change', () => {
     it('should emit undefined', fakeAsync(() => {
-      const store = TestBed.inject(SearchConfigStore);
-      store.patchState({
+      const localFixture = TestBed.createComponent(OneCXSearchConfigComponent);
+      const localComponent = localFixture.componentInstance;
+      localFixture.detectChanges();
+      const localStore = (localComponent as any).searchConfigStore;
+
+      localStore.patchState({
         searchConfigs: [config],
         currentSearchConfig: config,
         fieldValues: { k: 'v' },
       });
 
-      const { component } = setUp();
-      const emitterSpy = jest.spyOn(component.searchConfigSelected, 'emit');
+      const emitterSpy = jest.spyOn(
+        localComponent.searchConfigSelected,
+        'emit',
+      );
 
-      component.currentFieldValues = { k: 'v_2' };
+      localComponent.currentFieldValues = { k: 'v_2' };
       tick(500);
 
       expect(emitterSpy).toHaveBeenCalledWith(undefined);
     }));
     it('should emit all config data ', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config],
         currentSearchConfig: undefined,
@@ -1837,7 +1785,6 @@ describe('OneCXSearchConfigComponent', () => {
       });
     });
     it('should emit only values config', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [onlyValuesConfig],
         currentSearchConfig: undefined,
@@ -1866,8 +1813,12 @@ describe('OneCXSearchConfigComponent', () => {
       });
     });
     it('should emit only columns config', fakeAsync(() => {
-      const store = TestBed.inject(SearchConfigStore);
-      store.patchState({
+      const localFixture = TestBed.createComponent(OneCXSearchConfigComponent);
+      const localComponent = localFixture.componentInstance;
+      localFixture.detectChanges();
+      const localStore = (localComponent as any).searchConfigStore;
+
+      localStore.patchState({
         searchConfigs: [onlyColumnsConfig],
         currentSearchConfig: undefined,
         columnGroupComponentActive: true,
@@ -1880,9 +1831,11 @@ describe('OneCXSearchConfigComponent', () => {
         },
       });
 
-      const { component } = setUp();
-      const emitterSpy = jest.spyOn(component.searchConfigSelected, 'emit');
-      store.patchState({
+      const emitterSpy = jest.spyOn(
+        localComponent.searchConfigSelected,
+        'emit',
+      );
+      localStore.patchState({
         searchConfigs: [onlyColumnsConfig],
         currentSearchConfig: onlyColumnsConfig,
         columnGroupComponentActive: true,
@@ -1907,7 +1860,6 @@ describe('OneCXSearchConfigComponent', () => {
       });
     }));
     it('should emit only values config if column group component is not active', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config],
         currentSearchConfig: undefined,
@@ -1935,14 +1887,17 @@ describe('OneCXSearchConfigComponent', () => {
     });
 
     it('should emit advancedViewMode when selected config is advanced', fakeAsync(() => {
-      const store = TestBed.inject(SearchConfigStore);
-
       const advancedConfig = {
         ...config,
         isAdvanced: true,
       };
 
-      store.patchState({
+      const localFixture = TestBed.createComponent(OneCXSearchConfigComponent);
+      const localComponent = localFixture.componentInstance;
+      localFixture.detectChanges();
+      const localStore = (localComponent as any).searchConfigStore;
+
+      localStore.patchState({
         searchConfigs: [advancedConfig],
         currentSearchConfig: undefined,
         columnGroupComponentActive: true,
@@ -1955,10 +1910,12 @@ describe('OneCXSearchConfigComponent', () => {
         },
       });
 
-      const { component } = setUp();
-      const emitterSpy = jest.spyOn(component.searchConfigSelected, 'emit');
+      const emitterSpy = jest.spyOn(
+        localComponent.searchConfigSelected,
+        'emit',
+      );
 
-      store.patchState({
+      localStore.patchState({
         currentSearchConfig: advancedConfig,
       });
 
@@ -1975,8 +1932,6 @@ describe('OneCXSearchConfigComponent', () => {
 
   describe('focusManageButton', () => {
     it('should not throw when manage button is undefined', () => {
-      const { component } = setUp();
-
       component.manageButton = undefined;
 
       expect(() => component.focusManageButton()).not.toThrow();

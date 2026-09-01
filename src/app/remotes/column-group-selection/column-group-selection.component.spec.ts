@@ -1,7 +1,12 @@
 import { AsyncPipe } from '@angular/common';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NgModule } from '@angular/core';
-import { TestBed, fakeAsync, tick } from '@angular/core/testing';
+import {
+  ComponentFixture,
+  TestBed,
+  fakeAsync,
+  tick,
+} from '@angular/core/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
@@ -59,6 +64,10 @@ const createSpyObj = (
 };
 
 describe('OneCXColumnGroupSelectionComponent', () => {
+  let component: OneCXColumnGroupSelectionComponent;
+  let fixture: ComponentFixture<OneCXColumnGroupSelectionComponent>;
+  let store: SearchConfigStore;
+
   const searchConfigServiceSpy = {
     ...createSpyObj('searchConfigService', [
       'getSearchConfigInfos',
@@ -120,14 +129,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     isReadonly: false,
     isAdvanced: false,
   };
-
-  function setUp() {
-    const fixture = TestBed.createComponent(OneCXColumnGroupSelectionComponent);
-    const component = fixture.componentInstance;
-    fixture.detectChanges();
-
-    return { fixture, component };
-  }
 
   async function setUpWithHarnessAndInit(permissions: Array<string>) {
     const fixture = TestBed.createComponent(OneCXColumnGroupSelectionComponent);
@@ -230,19 +231,20 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       of({
         configs: [],
       } as any);
+
+    fixture = TestBed.createComponent(OneCXColumnGroupSelectionComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    store = TestBed.inject(SearchConfigStore);
   });
 
   it('should create', () => {
-    const { component } = setUp();
-
     expect(component).toBeTruthy();
   });
 
   it('should update store on selectedGroupKey input set', fakeAsync(() => {
-    const store = TestBed.inject(SearchConfigStore);
     const spy = jest.spyOn(store, 'setSelectedGroupKey');
-
-    const { component } = setUp();
 
     component.selectedGroupKey = 'my-key';
     tick(500);
@@ -251,10 +253,7 @@ describe('OneCXColumnGroupSelectionComponent', () => {
   }));
 
   it('should not update store on when selectedGroupKey input is undefined', fakeAsync(() => {
-    const store = TestBed.inject(SearchConfigStore);
     const spy = jest.spyOn(store, 'setSelectedGroupKey');
-
-    const { component } = setUp();
 
     component.selectedGroupKey = undefined;
     tick(500);
@@ -263,10 +262,7 @@ describe('OneCXColumnGroupSelectionComponent', () => {
   }));
 
   it('should update store on customGroupKey input set', fakeAsync(() => {
-    const store = TestBed.inject(SearchConfigStore);
     const spy = jest.spyOn(store, 'setCustomGroupKey');
-
-    const { component } = setUp();
 
     component.customGroupKey = 'my-key';
     tick(500);
@@ -275,10 +271,7 @@ describe('OneCXColumnGroupSelectionComponent', () => {
   }));
 
   it('should update store on displayedColumnsIds input set', fakeAsync(() => {
-    const store = TestBed.inject(SearchConfigStore);
     const spy = jest.spyOn(store, 'updateDisplayedColumnsIds');
-
-    const { component } = setUp();
 
     component.displayedColumnsIds = ['col-1'];
     tick(500);
@@ -287,10 +280,7 @@ describe('OneCXColumnGroupSelectionComponent', () => {
   }));
 
   it('should update store on layout input set', fakeAsync(() => {
-    const store = TestBed.inject(SearchConfigStore);
     const spy = jest.spyOn(store, 'updateLayout');
-
-    const { component } = setUp();
 
     component.layout = 'grid';
     tick(500);
@@ -299,8 +289,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
   }));
 
   it('should update columns on columns input set', fakeAsync(() => {
-    const { component } = setUp();
-
     component.columns = [{ id: '1' } as any, { id: '2' }];
     tick(500);
 
@@ -319,7 +307,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
         baseUrl: 'base',
       };
 
-      const { component } = setUp();
       jest.spyOn(component, 'ocxInitRemoteComponent');
       component.ocxRemoteComponentConfig = config;
 
@@ -333,10 +320,7 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     });
 
     it('should set non search config group keys on columns update', fakeAsync(() => {
-      const store = TestBed.inject(SearchConfigStore);
       const spy = jest.spyOn(store, 'setNonSearchConfigGroupKeys');
-
-      const { component } = setUp();
 
       component.defaultGroupKey = 'default';
 
@@ -368,7 +352,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
   });
   describe('overlay content', () => {
     it('should not display manage button with layout set to list or grid', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [],
         nonSearchConfigGroupKeys: ['default'],
@@ -382,7 +365,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     });
 
     it('should not display manage button with no view permission', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [],
         nonSearchConfigGroupKeys: ['default'],
@@ -396,7 +378,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     });
 
     it('should display overlay with configs that have only columns', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config, onlyValuesConfig, onlyColumnsConfig],
         nonSearchConfigGroupKeys: [],
@@ -412,7 +393,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     });
 
     it('should display editing message on edit mode', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
         layout: 'table',
@@ -429,7 +409,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     });
 
     it('should display all group keys', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config, onlyValuesConfig, onlyColumnsConfig],
         nonSearchConfigGroupKeys: ['def', 'full'],
@@ -451,7 +430,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     });
 
     it('should display edit/delete next to items', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
         layout: 'table',
@@ -465,7 +443,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       expect(await items?.at(0)?.getDeleteButton()).toBeDefined();
     });
     it('should not display edit/delete if config is readonly', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [
           {
@@ -484,7 +461,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       expect(await items?.at(0)?.getDeleteButton()).toBeNull();
     });
     it('should not display edit/delete if no permissions ', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [
           {
@@ -506,7 +482,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
 
   describe('on edit mode', () => {
     it('should display save/cancel options', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
         layout: 'table',
@@ -525,7 +500,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       expect(cancelEditButton).toBeTruthy();
     });
     it('should not display save/cancel options when not in charge of edit', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [config],
         editMode: true,
@@ -545,7 +519,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
 
   describe('on key change', () => {
     it('should set current config', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
         layout: 'table',
@@ -566,7 +539,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
 
   describe('on edit actions', () => {
     it('should set edit mode on edit button click', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const editModeSpy = jest.spyOn(store, 'enterEditMode');
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
@@ -584,7 +556,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     });
 
     it('should cancel edit mode on edit cancel button click', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
@@ -605,10 +576,7 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     });
 
     it('should not set edit mode if config is not set', fakeAsync(() => {
-      const store = TestBed.inject(SearchConfigStore);
       const enterEditModeSpy = jest.spyOn(store, 'enterEditMode');
-
-      const { component } = setUp();
 
       component.onSearchConfigEdit(undefined);
 
@@ -620,7 +588,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
 
   describe('on delete actions', () => {
     it('should open confirmation dialog on delete button click', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const dialogSpy = jest.spyOn(portalDialogSpy, 'openDialog');
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
@@ -648,7 +615,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       );
     });
     it('should delete config', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const deleteSpy = jest.spyOn(store, 'deleteSearchConfig');
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
@@ -678,7 +644,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       expect(deleteSpy).toHaveBeenCalledWith(onlyColumnsConfig);
     });
     it('should not delete config if dialog was closed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const deleteSpy = jest.spyOn(store, 'deleteSearchConfig');
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
@@ -700,7 +665,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       expect(deleteSpy).toHaveBeenCalledTimes(0);
     });
     it('should not delete config if secondary button was chosen', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const deleteSpy = jest.spyOn(store, 'deleteSearchConfig');
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
@@ -724,7 +688,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       expect(deleteSpy).toHaveBeenCalledTimes(0);
     });
     it('should not delete config if delete call failed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const deleteSpy = jest.spyOn(store, 'deleteSearchConfig');
       const consoleSpy = jest.spyOn(console, 'error');
       const error = new Error('my-error-msg');
@@ -759,8 +722,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     it('should not open dialog if config is not set', fakeAsync(() => {
       const dialogSpy = jest.spyOn(portalDialogSpy, 'openDialog');
 
-      const { component } = setUp();
-
       component.onSearchConfigDelete(undefined);
 
       tick(500);
@@ -771,7 +732,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
 
   describe('on edit save', () => {
     it('should use config info to fill dialog', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
         layout: 'table',
@@ -806,7 +766,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       );
     });
     it('should cancel edit if dialog was closed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
@@ -837,7 +796,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       expect(cancelEditSpy).toHaveBeenCalledTimes(1);
     });
     it('should cancel edit if edit was not confirmed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
@@ -870,7 +828,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       expect(cancelEditSpy).toHaveBeenCalledTimes(1);
     });
     it('should save edit config if edit was confirmed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const saveEditSpy = jest.spyOn(store, 'saveEdit');
       const updatedConfig = {
         ...onlyColumnsConfig,
@@ -918,7 +875,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       expect(saveEditSpy).toHaveBeenCalledWith(updatedConfig);
     });
     it('should save inputs and viewMode', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const updateSpy = jest
         .spyOn(searchConfigServiceSpy, 'updateSearchConfig')
         .mockReturnValue(of(undefined as any));
@@ -977,7 +933,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       });
     });
     it('should not save inputs and viewMode', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const updateSpy = jest
         .spyOn(searchConfigServiceSpy, 'updateSearchConfig')
         .mockReturnValue(of(undefined as any));
@@ -1034,7 +989,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       });
     });
     it('should save columns', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const updateSpy = jest
         .spyOn(searchConfigServiceSpy, 'updateSearchConfig')
         .mockReturnValue(of(undefined as any));
@@ -1088,7 +1042,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       });
     });
     it('should not save columns', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const updateSpy = jest
         .spyOn(searchConfigServiceSpy, 'updateSearchConfig')
         .mockReturnValue(of(undefined as any));
@@ -1142,7 +1095,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       });
     });
     it('should cancel edit if get search config call failed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
       const error = new Error('my-msg');
       store.patchState({
@@ -1174,7 +1126,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       expect(cancelEditSpy).toHaveBeenCalledTimes(1);
     });
     it('should cancel edit if update search config call failed', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
@@ -1212,10 +1163,7 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     });
 
     it('should cancel edit if config is not set', fakeAsync(() => {
-      const store = TestBed.inject(SearchConfigStore);
       const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
-
-      const { component } = setUp();
 
       component.onSearchConfigSaveEdit(undefined);
 
@@ -1227,9 +1175,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
 
   describe('on dataToRevert change', () => {
     it('should not emit if data does not contain columnGroupKey', fakeAsync(() => {
-      const store = TestBed.inject(SearchConfigStore);
-
-      const { component } = setUp();
       const emitterSpy = jest.spyOn(component.groupSelectionChanged, 'emit');
 
       store.patchState({
@@ -1246,9 +1191,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       expect(emitterSpy).toHaveBeenCalledTimes(0);
     }));
     it('should emit searchConfigSelected', fakeAsync(() => {
-      const store = TestBed.inject(SearchConfigStore);
-
-      const { component } = setUp();
       component.columns = [
         {
           id: 'col-1',
@@ -1284,7 +1226,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
 
   describe('on selectedGroupKey change', () => {
     it('should emit if config with columns was set', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
         currentSearchConfig: undefined,
@@ -1312,9 +1253,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     });
 
     it('should not emit if customGroupKey was set', fakeAsync(() => {
-      const store = TestBed.inject(SearchConfigStore);
-
-      const { component } = setUp();
       component.columns = [
         {
           id: 'col-1',
@@ -1339,7 +1277,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     }));
 
     it('should emit if no search config group key was set', async () => {
-      const store = TestBed.inject(SearchConfigStore);
       store.patchState({
         searchConfigs: [onlyColumnsConfig],
         currentSearchConfig: undefined,
@@ -1385,8 +1322,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
 
   describe('focusManageButton', () => {
     it('should not throw when manage button is undefined', () => {
-      const { component } = setUp();
-
       component.manageButton = undefined;
 
       expect(() => component.focusManageButton()).not.toThrow();
