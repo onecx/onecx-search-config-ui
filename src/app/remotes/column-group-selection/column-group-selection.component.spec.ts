@@ -1,3 +1,4 @@
+import { AsyncPipe } from '@angular/common';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NgModule } from '@angular/core';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
@@ -36,7 +37,6 @@ import {
 import { CreateOrEditSearchConfigDialogComponent } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
 import { OneCXColumnGroupSelectionHarness } from './column-group-selection.harness';
 import { OneCXColumnGroupSelectionComponent } from './column-group-selection.component';
-import { AsyncPipe } from '@angular/common';
 
 @NgModule({
   imports: [],

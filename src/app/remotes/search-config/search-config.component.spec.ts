@@ -1,3 +1,4 @@
+import { AsyncPipe } from '@angular/common';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NgModule } from '@angular/core';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
@@ -37,7 +38,6 @@ import {
 import { advancedViewMode, basicViewMode } from 'src/app/shared/constants';
 import { OneCXSearchConfigComponent } from './search-config.component';
 import { OneCXSearchConfigHarness } from './search-config.harness';
-import { AsyncPipe } from '@angular/common';
 
 @NgModule({
   imports: [],
