@@ -3,21 +3,18 @@ import {
   ContentContainerComponentHarness,
 } from '@angular/cdk/testing';
 
-import {
-  PButtonDirectiveHarness,
-  PButtonHarness,
-} from '@onecx/angular-testing';
+import { PButtonHarness } from '@onecx/angular-testing';
 
 export class OneCXSearchConfigListItemHarness extends ComponentHarness {
   public static hostSelector = 'li';
 
   getSpan = this.locatorFor('span');
-  getEditButton = this.locatorForOptional('button.search_config_edit_button');
+  getEditButton = this.locatorForOptional('p-button.search_config_edit_button');
   getDeleteButton = this.locatorForOptional(
-    'button.search_config_delete_button',
+    'p-button.search_config_delete_button',
   );
   getSelectButton = this.locatorForOptional(
-    'button.search_config_select_button',
+    'p-button.search_config_select_button',
   );
 
   async getText() {
@@ -28,21 +25,28 @@ export class OneCXSearchConfigListItemHarness extends ComponentHarness {
 export class OneCXSearchConfigHarness extends ContentContainerComponentHarness {
   static readonly hostSelector = 'app-ocx-search-config';
 
-  getSaveEditButton = this.locatorForOptional(
-    PButtonDirectiveHarness.with({
-      id: 'sc_search_config_save_search_config_edit',
-    }),
+  private readonly _saveEditPButton = this.locatorForOptional(
+    PButtonHarness.with({ id: 'sc_search_config_save_search_config_edit' }),
   );
-  getCancelEditButton = this.locatorForOptional(
-    PButtonDirectiveHarness.with({
-      id: 'sc_search_config_cancel_search_config_edit',
-    }),
+  private readonly _cancelEditPButton = this.locatorForOptional(
+    PButtonHarness.with({ id: 'sc_search_config_cancel_search_config_edit' }),
   );
-  getManageButton = this.locatorForOptional(
-    PButtonHarness.with({
-      id: 'sc_search_config_manage_search_config',
-    }),
+
+  private readonly _managePButton = this.locatorForOptional(
+    PButtonHarness.with({ id: 'sc_search_config_manage_search_config' }),
   );
+
+  async getSaveEditButton() {
+    return await this._saveEditPButton();
+  }
+
+  async getCancelEditButton() {
+    return await this._cancelEditPButton();
+  }
+
+  async getManageButton() {
+    return await this._managePButton();
+  }
 
   async getHarnessLoaderForOverlay() {
     return this.documentRootLocatorFactory().harnessLoaderForOptional(
@@ -65,7 +69,12 @@ export class OneCXSearchConfigHarness extends ContentContainerComponentHarness {
   async getAddItem() {
     await this.open();
     const overlay = await this.getHarnessLoaderForOverlay();
-    return await overlay?.getHarness(PButtonDirectiveHarness);
+    if (!overlay) return null;
+    try {
+      return await overlay.getHarness(PButtonHarness);
+    } catch (err) {
+      return null;
+    }
   }
 
   async getItems() {

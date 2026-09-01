@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NgModule } from '@angular/core';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
@@ -175,7 +175,8 @@ describe('OneCXSearchConfigComponent', () => {
       declarations: [],
       imports: [
         TranslateTestingModule.withTranslations({
-          en: require('../../../assets/i18n/en.json'),
+          en: require('./src/assets/i18n/en.json'),
+          de: require('./src/assets/i18n/de.json'),
         }).withDefaultLanguage('en'),
         NoopAnimationsModule,
       ],
@@ -203,9 +204,9 @@ describe('OneCXSearchConfigComponent', () => {
       .overrideComponent(OneCXSearchConfigComponent, {
         set: {
           imports: [
+            AsyncPipe,
             PortalDependencyModule,
             TranslateTestingModule,
-            CommonModule,
             TooltipModule,
             CreateOrEditSearchConfigDialogComponent,
             ButtonModule,
@@ -377,6 +378,29 @@ describe('OneCXSearchConfigComponent', () => {
       const addItem = await searchConfigHarness.getAddItem();
       expect(addItem).toBeDefined();
       expect(await addItem?.getIcon()).toEqual(component.plusIcon);
+    });
+
+    it('getAddItem returns null when manage button is not available', async () => {
+      const { searchConfigHarness } = await setUpWithHarnessAndInit(['']);
+
+      const addItem = await searchConfigHarness.getAddItem();
+      expect(addItem).toBeNull();
+    });
+
+    it('getAddItem returns null when overlay has no p-button', async () => {
+      const { fixture, searchConfigHarness } =
+        await setUpWithHarnessAndInit(allPermissions);
+
+      const manage = await searchConfigHarness.getManageButton();
+      await manage?.click();
+      fixture.detectChanges();
+
+      const popover = document.querySelector('.p-popover');
+      const pbtn = popover?.querySelector('p-button');
+      pbtn?.remove();
+
+      const addItem = await searchConfigHarness.getAddItem();
+      expect(addItem).toBeNull();
     });
 
     it('should not display manage button with no view permission', async () => {

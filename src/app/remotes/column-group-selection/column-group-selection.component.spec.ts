@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { NgModule } from '@angular/core';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
@@ -177,7 +177,8 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       declarations: [],
       imports: [
         TranslateTestingModule.withTranslations({
-          en: require('../../../assets/i18n/en.json'),
+          en: require('./src/assets/i18n/en.json'),
+          de: require('./src/assets/i18n/de.json'),
         }).withDefaultLanguage('en'),
         NoopAnimationsModule,
       ],
@@ -205,9 +206,9 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       .overrideComponent(OneCXColumnGroupSelectionComponent, {
         set: {
           imports: [
+            AsyncPipe,
             PortalDependencyModule,
             TranslateTestingModule,
-            CommonModule,
             TooltipModule,
             CreateOrEditSearchConfigDialogComponent,
             ButtonModule,

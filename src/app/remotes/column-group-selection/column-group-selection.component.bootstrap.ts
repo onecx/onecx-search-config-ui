@@ -3,7 +3,6 @@ import {
   provideHttpClient,
   withInterceptorsFromDi,
 } from '@angular/common/http';
-import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import {
   importProvidersFrom,
@@ -48,10 +47,11 @@ bootstrapRemoteComponent(
       provide: REMOTE_COMPONENT_CONFIG,
       useValue: new ReplaySubject<RemoteComponentConfig>(1),
     },
-    importProvidersFrom(AngularAcceleratorModule),
-    importProvidersFrom(AngularAuthModule),
-    importProvidersFrom(BrowserModule),
-    importProvidersFrom(BrowserAnimationsModule),
+    importProvidersFrom(
+      AngularAcceleratorModule,
+      AngularAuthModule,
+      BrowserAnimationsModule,
+    ),
     providePortalDialogService(),
     provideAppInitializer(() => {
       const initializerFn = userProfileInitializer(inject(UserService));

@@ -1,4 +1,4 @@
-import { CommonModule, Location } from '@angular/common';
+import { AsyncPipe, Location } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import {
   Component,
@@ -8,6 +8,7 @@ import {
   Input,
   OnDestroy,
   ViewChild,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import {
   TranslateLoader,
@@ -66,7 +67,6 @@ import {
   SearchConfigInfo,
   UpdateSearchConfigRequest,
 } from 'src/app/shared/generated';
-import { SharedModule } from 'src/app/shared/shared.module';
 import {
   PageData,
   SEARCH_CONFIG_STORE_NAME,
@@ -98,12 +98,12 @@ import { environment } from 'src/environments/environment';
   selector: 'app-ocx-search-config',
   standalone: true,
   templateUrl: './search-config.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AngularRemoteComponentsModule,
-    CommonModule,
+    AsyncPipe,
     AngularAcceleratorModule,
     TranslateModule,
-    SharedModule,
     ButtonModule,
     PopoverModule,
     TooltipModule,
