@@ -3,21 +3,18 @@ import {
   ContentContainerComponentHarness,
 } from '@angular/cdk/testing';
 
-import {
-  PButtonDirectiveHarness,
-  PButtonHarness,
-} from '@onecx/angular-testing';
+import { PButtonHarness } from '@onecx/angular-testing';
 
 export class OneCXColumnGroupSelectionListItemHarness extends ComponentHarness {
   public static hostSelector = 'li';
 
   getSpan = this.locatorFor('span');
-  getEditButton = this.locatorForOptional('button.search_config_edit_button');
+  getEditButton = this.locatorForOptional('p-button.search_config_edit_button');
   getDeleteButton = this.locatorForOptional(
-    'button.search_config_delete_button',
+    'p-button.search_config_delete_button',
   );
   getSelectButton = this.locatorForOptional(
-    'button.search_config_select_button',
+    'p-button.search_config_select_button',
   );
 
   async getText() {
@@ -28,21 +25,33 @@ export class OneCXColumnGroupSelectionListItemHarness extends ComponentHarness {
 export class OneCXColumnGroupSelectionHarness extends ContentContainerComponentHarness {
   static readonly hostSelector = 'app-ocx-column-group-selection';
 
-  getSaveEditButton = this.locatorForOptional(
-    PButtonDirectiveHarness.with({
+  private _saveEditPButton = this.locatorForOptional(
+    PButtonHarness.with({
       id: 'sc_column_group_selection_save_search_config_edit',
     }),
   );
-  getCancelEditButton = this.locatorForOptional(
-    PButtonDirectiveHarness.with({
+  private _cancelEditPButton = this.locatorForOptional(
+    PButtonHarness.with({
       id: 'sc_column_group_selection_cancel_search_config_edit',
     }),
   );
-  getManageButton = this.locatorForOptional(
+  private _managePButton = this.locatorForOptional(
     PButtonHarness.with({
       id: 'sc_column_group_selection_manage_column_group',
     }),
   );
+
+  async getSaveEditButton() {
+    return await this._saveEditPButton();
+  }
+
+  async getCancelEditButton() {
+    return await this._cancelEditPButton();
+  }
+
+  async getManageButton() {
+    return await this._managePButton();
+  }
 
   async getHarnessLoaderForOverlay() {
     return this.documentRootLocatorFactory().harnessLoaderForOptional(
