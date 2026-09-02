@@ -84,7 +84,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
   const portalDialogSpy = createSpyObj('portalDialogService', [
     'openDialog',
   ]) as PortalDialogService;
-
   const portalMessageSpy = createSpyObj('portalMessageService', [
     'info',
     'error',
@@ -131,16 +130,17 @@ describe('OneCXColumnGroupSelectionComponent', () => {
   };
 
   async function setUpWithHarnessAndInit(permissions: Array<string>) {
-    const fixture = TestBed.createComponent(OneCXColumnGroupSelectionComponent);
-    const component = fixture.componentInstance;
+    const localFixture = fixture;
+
     component.ocxInitRemoteComponent({
       baseUrl: 'base_url',
       permissions: permissions,
     } as any);
-    fixture.detectChanges();
+    localFixture.detectChanges();
+    await localFixture.whenStable();
     const columnGroupHarness =
       await TestbedHarnessEnvironment.harnessForFixture(
-        fixture,
+        localFixture,
         OneCXColumnGroupSelectionHarness,
       );
 
@@ -168,8 +168,17 @@ describe('OneCXColumnGroupSelectionComponent', () => {
           de: require('./src/assets/i18n/de.json'),
         }).withDefaultLanguage('en'),
         NoopAnimationsModule,
+        AsyncPipe,
+        PortalDependencyModule,
+        TooltipModule,
+        CreateOrEditSearchConfigDialogComponent,
+        ButtonModule,
+        PopoverModule,
+        FocusTrapModule,
+        OneCXColumnGroupSelectionComponent,
       ],
       providers: [
+        DialogService,
         provideHttpClient(),
         provideHttpClientTesting(),
         {
@@ -188,38 +197,20 @@ describe('OneCXColumnGroupSelectionComponent', () => {
           provide: SEARCH_CONFIG_TOPIC,
           useValue: new FakeTopic<SearchConfigMessage>(),
         },
-      ],
-    })
-      .overrideComponent(OneCXColumnGroupSelectionComponent, {
-        set: {
-          imports: [
-            AsyncPipe,
-            PortalDependencyModule,
-            TranslateTestingModule,
-            TooltipModule,
-            CreateOrEditSearchConfigDialogComponent,
-            ButtonModule,
-            PopoverModule,
-            FocusTrapModule,
-          ],
-          providers: [
-            DialogService,
-            {
-              provide: PortalDialogService,
-              useValue: portalDialogSpy,
-            },
-            {
-              provide: PortalMessageService,
-              useValue: portalMessageSpy,
-            },
-            {
-              provide: SearchConfigAPIService,
-              useValue: searchConfigServiceSpy,
-            },
-          ],
+        {
+          provide: PortalDialogService,
+          useValue: portalDialogSpy,
         },
-      })
-      .compileComponents();
+        {
+          provide: PortalMessageService,
+          useValue: portalMessageSpy,
+        },
+        {
+          provide: SearchConfigAPIService,
+          useValue: searchConfigServiceSpy,
+        },
+      ],
+    });
 
     baseUrlSubject.next('base_url_mock');
     (portalDialogSpy.openDialog as jest.Mock).mockReset();
@@ -235,6 +226,10 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     fixture = TestBed.createComponent(OneCXColumnGroupSelectionComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+
+    (component as any).portalDialogService = portalDialogSpy;
+    (component as any).portalMessageService = portalMessageSpy;
+    (component as any).searchConfigService = searchConfigServiceSpy as any;
 
     store = TestBed.inject(SearchConfigStore);
   });

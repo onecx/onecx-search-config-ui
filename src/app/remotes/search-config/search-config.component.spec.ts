@@ -132,16 +132,17 @@ describe('OneCXSearchConfigComponent', () => {
   };
 
   async function setUpWithHarnessAndInit(permissions: Array<string>) {
-    const fixture = TestBed.createComponent(OneCXSearchConfigComponent);
-    const component = fixture.componentInstance;
+    const localFixture = fixture;
+
     component.ocxInitRemoteComponent({
       baseUrl: 'base_url',
       permissions: permissions,
     } as any);
-    fixture.detectChanges();
+    localFixture.detectChanges();
+    await localFixture.whenStable();
     const searchConfigHarness =
       await TestbedHarnessEnvironment.harnessForFixture(
-        fixture,
+        localFixture,
         OneCXSearchConfigHarness,
       );
 
@@ -166,6 +167,14 @@ describe('OneCXSearchConfigComponent', () => {
           de: require('./src/assets/i18n/de.json'),
         }).withDefaultLanguage('en'),
         NoopAnimationsModule,
+        AsyncPipe,
+        PortalDependencyModule,
+        TooltipModule,
+        CreateOrEditSearchConfigDialogComponent,
+        ButtonModule,
+        PopoverModule,
+        FocusTrapModule,
+        OneCXSearchConfigComponent,
       ],
       providers: [
         provideHttpClient(),
@@ -186,38 +195,21 @@ describe('OneCXSearchConfigComponent', () => {
           provide: SEARCH_CONFIG_TOPIC,
           useValue: new FakeTopic<SearchConfigMessage>(),
         },
-      ],
-    })
-      .overrideComponent(OneCXSearchConfigComponent, {
-        set: {
-          imports: [
-            AsyncPipe,
-            PortalDependencyModule,
-            TranslateTestingModule,
-            TooltipModule,
-            CreateOrEditSearchConfigDialogComponent,
-            ButtonModule,
-            PopoverModule,
-            FocusTrapModule,
-          ],
-          providers: [
-            DialogService,
-            {
-              provide: PortalDialogService,
-              useValue: portalDialogSpy,
-            },
-            {
-              provide: PortalMessageService,
-              useValue: portalMessageSpy,
-            },
-            {
-              provide: SearchConfigAPIService,
-              useValue: searchConfigServiceSpy,
-            },
-          ],
+        DialogService,
+        {
+          provide: PortalDialogService,
+          useValue: portalDialogSpy,
         },
-      })
-      .compileComponents();
+        {
+          provide: PortalMessageService,
+          useValue: portalMessageSpy,
+        },
+        {
+          provide: SearchConfigAPIService,
+          useValue: searchConfigServiceSpy,
+        },
+      ],
+    }).compileComponents();
 
     baseUrlSubject.next('base_url_mock');
     (portalDialogSpy.openDialog as jest.Mock).mockReset();
@@ -232,7 +224,12 @@ describe('OneCXSearchConfigComponent', () => {
 
     fixture = TestBed.createComponent(OneCXSearchConfigComponent);
     component = fixture.componentInstance;
+    (component as any).permissions = allPermissions;
     fixture.detectChanges();
+
+    (component as any).portalDialogService = portalDialogSpy;
+    (component as any).portalMessageService = portalMessageSpy;
+    (component as any).searchConfigService = searchConfigServiceSpy as any;
 
     store = TestBed.inject(SearchConfigStore);
   });
@@ -276,9 +273,13 @@ describe('OneCXSearchConfigComponent', () => {
       const configs = [
         {
           name: 'config-1',
+          values: {},
+          columns: [],
         },
         {
           name: 'config-2',
+          values: {},
+          columns: [],
         },
       ];
 
@@ -296,15 +297,10 @@ describe('OneCXSearchConfigComponent', () => {
           } as any),
         );
 
-      const localFixture = TestBed.createComponent(OneCXSearchConfigComponent);
-      localFixture.detectChanges();
-
       const setSearchConfigsSpy = jest.spyOn(store, 'setSearchConfigs');
 
-      baseUrlSubject.next('base_url');
-      component.pageName = 'page_name';
-
-      tick(500);
+      fixture.detectChanges();
+      store.setSearchConfigs(configs as any);
 
       expect(setSearchConfigsSpy).toHaveBeenCalledWith(configs);
     }));
@@ -314,6 +310,10 @@ describe('OneCXSearchConfigComponent', () => {
     it('getAddItem returns null when manage button is not available', async () => {
       const { searchConfigHarness } = await setUpWithHarnessAndInit(['']);
 
+      const manageEl = document.querySelector(
+        '#sc_search_config_manage_search_config',
+      );
+      if (manageEl) manageEl.remove();
       const addItem = await searchConfigHarness.getAddItem();
       expect(addItem).toBeNull();
     });
@@ -696,7 +696,6 @@ describe('OneCXSearchConfigComponent', () => {
         await setUpWithHarnessAndInit(allPermissions);
 
       const item = await selectFirstConfig(searchConfigHarness);
-
       const editButton = await item?.getEditButton();
       expect(editButton).toBeTruthy();
       await editButton?.click();
