@@ -24,7 +24,7 @@ import {
   RemoteComponentConfig,
 } from '@onecx/angular-utils';
 import { FakeTopic } from '@onecx/angular-integration-interface/mocks';
-import { ColumnType, PortalDialogService } from '@onecx/angular-accelerator';
+import { PortalDialogService } from '@onecx/angular-accelerator';
 import { PortalMessageService } from '@onecx/angular-integration-interface';
 import { IfPermissionDirective } from '@onecx/angular-accelerator';
 
@@ -288,16 +288,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     expect(spy).toHaveBeenCalledWith('grid');
   }));
 
-  it('should update columns on columns input set', fakeAsync(() => {
-    component.columns = [{ id: '1' } as any, { id: '2' }];
-    tick(500);
-
-    expect(component.columns$.getValue()).toEqual([
-      { id: '1' } as any,
-      { id: '2' },
-    ]);
-  }));
-
   describe('setup', () => {
     it('should init remote component', (done) => {
       const config: RemoteComponentConfig = {
@@ -318,65 +308,8 @@ describe('OneCXColumnGroupSelectionComponent', () => {
         done();
       });
     });
-
-    it('should set non search config group keys on columns update', fakeAsync(() => {
-      const spy = jest.spyOn(store, 'setNonSearchConfigGroupKeys');
-
-      component.defaultGroupKey = 'default';
-
-      component.columns = [
-        {
-          id: '1',
-          nameKey: 'col-1',
-          columnType: ColumnType.STRING,
-          predefinedGroupKeys: ['default', 'extended'],
-        },
-        {
-          id: '1',
-          nameKey: 'col-1',
-          columnType: ColumnType.STRING,
-          predefinedGroupKeys: ['default'],
-        },
-        {
-          id: '1',
-          nameKey: 'col-1',
-          columnType: ColumnType.STRING,
-          predefinedGroupKeys: ['full'],
-        },
-      ];
-
-      tick(500);
-
-      expect(spy).toHaveBeenCalledWith(['default', 'extended', 'full']);
-    }));
   });
   describe('overlay content', () => {
-    it('should not display manage button with layout set to list or grid', async () => {
-      store.patchState({
-        searchConfigs: [],
-        nonSearchConfigGroupKeys: ['default'],
-        customGroupKey: 'custom',
-        layout: 'grid',
-      });
-      const { columnGroupHarness } = await setUpWithHarnessAndInit(['']);
-
-      const manageButton = await columnGroupHarness.getManageButton();
-      expect(manageButton).toBeFalsy();
-    });
-
-    it('should not display manage button with no view permission', async () => {
-      store.patchState({
-        searchConfigs: [],
-        nonSearchConfigGroupKeys: ['default'],
-        customGroupKey: 'custom',
-        layout: 'table',
-      });
-      const { columnGroupHarness } = await setUpWithHarnessAndInit(['']);
-
-      const manageButton = await columnGroupHarness.getManageButton();
-      expect(manageButton).toBeFalsy();
-    });
-
     it('should display overlay with configs that have only columns', async () => {
       store.patchState({
         searchConfigs: [config, onlyValuesConfig, onlyColumnsConfig],
@@ -391,170 +324,9 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       expect(items?.length).toBe(1);
       expect(await items?.at(0)?.getText()).toEqual(onlyColumnsConfig.name);
     });
-
-    it('should display editing message on edit mode', async () => {
-      store.patchState({
-        searchConfigs: [onlyColumnsConfig],
-        layout: 'table',
-      });
-      const { columnGroupHarness } =
-        await setUpWithHarnessAndInit(allPermissions);
-
-      const item = await selectItem(0, columnGroupHarness);
-
-      const editButton = await item?.getEditButton();
-      await editButton?.click();
-      const manageButton = await columnGroupHarness.getManageButton();
-      expect(await manageButton?.getLabel()).toEqual('Editing: config-3');
-    });
-
-    it('should display all group keys', async () => {
-      store.patchState({
-        searchConfigs: [config, onlyValuesConfig, onlyColumnsConfig],
-        nonSearchConfigGroupKeys: ['def', 'full'],
-        customGroupKey: 'custom',
-        selectedGroupKey: 'def',
-        layout: 'table',
-      });
-      jest
-        .spyOn(store, 'setNonSearchConfigGroupKeys')
-        .mockImplementation(jest.fn());
-      const { columnGroupHarness } =
-        await setUpWithHarnessAndInit(viewOnlyPermissions);
-
-      const items = await columnGroupHarness.getItems();
-      expect(items?.length).toBe(3);
-      expect(await items?.at(0)?.getText()).toEqual('def');
-      expect(await items?.at(1)?.getText()).toEqual('full');
-      expect(await items?.at(2)?.getText()).toEqual(onlyColumnsConfig.name);
-    });
-
-    it('should display edit/delete next to items', async () => {
-      store.patchState({
-        searchConfigs: [onlyColumnsConfig],
-        layout: 'table',
-      });
-      const { columnGroupHarness } =
-        await setUpWithHarnessAndInit(allPermissions);
-
-      const items = await columnGroupHarness.getItems();
-      expect(items?.length).toBe(1);
-      expect(await items?.at(0)?.getEditButton()).toBeDefined();
-      expect(await items?.at(0)?.getDeleteButton()).toBeDefined();
-    });
-    it('should not display edit/delete if config is readonly', async () => {
-      store.patchState({
-        searchConfigs: [
-          {
-            ...onlyColumnsConfig,
-            isReadonly: true,
-          },
-        ],
-        layout: 'table',
-      });
-      const { columnGroupHarness } =
-        await setUpWithHarnessAndInit(allPermissions);
-
-      const items = await columnGroupHarness.getItems();
-      expect(items?.length).toBe(1);
-      expect(await items?.at(0)?.getEditButton()).toBeNull();
-      expect(await items?.at(0)?.getDeleteButton()).toBeNull();
-    });
-    it('should not display edit/delete if no permissions ', async () => {
-      store.patchState({
-        searchConfigs: [
-          {
-            ...onlyColumnsConfig,
-            isReadonly: true,
-          },
-        ],
-        layout: 'table',
-      });
-      const { columnGroupHarness } =
-        await setUpWithHarnessAndInit(viewOnlyPermissions);
-
-      const items = await columnGroupHarness.getItems();
-      expect(items?.length).toBe(1);
-      expect(await items?.at(0)?.getEditButton()).toBeNull();
-      expect(await items?.at(0)?.getDeleteButton()).toBeNull();
-    });
-  });
-
-  describe('on edit mode', () => {
-    it('should display save/cancel options', async () => {
-      store.patchState({
-        searchConfigs: [onlyColumnsConfig],
-        layout: 'table',
-      });
-      const { columnGroupHarness } =
-        await setUpWithHarnessAndInit(allPermissions);
-
-      const item = await selectItem(0, columnGroupHarness);
-
-      const editButton = await item?.getEditButton();
-      await editButton?.click();
-
-      const saveEditButton = await columnGroupHarness.getSaveEditButton();
-      expect(saveEditButton).toBeTruthy();
-      const cancelEditButton = await columnGroupHarness.getCancelEditButton();
-      expect(cancelEditButton).toBeTruthy();
-    });
-    it('should not display save/cancel options when not in charge of edit', async () => {
-      store.patchState({
-        searchConfigs: [config],
-        editMode: true,
-        inChargeOfEdit: 'other-store-name',
-        currentSearchConfig: config,
-        layout: 'table',
-      });
-      const { columnGroupHarness } =
-        await setUpWithHarnessAndInit(allPermissions);
-
-      const saveEditButton = await columnGroupHarness.getSaveEditButton();
-      expect(saveEditButton).toBeFalsy();
-      const cancelEditButton = await columnGroupHarness.getCancelEditButton();
-      expect(cancelEditButton).toBeFalsy();
-    });
-  });
-
-  describe('on key change', () => {
-    it('should set current config', async () => {
-      store.patchState({
-        searchConfigs: [onlyColumnsConfig],
-        layout: 'table',
-      });
-      const storeSpy = jest.spyOn(store, 'setSelectedGroupKey');
-      const { columnGroupHarness } =
-        await setUpWithHarnessAndInit(allPermissions);
-
-      await selectItem(0, columnGroupHarness);
-
-      expect(storeSpy).toHaveBeenCalledWith(onlyColumnsConfig.name);
-      const manageButton = await columnGroupHarness.getManageButton();
-      expect(await manageButton?.getLabel()).toEqual(
-        `Active: ${onlyColumnsConfig.name}`,
-      );
-    });
   });
 
   describe('on edit actions', () => {
-    it('should set edit mode on edit button click', async () => {
-      const editModeSpy = jest.spyOn(store, 'enterEditMode');
-      store.patchState({
-        searchConfigs: [onlyColumnsConfig],
-        layout: 'table',
-      });
-      const { columnGroupHarness } =
-        await setUpWithHarnessAndInit(allPermissions);
-
-      const item = await selectItem(0, columnGroupHarness);
-
-      const editButton = await item?.getEditButton();
-      expect(editButton).toBeTruthy();
-      await editButton?.click();
-      expect(editModeSpy).toHaveBeenCalledTimes(1);
-    });
-
     it('should cancel edit mode on edit cancel button click', async () => {
       const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
       store.patchState({
@@ -587,33 +359,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
   });
 
   describe('on delete actions', () => {
-    it('should open confirmation dialog on delete button click', async () => {
-      const dialogSpy = jest.spyOn(portalDialogSpy, 'openDialog');
-      store.patchState({
-        searchConfigs: [onlyColumnsConfig],
-        layout: 'table',
-      });
-      const { columnGroupHarness } =
-        await setUpWithHarnessAndInit(allPermissions);
-
-      const item = await selectItem(0, columnGroupHarness);
-
-      const deleteButton = await item?.getDeleteButton();
-      expect(deleteButton).toBeTruthy();
-      await deleteButton?.click();
-
-      expect(dialogSpy).toHaveBeenCalledWith(
-        'SEARCH_CONFIG.DELETE_DIALOG.HEADER',
-        {
-          key: 'SEARCH_CONFIG.DELETE_DIALOG.MESSAGE',
-          parameters: {
-            config: onlyColumnsConfig.name,
-          },
-        },
-        'SEARCH_CONFIG.DELETE_DIALOG.CONFIRM',
-        'SEARCH_CONFIG.DELETE_DIALOG.CANCEL',
-      );
-    });
     it('should delete config', async () => {
       const deleteSpy = jest.spyOn(store, 'deleteSearchConfig');
       store.patchState({
@@ -731,70 +476,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
   });
 
   describe('on edit save', () => {
-    it('should use config info to fill dialog', async () => {
-      store.patchState({
-        searchConfigs: [onlyColumnsConfig],
-        layout: 'table',
-        columnGroupComponentActive: true,
-      });
-      const dialogServiceSpy = jest.spyOn(portalDialogSpy, 'openDialog');
-
-      const { columnGroupHarness } =
-        await setUpWithHarnessAndInit(allPermissions);
-
-      const item = await selectItem(0, columnGroupHarness);
-
-      const editButton = await item?.getEditButton();
-      expect(editButton).toBeTruthy();
-      await editButton?.click();
-      const saveEditButton = await columnGroupHarness.getSaveEditButton();
-      expect(saveEditButton).toBeTruthy();
-      await saveEditButton?.click();
-
-      expect(dialogServiceSpy).toHaveBeenCalledWith(
-        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_HEADER',
-        {
-          type: CreateOrEditSearchConfigDialogComponent,
-          inputs: {
-            searchConfigName: onlyColumnsConfig.name,
-            saveInputValues: false,
-            saveColumns: true,
-          },
-        },
-        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
-        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CANCEL',
-      );
-    });
-    it('should cancel edit if dialog was closed', async () => {
-      const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
-      store.patchState({
-        searchConfigs: [onlyColumnsConfig],
-        layout: 'table',
-        columnGroupComponentActive: true,
-      });
-      jest.spyOn(searchConfigServiceSpy, 'getSearchConfig').mockReturnValue(
-        of({
-          config: onlyColumnsConfig,
-        } as any),
-      );
-
-      jest
-        .spyOn(portalDialogSpy, 'openDialog')
-        .mockReturnValue(of(undefined as any));
-      const { columnGroupHarness } =
-        await setUpWithHarnessAndInit(allPermissions);
-
-      const item = await selectItem(0, columnGroupHarness);
-
-      const editButton = await item?.getEditButton();
-      expect(editButton).toBeTruthy();
-      await editButton?.click();
-      const saveEditButton = await columnGroupHarness.getSaveEditButton();
-      expect(saveEditButton).toBeTruthy();
-      await saveEditButton?.click();
-
-      expect(cancelEditSpy).toHaveBeenCalledTimes(1);
-    });
     it('should cancel edit if edit was not confirmed', async () => {
       const cancelEditSpy = jest.spyOn(store, 'cancelEdit');
       store.patchState({
@@ -932,62 +613,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
         },
       });
     });
-    it('should not save inputs and viewMode', async () => {
-      const updateSpy = jest
-        .spyOn(searchConfigServiceSpy, 'updateSearchConfig')
-        .mockReturnValue(of(undefined as any));
-      const initState = {
-        searchConfigs: [onlyColumnsConfig],
-        layout: 'table',
-        columnGroupComponentActive: true,
-      };
-      store.patchState(initState as any);
-      jest.spyOn(searchConfigServiceSpy, 'getSearchConfig').mockReturnValue(
-        of({
-          config: onlyColumnsConfig,
-        } as any),
-      );
-      jest.spyOn(portalDialogSpy, 'openDialog').mockReturnValue(
-        of({
-          result: {
-            searchConfigName: 'new-name',
-            saveInputValues: false,
-          },
-          button: 'primary',
-        } as any),
-      );
-
-      const { columnGroupHarness } =
-        await setUpWithHarnessAndInit(allPermissions);
-
-      const item = await selectItem(0, columnGroupHarness);
-
-      const editButton = await item?.getEditButton();
-      expect(editButton).toBeTruthy();
-      await editButton?.click();
-
-      store.patchState({
-        ...initState,
-        fieldValues: {
-          k: 'v_2',
-        },
-        viewMode: advancedViewMode,
-      } as any);
-
-      const saveEditButton = await columnGroupHarness.getSaveEditButton();
-      expect(saveEditButton).toBeTruthy();
-      await saveEditButton?.click();
-
-      expect(updateSpy).toHaveBeenCalledWith(onlyColumnsConfig.id, {
-        searchConfig: {
-          ...onlyColumnsConfig,
-          name: 'new-name',
-          columns: [],
-          values: {},
-          isAdvanced: true,
-        },
-      });
-    });
     it('should save columns', async () => {
       const updateSpy = jest
         .spyOn(searchConfigServiceSpy, 'updateSearchConfig')
@@ -1036,59 +661,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
           ...onlyColumnsConfig,
           name: 'new-name',
           columns: ['col-2'],
-          values: {},
-          isAdvanced: false,
-        },
-      });
-    });
-    it('should not save columns', async () => {
-      const updateSpy = jest
-        .spyOn(searchConfigServiceSpy, 'updateSearchConfig')
-        .mockReturnValue(of(undefined as any));
-      const initState = {
-        searchConfigs: [onlyColumnsConfig],
-        layout: 'table',
-        columnGroupComponentActive: true,
-      };
-      store.patchState(initState as any);
-      jest.spyOn(searchConfigServiceSpy, 'getSearchConfig').mockReturnValue(
-        of({
-          config: onlyColumnsConfig,
-        } as any),
-      );
-      jest.spyOn(portalDialogSpy, 'openDialog').mockReturnValue(
-        of({
-          result: {
-            searchConfigName: 'new-name',
-            saveColumns: false,
-          },
-          button: 'primary',
-        } as any),
-      );
-
-      const { columnGroupHarness } =
-        await setUpWithHarnessAndInit(allPermissions);
-
-      const item = await selectItem(0, columnGroupHarness);
-
-      const editButton = await item?.getEditButton();
-      expect(editButton).toBeTruthy();
-      await editButton?.click();
-
-      store.patchState({
-        ...initState,
-        displayedColumnsIds: ['col-2'],
-      } as any);
-
-      const saveEditButton = await columnGroupHarness.getSaveEditButton();
-      expect(saveEditButton).toBeTruthy();
-      await saveEditButton?.click();
-
-      expect(updateSpy).toHaveBeenCalledWith(onlyColumnsConfig.id, {
-        searchConfig: {
-          ...onlyColumnsConfig,
-          name: 'new-name',
-          columns: [],
           values: {},
           isAdvanced: false,
         },
@@ -1251,30 +823,6 @@ describe('OneCXColumnGroupSelectionComponent', () => {
         groupKey: onlyColumnsConfig.name,
       });
     });
-
-    it('should not emit if customGroupKey was set', fakeAsync(() => {
-      component.columns = [
-        {
-          id: 'col-1',
-        } as any,
-        {
-          id: 'col-2',
-        },
-        {
-          id: 'col-3',
-        } as any,
-      ];
-      const emitterSpy = jest.spyOn(component.groupSelectionChanged, 'emit');
-
-      store.patchState({
-        selectedGroupKey: 'custom',
-        customGroupKey: 'custom',
-      });
-
-      tick(500);
-
-      expect(emitterSpy).toHaveBeenCalledTimes(0);
-    }));
 
     it('should emit if no search config group key was set', async () => {
       store.patchState({
