@@ -1,5 +1,4 @@
 import { AsyncPipe, Location } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,11 +11,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import {
-  TranslateLoader,
-  TranslateModule,
-  TranslateService,
-} from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import {
   BehaviorSubject,
   OperatorFunction,
@@ -43,10 +38,8 @@ import {
   ColumnGroupData,
   DataTableColumn,
   PortalDialogService,
-  providePortalDialogService,
 } from '@onecx/angular-accelerator';
 import {
-  AppStateService,
   PortalMessageService,
   UserService,
 } from '@onecx/angular-integration-interface';
@@ -54,10 +47,8 @@ import {
   AngularRemoteComponentsModule,
   ocxRemoteComponent,
   ocxRemoteWebcomponent,
-  provideTranslateServiceForRoot,
 } from '@onecx/angular-remote-components';
 import {
-  createTranslateLoader,
   REMOTE_COMPONENT_CONFIG,
   RemoteComponentConfig,
 } from '@onecx/angular-utils';
@@ -74,19 +65,13 @@ import { environment } from 'src/environments/environment';
 import {
   ColumnSelectionViewModel,
   PageData,
-  SEARCH_CONFIG_STORE_NAME,
-  SEARCH_CONFIG_TOPIC,
   SearchConfigStore,
-  SearchConfigTopic,
 } from 'src/app/shared/search-config.store';
 import {
   CreateOrEditSearchConfigDialogComponent,
   CreateOrEditSearchDialogContent,
 } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
-import {
-  advancedViewMode,
-  columngGroupSelectionStoreName,
-} from 'src/app/shared/constants';
+import { advancedViewMode } from 'src/app/shared/constants';
 import {
   hasOnlyColumns,
   parseFieldValues,
@@ -109,27 +94,6 @@ import {
     TooltipModule,
     PopoverModule,
     FocusTrapModule,
-  ],
-  providers: [
-    PortalMessageService,
-    provideTranslateServiceForRoot({
-      isolate: true,
-      loader: {
-        provide: TranslateLoader,
-        useFactory: createTranslateLoader,
-        deps: [HttpClient, AppStateService],
-      },
-    }),
-    providePortalDialogService(),
-    {
-      provide: SEARCH_CONFIG_STORE_NAME,
-      useValue: columngGroupSelectionStoreName,
-    },
-    {
-      provide: SEARCH_CONFIG_TOPIC,
-      useValue: new SearchConfigTopic(),
-    },
-    SearchConfigStore,
   ],
 })
 export class OneCXColumnGroupSelectionComponent

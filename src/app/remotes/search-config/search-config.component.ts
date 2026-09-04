@@ -1,5 +1,4 @@
 import { AsyncPipe, Location } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import {
   Component,
   ElementRef,
@@ -10,11 +9,7 @@ import {
   ViewChild,
   ChangeDetectionStrategy,
 } from '@angular/core';
-import {
-  TranslateLoader,
-  TranslateModule,
-  TranslateService,
-} from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import {
   OperatorFunction,
   ReplaySubject,
@@ -39,7 +34,6 @@ import {
   AngularAcceleratorModule,
   SearchConfigData,
   PortalDialogService,
-  providePortalDialogService,
 } from '@onecx/angular-accelerator';
 import {
   AppStateService,
@@ -51,10 +45,8 @@ import {
   AngularRemoteComponentsModule,
   ocxRemoteComponent,
   ocxRemoteWebcomponent,
-  provideTranslateServiceForRoot,
 } from '@onecx/angular-remote-components';
 import {
-  createTranslateLoader,
   REMOTE_COMPONENT_CONFIG,
   RemoteComponentConfig,
 } from '@onecx/angular-utils';
@@ -69,10 +61,7 @@ import {
 } from 'src/app/shared/generated';
 import {
   PageData,
-  SEARCH_CONFIG_STORE_NAME,
-  SEARCH_CONFIG_TOPIC,
   SearchConfigStore,
-  SearchConfigTopic,
   SearchConfigViewModel,
   UnparsedFieldValues,
 } from 'src/app/shared/search-config.store';
@@ -85,7 +74,6 @@ import {
   advancedViewModeType,
   basicViewMode,
   basicViewModeType,
-  searchConfigStoreName,
 } from 'src/app/shared/constants';
 import {
   hasColumns,
@@ -108,27 +96,6 @@ import { environment } from 'src/environments/environment';
     PopoverModule,
     TooltipModule,
     FocusTrapModule,
-  ],
-  providers: [
-    PortalMessageService,
-    provideTranslateServiceForRoot({
-      isolate: true,
-      loader: {
-        provide: TranslateLoader,
-        useFactory: createTranslateLoader,
-        deps: [HttpClient],
-      },
-    }),
-    providePortalDialogService(),
-    {
-      provide: SEARCH_CONFIG_STORE_NAME,
-      useValue: searchConfigStoreName,
-    },
-    {
-      provide: SEARCH_CONFIG_TOPIC,
-      useValue: new SearchConfigTopic(),
-    },
-    SearchConfigStore,
   ],
 })
 export class OneCXSearchConfigComponent
