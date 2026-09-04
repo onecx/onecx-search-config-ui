@@ -9,30 +9,17 @@
         [pTooltip]="'SEARCH_CONFIG.CREATE_EDIT_TOOLTIP' | translate"
         tooltipPosition="top"
       />
-      <label for="searchConfigName">{{
-        'SEARCH_CONFIG.SEARCH_CRITERION_NAME' | translate
-      }}</label>
+      <label for="searchConfigName">{{ 'SEARCH_CONFIG.SEARCH_CRITERION_NAME' | translate }}</label>
     </p-floatlabel>
   </div>
 
   <div class="flex">
-    <p-checkbox
-      formControlName="saveInputValues"
-      [binary]="true"
-      inputId="saveInputValuesId"
-    >
-    </p-checkbox>
-    <label for="saveInputValuesId">{{
-      'SEARCH_CONFIG.SAVE_INPUT_FIELDS_OPTION' | translate
-    }}</label>
+    <p-checkbox formControlName="saveInputValues" [binary]="true" inputId="saveInputValuesId"> </p-checkbox>
+    <label for="saveInputValuesId">{{ 'SEARCH_CONFIG.SAVE_INPUT_FIELDS_OPTION' | translate }}</label>
   </div>
 
   <div class="flex">
-    <p-checkbox
-      [binary]="true"
-      formControlName="saveColumns"
-      inputId="saveColumnsId"
-    ></p-checkbox>
+    <p-checkbox [binary]="true" formControlName="saveColumns" inputId="saveColumnsId"></p-checkbox>
     <label for="saveColumnsId">
       <ng-container>
         {{ 'SEARCH_CONFIG.SAVE_COLUMNS_OPTION' | translate }}

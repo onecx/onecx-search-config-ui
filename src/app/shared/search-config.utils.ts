@@ -1,26 +1,26 @@
-import { isValidDate } from '@onecx/accelerator';
+import { isValidDate } from '@onecx/accelerator'
 
-import { SearchConfigInfo } from './generated';
-import { FieldValues, UnparsedFieldValues } from './search-config.store';
+import { SearchConfigInfo } from './generated'
+import { FieldValues, UnparsedFieldValues } from './search-config.store'
 
 export function hasValues(config: SearchConfigInfo): boolean {
-  return Object.keys(config.values).length > 0;
+  return Object.keys(config.values).length > 0
 }
 
 export function hasColumns(config: SearchConfigInfo): boolean {
-  return config.columns.length > 0;
+  return config.columns.length > 0
 }
 
 export function hasOnlyValues(config: SearchConfigInfo): boolean {
-  return !hasColumns(config) && hasValues(config);
+  return !hasColumns(config) && hasValues(config)
 }
 
 export function hasOnlyColumns(config: SearchConfigInfo): boolean {
-  return !hasValues(config) && hasColumns(config);
+  return !hasValues(config) && hasColumns(config)
 }
 
 export function areValuesEqual(v1: FieldValues, v2: FieldValues): boolean {
-  return JSON.stringify(v1) === JSON.stringify(v2);
+  return JSON.stringify(v1) === JSON.stringify(v2)
 }
 
 export function parseFieldValues(values: UnparsedFieldValues): FieldValues {
@@ -29,12 +29,12 @@ export function parseFieldValues(values: UnparsedFieldValues): FieldValues {
     .reduce(
       (acc: { [key: string]: string }, [key, value]) => ({
         ...acc,
-        [key]: isValidDate(value) ? value.toISOString() : String(value),
+        [key]: isValidDate(value) ? value.toISOString() : String(value)
       }),
-      {},
-    );
+      {}
+    )
 }
 
 export function areColumnsEqual(c1: Array<string>, c2: Array<string>): boolean {
-  return c1.length === c2.length && c1.every((col) => c2.includes(col));
+  return c1.length === c2.length && c1.every((col) => c2.includes(col))
 }

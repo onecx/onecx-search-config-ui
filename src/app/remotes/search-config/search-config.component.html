@@ -47,18 +47,10 @@
         ></p-button>
       }
       <p-popover (onHide)="focusManageButton()" #op>
-        <div
-          id="sc_search_config_panel_content"
-          pFocusTrap
-          class="flex flex-column"
-        >
-          <div
-            class="flex flex-row align-items-center justify-content-between gap-2"
-          >
+        <div id="sc_search_config_panel_content" pFocusTrap class="flex flex-column">
+          <div class="flex flex-row align-items-center justify-content-between gap-2">
             <div>
-              <span class="font-bold text-xl block">{{
-                'SEARCH_CONFIG.SEARCH_CONFIG_LIST' | translate
-              }}</span>
+              <span class="font-bold text-xl block">{{ 'SEARCH_CONFIG.SEARCH_CONFIG_LIST' | translate }}</span>
             </div>
             <div>
               <p-button
@@ -86,10 +78,7 @@
                   @if (!config.isReadonly) {
                     <ng-container>
                       <p-button
-                        *ocxIfPermission="
-                          'SEARCHCONFIG#EDIT';
-                          permissions: permissions
-                        "
+                        *ocxIfPermission="'SEARCHCONFIG#EDIT'; permissions: permissions"
                         class="search_config_edit_button"
                         pButton
                         type="button"
@@ -99,15 +88,10 @@
                         (click)="onSearchConfigEdit(config)"
                         (keydown.enter)="onSearchConfigEdit(config)"
                         autofocus="true"
-                        [ariaLabel]="
-                          'SEARCH_CONFIG.EDIT.ARIA_LABEL' | translate
-                        "
+                        [ariaLabel]="'SEARCH_CONFIG.EDIT.ARIA_LABEL' | translate"
                       ></p-button>
                       <p-button
-                        *ocxIfPermission="
-                          'SEARCHCONFIG#DELETE';
-                          permissions: permissions
-                        "
+                        *ocxIfPermission="'SEARCHCONFIG#DELETE'; permissions: permissions"
                         class="search_config_delete_button"
                         icon="{{ deleteIcon }}"
                         pButton
@@ -117,9 +101,7 @@
                         (click)="onSearchConfigDelete(config)"
                         (keydown.enter)="onSearchConfigDelete(config)"
                         autofocus="true"
-                        [ariaLabel]="
-                          'SEARCH_CONFIG.DELETE.ARIA_LABEL' | translate
-                        "
+                        [ariaLabel]="'SEARCH_CONFIG.DELETE.ARIA_LABEL' | translate"
                       ></p-button>
                     </ng-container>
                   }

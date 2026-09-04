@@ -4,30 +4,30 @@
  */
 const logFn = function (req, res) {
   //   console.log(new Date().toISOString() + `: bypassing ${req.method} ${req.url} `)
-};
+}
 
 const onProxyRes = function (proxyRes, req, res) {
-  logFn(req, res);
+  logFn(req, res)
   if (req.method.toUpperCase() === 'OPTIONS') {
-    res.setHeader('Allow', 'GET, POST, HEAD, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', '*');
-    res.setHeader('Access-Control-Allow-Headers', '*');
-    return res.send('');
+    res.setHeader('Allow', 'GET, POST, HEAD, PUT, DELETE, OPTIONS')
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.setHeader('Access-Control-Allow-Methods', '*')
+    res.setHeader('Access-Control-Allow-Headers', '*')
+    return res.send('')
   }
-};
+}
 
 const PROXY_CONFIG = {
   '/bff': {
     target: 'http://onecx-search-config-bff',
     secure: false,
     pathRewrite: {
-      '^.*/bff': '',
+      '^.*/bff': ''
     },
     changeOrigin: true,
     logLevel: 'debug',
-    onProxyRes: onProxyRes,
-  },
-};
+    onProxyRes: onProxyRes
+  }
+}
 
-module.exports = PROXY_CONFIG;
+module.exports = PROXY_CONFIG
