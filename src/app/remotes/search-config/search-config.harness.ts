@@ -52,8 +52,6 @@ export class OneCXSearchConfigHarness extends ContentContainerComponentHarness {
   async open() {
     if (!(await this.isOpen())) {
       await (await this.getManageButton())?.click()
-    } else {
-      console.warn('Unable to open overlay, because it is already open.')
     }
   }
 
