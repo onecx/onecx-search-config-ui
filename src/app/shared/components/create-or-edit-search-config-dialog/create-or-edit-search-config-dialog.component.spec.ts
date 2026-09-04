@@ -204,4 +204,32 @@ describe('CreateOrEditSearchConfigDialogComponent', () => {
     await finished
     expect(enabled).toEqual(true)
   })
+
+  it('should return undefined when second label does not exist', async () => {
+    const harness = {
+      locatorForAll: jest.fn().mockReturnValue(async () => []),
+      getSaveColumnsLabel: CreateOrEditSearchConfigDialogHarness.prototype.getSaveColumnsLabel
+    }
+
+    const label = await harness.getSaveColumnsLabel()
+
+    expect(label).toBeUndefined()
+  })
+
+  it('should handle undefined searchConfigFormGroup in ocxDialogButtonClicked', () => {
+    component.searchConfigFormGroup = undefined as any
+
+    const state: DialogState<CreateOrEditSearchConfigDialogComponent> = {
+      button: 'primary',
+      result: undefined
+    }
+
+    component.ocxDialogButtonClicked(state)
+
+    expect(component.dialogResult).toEqual({
+      searchConfigName: undefined,
+      saveInputValues: undefined,
+      saveColumns: undefined
+    })
+  })
 })
