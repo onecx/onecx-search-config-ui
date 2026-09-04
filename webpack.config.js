@@ -54,12 +54,12 @@ const modifyPrimeNgPlugin = new ModifySourcePlugin({
   rules: [
     {
       test: (module) => {
-        return module.resource && module.resource.includes('primeng')
+        return module.resource?.includes('primeng')
       },
       operations: [
         new ReplaceOperation(
           'all',
-          'document\\.createElement\\(([^)]+)\\)',
+          String.raw`document\.createElement\(([^)]+)\)`,
           'document.createElementFromPrimeNg({"this": this, "arguments": Array.from(arguments), element: $1})'
         ),
         new ReplaceOperation('all', 'Theme.setLoadedStyleName', '(function(_){})')

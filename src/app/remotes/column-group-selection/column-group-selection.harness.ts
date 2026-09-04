@@ -3,7 +3,7 @@ import { ComponentHarness, ContentContainerComponentHarness } from '@angular/cdk
 import { PButtonHarness } from '@onecx/angular-testing'
 
 export class OneCXColumnGroupSelectionListItemHarness extends ComponentHarness {
-  public static hostSelector = 'li'
+  public static readonly hostSelector = 'li'
 
   getSpan = this.locatorFor('span')
   getEditButton = this.locatorForOptional('p-button.search_config_edit_button')
