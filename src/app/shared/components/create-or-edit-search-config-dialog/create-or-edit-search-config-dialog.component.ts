@@ -1,37 +1,20 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  EventEmitter,
-  Input,
-  OnInit,
-  Output,
-} from '@angular/core';
-import {
-  FormControl,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-} from '@angular/forms';
-import { TranslateModule } from '@ngx-translate/core';
-import { Observable, map, startWith } from 'rxjs';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnInit, Output } from '@angular/core'
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms'
+import { TranslateModule } from '@ngx-translate/core'
+import { Observable, map, startWith } from 'rxjs'
 
-import { CheckboxModule } from 'primeng/checkbox';
-import { FloatLabelModule } from 'primeng/floatlabel';
-import { InputTextModule } from 'primeng/inputtext';
-import { TooltipModule } from 'primeng/tooltip';
+import { CheckboxModule } from 'primeng/checkbox'
+import { FloatLabelModule } from 'primeng/floatlabel'
+import { InputTextModule } from 'primeng/inputtext'
+import { TooltipModule } from 'primeng/tooltip'
 
-import {
-  DialogButtonClicked,
-  DialogPrimaryButtonDisabled,
-  DialogResult,
-  DialogState,
-} from '@onecx/angular-accelerator';
+import { DialogButtonClicked, DialogPrimaryButtonDisabled, DialogResult, DialogState } from '@onecx/angular-accelerator'
 
 export type CreateOrEditSearchDialogContent = {
-  searchConfigName: string;
-  saveInputValues: boolean;
-  saveColumns: boolean;
-};
+  searchConfigName: string
+  saveInputValues: boolean
+  saveColumns: boolean
+}
 @Component({
   selector: 'app-ocx-create-or-edit-search-config-dialog',
   templateUrl: './create-or-edit-search-config-dialog.component.html',
@@ -45,8 +28,8 @@ export type CreateOrEditSearchDialogContent = {
     CheckboxModule,
     InputTextModule,
     FloatLabelModule,
-    TooltipModule,
-  ],
+    TooltipModule
+  ]
 })
 export class CreateOrEditSearchConfigDialogComponent
   implements
@@ -57,55 +40,55 @@ export class CreateOrEditSearchConfigDialogComponent
 {
   @Input()
   set searchConfigName(value: string | undefined) {
-    this.searchConfigFormGroup.controls['searchConfigName'].setValue(value);
+    this.searchConfigFormGroup.controls['searchConfigName'].setValue(value)
   }
 
   @Input()
   set saveInputValues(value: boolean | undefined) {
-    this.searchConfigFormGroup.controls['saveInputValues'].setValue(value);
+    this.searchConfigFormGroup.controls['saveInputValues'].setValue(value)
   }
 
   @Input()
   set saveColumns(value: boolean | undefined) {
-    this.searchConfigFormGroup.controls['saveColumns'].setValue(value);
+    this.searchConfigFormGroup.controls['saveColumns'].setValue(value)
   }
 
-  _frozeColumnSaveOption = false;
+  _frozeColumnSaveOption = false
   @Input()
   set frozeColumnSaveOption(value: boolean | undefined) {
-    this._frozeColumnSaveOption = value ?? false;
+    this._frozeColumnSaveOption = value ?? false
     if (value) {
-      this.searchConfigFormGroup.controls['saveColumns'].disable();
+      this.searchConfigFormGroup.controls['saveColumns'].disable()
     } else {
-      this.searchConfigFormGroup.controls['saveColumns'].enable();
+      this.searchConfigFormGroup.controls['saveColumns'].enable()
     }
   }
   get frozeColumnSaveOption(): boolean {
-    return this._frozeColumnSaveOption;
+    return this._frozeColumnSaveOption
   }
 
-  _frozeColumnSaveOptionExplanation = '';
+  _frozeColumnSaveOptionExplanation = ''
   @Input()
   set frozeColumnSaveOptionExplanation(value: string | undefined) {
-    this._frozeColumnSaveOptionExplanation = value ?? '';
+    this._frozeColumnSaveOptionExplanation = value ?? ''
   }
   get frozeColumnSaveOptionExplanation(): string {
-    return this._frozeColumnSaveOptionExplanation;
+    return this._frozeColumnSaveOptionExplanation
   }
 
-  @Output() primaryButtonEnabled: EventEmitter<boolean> = new EventEmitter();
+  @Output() primaryButtonEnabled: EventEmitter<boolean> = new EventEmitter()
 
   searchConfigFormGroup: FormGroup = new FormGroup({
     searchConfigName: new FormControl<string>(''),
     saveInputValues: new FormControl<boolean>(false),
-    saveColumns: new FormControl<boolean>(false),
-  });
-  placeHolderKey = 'SEARCH_CONFIG.CREATE_EDIT_PLACEHOLDER';
+    saveColumns: new FormControl<boolean>(false)
+  })
+  placeHolderKey = 'SEARCH_CONFIG.CREATE_EDIT_PLACEHOLDER'
   dialogResult: CreateOrEditSearchDialogContent = {
     searchConfigName: '',
     saveInputValues: false,
-    saveColumns: false,
-  };
+    saveColumns: false
+  }
 
   ngOnInit(): void {
     this.searchConfigFormGroup.valueChanges
@@ -113,23 +96,20 @@ export class CreateOrEditSearchConfigDialogComponent
         startWith(this.searchConfigFormGroup.value),
         map(
           (dialogFormValues: CreateOrEditSearchDialogContent) =>
-            !!dialogFormValues.searchConfigName &&
-            (dialogFormValues.saveInputValues || dialogFormValues.saveColumns),
-        ),
+            !!dialogFormValues.searchConfigName && (dialogFormValues.saveInputValues || dialogFormValues.saveColumns)
+        )
       )
-      .subscribe(this.primaryButtonEnabled);
+      .subscribe(this.primaryButtonEnabled)
   }
 
   ocxDialogButtonClicked(
-    _state: DialogState<CreateOrEditSearchConfigDialogComponent>,
+    _state: DialogState<CreateOrEditSearchConfigDialogComponent>
   ): boolean | Observable<boolean> | Promise<boolean> | undefined {
     this.dialogResult = {
-      searchConfigName:
-        this.searchConfigFormGroup?.get('searchConfigName')?.value,
-      saveInputValues:
-        this.searchConfigFormGroup?.get('saveInputValues')?.value,
-      saveColumns: this.searchConfigFormGroup?.get('saveColumns')?.value,
-    };
-    return true;
+      searchConfigName: this.searchConfigFormGroup?.get('searchConfigName')?.value,
+      saveInputValues: this.searchConfigFormGroup?.get('saveInputValues')?.value,
+      saveColumns: this.searchConfigFormGroup?.get('saveColumns')?.value
+    }
+    return true
   }
 }

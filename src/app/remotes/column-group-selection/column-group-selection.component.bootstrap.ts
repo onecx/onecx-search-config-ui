@@ -1,40 +1,29 @@
-import {
-  HttpClient,
-  provideHttpClient,
-  withInterceptorsFromDi,
-} from '@angular/common/http';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import {
-  importProvidersFrom,
-  inject,
-  provideAppInitializer,
-} from '@angular/core';
-import { TranslateLoader } from '@ngx-translate/core';
-import { ReplaySubject } from 'rxjs';
+import { HttpClient, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations'
+import { importProvidersFrom, inject, provideAppInitializer } from '@angular/core'
+import { TranslateLoader } from '@ngx-translate/core'
+import { ReplaySubject } from 'rxjs'
 
-import {
-  AngularAcceleratorModule,
-  providePortalDialogService,
-} from '@onecx/angular-accelerator';
-import { AngularAuthModule } from '@onecx/angular-auth';
-import { UserService } from '@onecx/angular-integration-interface';
-import { provideTranslateServiceForRoot } from '@onecx/angular-remote-components';
-import { bootstrapRemoteComponent } from '@onecx/angular-webcomponents';
+import { AngularAcceleratorModule, providePortalDialogService } from '@onecx/angular-accelerator'
+import { AngularAuthModule } from '@onecx/angular-auth'
+import { UserService } from '@onecx/angular-integration-interface'
+import { provideTranslateServiceForRoot } from '@onecx/angular-remote-components'
+import { bootstrapRemoteComponent } from '@onecx/angular-webcomponents'
 import {
   createTranslateLoader,
   provideThemeConfig,
   provideTranslationPathFromMeta,
   REMOTE_COMPONENT_CONFIG,
-  RemoteComponentConfig,
-} from '@onecx/angular-utils';
+  RemoteComponentConfig
+} from '@onecx/angular-utils'
 
-import { environment } from 'src/environments/environment';
-import { OneCXColumnGroupSelectionComponent } from './column-group-selection.component';
+import { environment } from 'src/environments/environment'
+import { OneCXColumnGroupSelectionComponent } from './column-group-selection.component'
 
 function userProfileInitializer(userService: UserService) {
   return async () => {
-    await userService.isInitialized;
-  };
+    await userService.isInitialized
+  }
 }
 
 bootstrapRemoteComponent(
@@ -45,17 +34,13 @@ bootstrapRemoteComponent(
     provideHttpClient(withInterceptorsFromDi()),
     {
       provide: REMOTE_COMPONENT_CONFIG,
-      useValue: new ReplaySubject<RemoteComponentConfig>(1),
+      useValue: new ReplaySubject<RemoteComponentConfig>(1)
     },
-    importProvidersFrom(
-      AngularAcceleratorModule,
-      AngularAuthModule,
-      BrowserAnimationsModule,
-    ),
+    importProvidersFrom(AngularAcceleratorModule, AngularAuthModule, BrowserAnimationsModule),
     providePortalDialogService(),
     provideAppInitializer(() => {
-      const initializerFn = userProfileInitializer(inject(UserService));
-      return initializerFn();
+      const initializerFn = userProfileInitializer(inject(UserService))
+      return initializerFn()
     }),
     provideTranslationPathFromMeta(import.meta.url, 'assets/i18n/'),
     provideTranslateServiceForRoot({
@@ -63,9 +48,9 @@ bootstrapRemoteComponent(
       loader: {
         provide: TranslateLoader,
         useFactory: createTranslateLoader,
-        deps: [HttpClient],
-      },
+        deps: [HttpClient]
+      }
     }),
-    provideThemeConfig(),
-  ],
-);
+    provideThemeConfig()
+  ]
+)

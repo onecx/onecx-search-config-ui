@@ -1,43 +1,40 @@
 {
   "root": true,
-  "plugins": ["@nx", "deprecation"],
+  "ignorePatterns": [
+    ".angular/**",
+    ".husky/**",
+    ".github/**",
+    ".scannerwork/**",
+    "reports/**",
+    "dist/**",
+    "helm/**",
+    "node_modules/**",
+    "src/app/shared/generated/**",
+    "src/assets/api/*",
+    "src/**/*.ico",
+    "src/**/*.svg"
+  ],
   "overrides": [
     {
-      "files": ["*.ts"],
-      "extends": ["plugin:deprecation/recommended"],
+      "files": ["*.ts", "*.js"],
+      "env": { "es6": true },
+      "globals": { "__dirname": true },
       "parserOptions": {
-        "project": ["./tsconfig.*?.json"]
+        "ecmaVersion": "latest",
+        "project": "**/tsconfig.json",
+        "tsconfigRootDir": "",
+        "createDefaultProgram": true,
+        "EXPERIMENTAL_useProjectService": true
       },
-      "rules": {
-        "deprecation/deprecation": "warn"
-      }
-    },
-    {
-      "files": ["*.ts", "*.tsx"],
-      "extends": ["plugin:@nx/typescript"],
-      "rules": {}
-    },
-    {
-      "files": ["*.js", "*.jsx"],
-      "extends": ["plugin:@nx/javascript"],
-      "rules": {}
-    },
-    {
-      "files": ["*.ts"],
       "extends": [
-        "plugin:@nx/angular",
-        "plugin:@angular-eslint/template/process-inline-templates"
+        "plugin:@angular-eslint/recommended",
+        "plugin:@angular-eslint/template/process-inline-templates",
+        "plugin:prettier/recommended",
+        "plugin:deprecation/recommended",
+        "plugin:@typescript-eslint/recommended"
       ],
       "rules": {
-        "no-unused-vars": "off",
-        "@typescript-eslint/no-unused-vars": [
-          "error",
-          {
-            "vars": "all",
-            "args": "none"
-          }
-        ],
-        "@typescript-eslint/no-explicit-any": "off",
+        "semi": ["error", "never"],
         "@angular-eslint/directive-selector": [
           "error",
           {
@@ -47,19 +44,43 @@
           }
         ],
         "@angular-eslint/component-selector": [
-          "error",
+          "warn",
           {
             "type": "element",
             "prefix": "app",
             "style": "kebab-case"
           }
-        ]
+        ],
+        "deprecation/deprecation": "warn",
+        "prettier/prettier": ["error", { "singleQuote": true }],
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-unused-vars": ["error", { "vars": "all", "args": "none" }],
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/ban-types": [
+          "error",
+          {
+            "extendDefaults": true,
+            "types": {
+              "{}": false
+            }
+          }
+        ],
+        "@typescript-eslint/no-var-requires": 0
       }
     },
     {
       "files": ["*.html"],
-      "extends": ["plugin:@nx/angular-template"],
-      "rules": {}
+      "excludedFiles": ["*inline-template-*.component.html"],
+      "extends": ["plugin:@angular-eslint/template/recommended", "plugin:prettier/recommended"],
+      "rules": {
+        "prettier/prettier": [
+          "error",
+          {
+            "singleQuote": true,
+            "parser": "angular"
+          }
+        ]
+      }
     }
   ]
 }
