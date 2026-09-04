@@ -1,6 +1,4 @@
-import { AsyncPipe } from '@angular/common';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { NgModule } from '@angular/core';
 import {
   ComponentFixture,
   TestBed,
@@ -12,12 +10,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { TranslateTestingModule } from 'ngx-translate-testing';
 import { ReplaySubject, of, throwError } from 'rxjs';
-
-import { ButtonModule } from 'primeng/button';
 import { DialogService } from 'primeng/dynamicdialog';
-import { TooltipModule } from 'primeng/tooltip';
-import { PopoverModule } from 'primeng/popover';
-import { FocusTrapModule } from 'primeng/focustrap';
 
 import {
   REMOTE_COMPONENT_CONFIG,
@@ -26,7 +19,6 @@ import {
 import { FakeTopic } from '@onecx/angular-integration-interface/mocks';
 import { PortalDialogService } from '@onecx/angular-accelerator';
 import { PortalMessageService } from '@onecx/angular-integration-interface';
-import { IfPermissionDirective } from '@onecx/angular-accelerator';
 
 import {
   SEARCH_CONFIG_STORE_NAME,
@@ -39,16 +31,8 @@ import {
   Configuration,
   SearchConfigAPIService,
 } from 'src/app/shared/generated';
-import { CreateOrEditSearchConfigDialogComponent } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component';
 import { OneCXColumnGroupSelectionHarness } from './column-group-selection.harness';
 import { OneCXColumnGroupSelectionComponent } from './column-group-selection.component';
-
-@NgModule({
-  imports: [],
-  declarations: [IfPermissionDirective],
-  exports: [IfPermissionDirective],
-})
-class PortalDependencyModule {}
 
 const createSpyObj = (
   baseName: string,
@@ -163,19 +147,12 @@ describe('OneCXColumnGroupSelectionComponent', () => {
     TestBed.configureTestingModule({
       declarations: [],
       imports: [
+        OneCXColumnGroupSelectionComponent,
+        NoopAnimationsModule,
         TranslateTestingModule.withTranslations({
           en: require('./src/assets/i18n/en.json'),
           de: require('./src/assets/i18n/de.json'),
         }).withDefaultLanguage('en'),
-        NoopAnimationsModule,
-        AsyncPipe,
-        PortalDependencyModule,
-        TooltipModule,
-        CreateOrEditSearchConfigDialogComponent,
-        ButtonModule,
-        PopoverModule,
-        FocusTrapModule,
-        OneCXColumnGroupSelectionComponent,
       ],
       providers: [
         DialogService,

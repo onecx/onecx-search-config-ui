@@ -1,6 +1,4 @@
-import { AsyncPipe } from '@angular/common';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { NgModule } from '@angular/core';
 import {
   ComponentFixture,
   TestBed,
@@ -12,16 +10,10 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { TranslateTestingModule } from 'ngx-translate-testing';
 import { ReplaySubject, of, throwError } from 'rxjs';
-
 import { DialogService } from 'primeng/dynamicdialog';
-import { ButtonModule } from 'primeng/button';
-import { TooltipModule } from 'primeng/tooltip';
-import { PopoverModule } from 'primeng/popover';
-import { FocusTrapModule } from 'primeng/focustrap';
 
 import { PortalDialogService } from '@onecx/angular-accelerator';
 import { PortalMessageService } from '@onecx/angular-integration-interface';
-import { IfPermissionDirective } from '@onecx/angular-accelerator';
 import { AppStateService } from '@onecx/angular-integration-interface';
 import { FakeTopic } from '@onecx/angular-integration-interface/mocks';
 import {
@@ -43,13 +35,6 @@ import {
 import { advancedViewMode, basicViewMode } from 'src/app/shared/constants';
 import { OneCXSearchConfigComponent } from './search-config.component';
 import { OneCXSearchConfigHarness } from './search-config.harness';
-
-@NgModule({
-  imports: [],
-  declarations: [IfPermissionDirective],
-  exports: [IfPermissionDirective],
-})
-class PortalDependencyModule {}
 
 const createSpyObj = (
   baseName: string,
@@ -162,19 +147,12 @@ describe('OneCXSearchConfigComponent', () => {
     TestBed.configureTestingModule({
       declarations: [],
       imports: [
+        OneCXSearchConfigComponent,
+        NoopAnimationsModule,
         TranslateTestingModule.withTranslations({
           en: require('./src/assets/i18n/en.json'),
           de: require('./src/assets/i18n/de.json'),
         }).withDefaultLanguage('en'),
-        NoopAnimationsModule,
-        AsyncPipe,
-        PortalDependencyModule,
-        TooltipModule,
-        CreateOrEditSearchConfigDialogComponent,
-        ButtonModule,
-        PopoverModule,
-        FocusTrapModule,
-        OneCXSearchConfigComponent,
       ],
       providers: [
         provideHttpClient(),
