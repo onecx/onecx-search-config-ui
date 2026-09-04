@@ -360,12 +360,7 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
 
     stateToUpdate = {
       ...stateToUpdate,
-      displayedSearchData: {
-        fieldValues: stateToUpdate.dataToRevert?.fieldValues ?? state.displayedSearchData?.fieldValues ?? {},
-        displayedColumnsIds:
-          stateToUpdate.dataToRevert?.displayedColumnsIds ?? state.displayedSearchData?.displayedColumnsIds ?? [],
-        viewMode: stateToUpdate.dataToRevert?.viewMode ?? state.displayedSearchData?.viewMode ?? basicViewMode
-      }
+      displayedSearchData: this.buildDisplayedSearchData(stateToUpdate.dataToRevert, state.displayedSearchData)
     }
 
     this.sendUpdateMessage(stateToUpdate, state)
@@ -696,6 +691,23 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
         wholeState: wholeState
       }
     })
+  }
+
+  private buildDisplayedSearchData(
+    dataToRevert: PageData | undefined,
+    displayedSearchData: SearchData | undefined
+  ): SearchData {
+    const fallbackDisplayedSearchData = displayedSearchData ?? {
+      fieldValues: {},
+      displayedColumnsIds: [],
+      viewMode: basicViewMode
+    }
+
+    return {
+      fieldValues: dataToRevert?.fieldValues ?? fallbackDisplayedSearchData.fieldValues ?? {},
+      displayedColumnsIds: dataToRevert?.displayedColumnsIds ?? fallbackDisplayedSearchData.displayedColumnsIds ?? [],
+      viewMode: dataToRevert?.viewMode ?? fallbackDisplayedSearchData.viewMode ?? basicViewMode
+    }
   }
 
   private isCurrentConfigOutdated(

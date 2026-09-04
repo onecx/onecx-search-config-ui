@@ -12,6 +12,7 @@ import {
 } from './search-config.store'
 import { SearchConfigInfo } from './generated'
 import { advancedViewMode, basicViewMode, columngGroupSelectionStoreName, searchConfigStoreName } from './constants'
+import { parseFieldValues } from './search-config.utils'
 
 describe('SearchConfigStore', () => {
   let store: SearchConfigStore
@@ -335,6 +336,31 @@ describe('SearchConfigStore', () => {
       })
     })
 
+    it('should set advancedViewMode when reverting values and columns config marked as advanced', (done) => {
+      store.patchState({
+        ...initialState,
+        preEditStateSnapshot: {
+          ...initialState,
+          currentSearchConfig: {
+            ...testConfigValuesAndColumns,
+            isAdvanced: true
+          },
+          fieldValues: { a: '1' },
+          displayedColumnsIds: ['old'],
+          viewMode: basicViewMode,
+          selectedGroupKey: testConfigValuesAndColumns.name
+        },
+        columnGroupComponentActive: true
+      })
+
+      store.revertData()
+
+      store.state$.pipe(take(1)).subscribe((state) => {
+        expect(state.dataToRevert?.viewMode).toBe(advancedViewMode)
+        done()
+      })
+    })
+
     it('should update currentConfig$ when other config was chosen before edit', (done) => {
       const state = {
         preEditStateSnapshot: {
@@ -474,6 +500,258 @@ describe('SearchConfigStore', () => {
         done()
       })
     })
+
+    it('should cover final branch paths in revertData, state sync and message fallback', (done) => {
+      expect((store as any).buildDisplayedSearchData(undefined, undefined)).toEqual({
+        fieldValues: {},
+        displayedColumnsIds: [],
+        viewMode: basicViewMode
+      })
+
+      expect(
+        (store as any).buildDisplayedSearchData(
+          {
+            fieldValues: { x: '1' },
+            displayedColumnsIds: ['from-revert'],
+            viewMode: advancedViewMode,
+            columnGroupKey: 'group'
+          },
+          { fieldValues: { y: '2' }, displayedColumnsIds: ['from-state'], viewMode: basicViewMode }
+        )
+      ).toEqual({
+        fieldValues: { x: '1' },
+        displayedColumnsIds: ['from-revert'],
+        viewMode: advancedViewMode
+      })
+
+      expect(
+        (store as any).buildDisplayedSearchData(
+          {
+            fieldValues: undefined,
+            displayedColumnsIds: undefined,
+            viewMode: undefined,
+            columnGroupKey: 'group'
+          },
+          { fieldValues: { y: '2' }, displayedColumnsIds: ['from-state'], viewMode: advancedViewMode }
+        )
+      ).toEqual({
+        fieldValues: { y: '2' },
+        displayedColumnsIds: ['from-state'],
+        viewMode: advancedViewMode
+      })
+
+      store.patchState({
+        ...initialState,
+        fieldValues: testConfigOnlyValues.values,
+        currentSearchConfig: testConfigOnlyValues,
+        selectedGroupKey: testConfigOnlyValues.name,
+        columnGroupComponentActive: true
+      })
+      store.updateFieldValues(testConfigOnlyValues.values)
+      store.state$.pipe(take(1)).subscribe((state) => {
+        expect(state.fieldValues).toEqual(testConfigOnlyValues.values)
+
+        expect(
+          (store as any).isCurrentConfigOutdated(
+            {
+              ...initialState,
+              currentSearchConfig: { ...testConfigValuesAndColumns, isAdvanced: true },
+              columnGroupComponentActive: true,
+              editMode: false
+            },
+            { viewMode: advancedViewMode }
+          )
+        ).toBe(false)
+
+        expect(
+          (store as any).isCurrentConfigOutdated(
+            {
+              ...initialState,
+              currentSearchConfig: { ...testConfigValuesAndColumns, isAdvanced: true },
+              columnGroupComponentActive: true,
+              editMode: false
+            },
+            { viewMode: basicViewMode }
+          )
+        ).toBe(true)
+
+        store.patchState({
+          ...initialState,
+          preEditStateSnapshot: {
+            ...initialState,
+            currentSearchConfig: { ...testConfigValuesAndColumns, isAdvanced: false },
+            fieldValues: { a: '1' },
+            displayedColumnsIds: ['old'],
+            viewMode: basicViewMode,
+            selectedGroupKey: testConfigValuesAndColumns.name
+          },
+          columnGroupComponentActive: true,
+          displayedSearchData: {
+            fieldValues: testConfigOnlyValues.values,
+            displayedColumnsIds: ['old'],
+            viewMode: basicViewMode
+          }
+        })
+
+        store.revertData()
+        store.state$.pipe(take(1)).subscribe((stateAfterRevert) => {
+          expect(stateAfterRevert.dataToRevert?.displayedColumnsIds).toEqual(testConfigValuesAndColumns.columns)
+
+          mockSearchConfigStoreTopic.publish({
+            payload: {
+              storeName: columngGroupSelectionStoreName,
+              stateToUpdate: {
+                selectedGroupKey: '',
+                customGroupKey: 'custom',
+                nonSearchConfigGroupKeys: [],
+                displayedColumnsIds: ['col-1'],
+                layout: 'table',
+                displayedSearchData: undefined
+              },
+              wholeState: true
+            }
+          })
+
+          store.state$.pipe(take(1)).subscribe((stateAfterSync) => {
+            expect(stateAfterSync.displayedSearchData).toEqual({
+              fieldValues: testConfigOnlyValues.values,
+              viewMode: basicViewMode,
+              displayedColumnsIds: []
+            })
+            expect(stateAfterSync.selectedGroupKey).toBe('')
+
+            mockSearchConfigStoreTopic.publish({
+              payload: {
+                storeName: searchConfigStoreName,
+                stateToUpdate: {
+                  selectedGroupKey: '',
+                  pageName: 'page',
+                  fieldValues: { d: '4' },
+                  viewMode: advancedViewMode,
+                  searchConfigs: [testConfigOnlyValues],
+                  currentSearchConfig: testConfigOnlyValues,
+                  displayedSearchData: undefined
+                },
+                wholeState: true
+              }
+            })
+
+            store.state$.pipe(take(1)).subscribe((state3) => {
+              expect(state3.selectedGroupKey).toBe('')
+              expect(state3.currentSearchConfig).toBe(testConfigOnlyValues)
+
+              mockSearchConfigStoreTopic.publish({
+                payload: {
+                  storeName: 'other-store',
+                  stateToUpdate: {
+                    selectedGroupKey: '',
+                    currentSearchConfig: testConfigOnlyValues
+                  },
+                  wholeState: false
+                }
+              })
+
+              store.state$.pipe(take(1)).subscribe((state4) => {
+                expect(state4.selectedGroupKey).toBe('')
+                expect(state4.currentSearchConfig).toBe(testConfigOnlyValues)
+                done()
+              })
+            })
+          })
+        })
+      })
+    })
+
+    it('should cover remaining nullish and ternary branches in revertData, buildDisplayedSearchData and updateFieldValues', (done) => {
+      expect(
+        (store as any).buildDisplayedSearchData(undefined, {
+          fieldValues: undefined,
+          displayedColumnsIds: undefined,
+          viewMode: undefined
+        })
+      ).toEqual({
+        fieldValues: {},
+        displayedColumnsIds: [],
+        viewMode: basicViewMode
+      })
+
+      store.patchState({
+        ...initialState,
+        fieldValues: undefined,
+        currentSearchConfig: testConfigOnlyValues,
+        selectedGroupKey: testConfigOnlyValues.name
+      })
+      store.updateFieldValues(undefined as any)
+      store.state$.pipe(take(1)).subscribe((state1) => {
+        expect(state1.fieldValues).toBeUndefined()
+
+        store.patchState({
+          ...initialState,
+          fieldValues: { key_1: 'old' },
+          currentSearchConfig: testConfigOnlyValues,
+          selectedGroupKey: testConfigOnlyValues.name
+        })
+        store.updateFieldValues({ key_1: 'new' })
+        store.state$.pipe(take(1)).subscribe((state2) => {
+          expect(state2.currentSearchConfig).toBeUndefined()
+
+          store.patchState({
+            ...initialState,
+            preEditStateSnapshot: {
+              ...initialState,
+              currentSearchConfig: { ...testConfigOnlyValues, isAdvanced: true },
+              fieldValues: { a: '1' },
+              displayedColumnsIds: ['old'],
+              viewMode: undefined,
+              selectedGroupKey: testConfigOnlyValues.name
+            },
+            displayedSearchData: undefined,
+            columnGroupComponentActive: true
+          })
+          store.revertData()
+          store.state$.pipe(take(1)).subscribe((state3) => {
+            expect(state3.dataToRevert?.viewMode).toBe(advancedViewMode)
+
+            store.patchState({
+              ...initialState,
+              preEditStateSnapshot: {
+                ...initialState,
+                currentSearchConfig: { ...testConfigValuesAndColumns, isAdvanced: false },
+                fieldValues: { a: '1' },
+                displayedColumnsIds: ['old'],
+                viewMode: undefined,
+                selectedGroupKey: testConfigValuesAndColumns.name
+              },
+              displayedSearchData: undefined,
+              columnGroupComponentActive: true
+            })
+            store.revertData()
+            store.state$.pipe(take(1)).subscribe((state4) => {
+              expect(state4.dataToRevert?.displayedColumnsIds).toEqual(testConfigValuesAndColumns.columns)
+
+              store.patchState({
+                ...initialState,
+                preEditStateSnapshot: {
+                  ...initialState,
+                  currentSearchConfig: testConfigValuesAndColumns,
+                  fieldValues: { a: '1' },
+                  displayedColumnsIds: ['snapshot-cols'],
+                  viewMode: basicViewMode,
+                  selectedGroupKey: testConfigValuesAndColumns.name
+                },
+                displayedSearchData: undefined,
+                columnGroupComponentActive: false
+              })
+              store.revertData()
+              store.state$.pipe(take(1)).subscribe((state5) => {
+                expect(state5.dataToRevert?.displayedColumnsIds).toEqual(['snapshot-cols'])
+                done()
+              })
+            })
+          })
+        })
+      })
+    })
   })
 
   describe('selectedGroupKey$ selector', () => {
@@ -555,6 +833,100 @@ describe('SearchConfigStore', () => {
 
       store.currentConfig$.pipe(take(1)).subscribe((config) => {
         expect(config).toBe(testConfigOnlyValues)
+      })
+    })
+
+    it('should exercise updateFieldValues and updateDisplayedColumnsIds/updateViewMode branches', () => {
+      store.patchState({
+        ...initialState,
+        fieldValues: { x: '1' },
+        currentSearchConfig: testConfigOnlyValues,
+        selectedGroupKey: 'default-key',
+        displayedSearchData: {
+          fieldValues: { old: 'value' },
+          displayedColumnsIds: ['old-col'],
+          viewMode: basicViewMode
+        }
+      })
+      store.updateFieldValues({ x: '2' })
+      store.state$.pipe(take(1)).subscribe((state) => {
+        expect(state.currentSearchConfig).toBeUndefined()
+
+        store.patchState({
+          ...initialState,
+          displayedColumnsIds: ['a'],
+          currentSearchConfig: testConfigValuesAndColumns,
+          selectedGroupKey: testConfigValuesAndColumns.name,
+          columnGroupComponentActive: true,
+          displayedSearchData: {
+            fieldValues: { old: 'value' },
+            displayedColumnsIds: ['a'],
+            viewMode: basicViewMode
+          }
+        })
+        store.updateDisplayedColumnsIds(['b'])
+        store.state$.pipe(take(1)).subscribe((state2) => {
+          expect(state2.currentSearchConfig).toBeUndefined()
+
+          store.patchState({
+            ...initialState,
+            viewMode: basicViewMode,
+            currentSearchConfig: testConfigOnlyValues,
+            selectedGroupKey: 'default-key',
+            displayedSearchData: {
+              fieldValues: { old: 'value' },
+              displayedColumnsIds: ['a'],
+              viewMode: basicViewMode
+            }
+          })
+          store.updateViewMode(advancedViewMode)
+          store.state$.pipe(take(1)).subscribe((state3) => {
+            expect(state3.currentSearchConfig).toBeUndefined()
+
+            store.patchState({
+              ...initialState,
+              fieldValues: { a: '1' },
+              currentSearchConfig: testConfigOnlyValues,
+              displayedSearchData: {
+                fieldValues: { a: '1' },
+                displayedColumnsIds: ['x'],
+                viewMode: basicViewMode
+              }
+            })
+            store.updateFieldValues({ a: '1' })
+            store.state$.pipe(take(1)).subscribe((state4) => {
+              expect(state4.fieldValues).toEqual({ a: '1' })
+
+              store.patchState({
+                ...initialState,
+                displayedColumnsIds: ['x'],
+                displayedSearchData: {
+                  fieldValues: { a: '1' },
+                  displayedColumnsIds: ['x'],
+                  viewMode: basicViewMode
+                }
+              })
+              store.updateDisplayedColumnsIds(['x'])
+              store.state$.pipe(take(1)).subscribe((state5) => {
+                expect(state5.displayedColumnsIds).toEqual(['x'])
+
+                store.patchState({
+                  ...initialState,
+                  viewMode: basicViewMode,
+                  displayedSearchData: {
+                    fieldValues: { a: '1' },
+                    displayedColumnsIds: ['x'],
+                    viewMode: basicViewMode
+                  }
+                })
+                store.updateViewMode(basicViewMode)
+                store.state$.pipe(take(1)).subscribe((state6) => {
+                  expect(state6.viewMode).toBe(basicViewMode)
+                })
+              })
+            })
+          })
+        })
       })
     })
   })
@@ -882,6 +1254,165 @@ describe('SearchConfigStore', () => {
         })
       })
     })
+
+    it('should resolve currentSearchConfig helper for all branches', () => {
+      const current = testConfigOnlyValues
+      expect(
+        (store as any).updateConfigBySelectedGroupKey(
+          {
+            ...initialState,
+            searchConfigComponentActive: false,
+            currentSearchConfig: current,
+            selectedGroupKey: 'default-key'
+          },
+          'other'
+        )
+      ).toBe(current)
+
+      expect(
+        (store as any).updateConfigBySelectedGroupKey(
+          {
+            ...initialState,
+            searchConfigComponentActive: true,
+            editMode: true,
+            currentSearchConfig: current,
+            selectedGroupKey: 'default-key'
+          },
+          'other'
+        )
+      ).toBe(current)
+
+      expect(
+        (store as any).updateConfigBySelectedGroupKey(
+          {
+            ...initialState,
+            searchConfigComponentActive: true,
+            currentSearchConfig: current,
+            selectedGroupKey: testConfigOnlyValues.name,
+            nonSearchConfigGroupKeys: ['default-key'],
+            searchConfigs: [testConfigOnlyValues]
+          },
+          'custom-group'
+        )
+      ).toBeUndefined()
+
+      expect(
+        (store as any).updateConfigBySelectedGroupKey(
+          {
+            ...initialState,
+            searchConfigComponentActive: true,
+            currentSearchConfig: current,
+            selectedGroupKey: 'other-config',
+            customGroupKey: 'custom-group',
+            searchConfigs: [testConfigOnlyValues, { ...testConfigOnlyValues, name: 'other-config' }]
+          },
+          'other-config'
+        )
+      ).toEqual({ ...testConfigOnlyValues, name: 'other-config' })
+
+      expect(
+        (store as any).updateConfigBySelectedGroupKey(
+          {
+            ...initialState,
+            searchConfigComponentActive: true,
+            currentSearchConfig: current,
+            selectedGroupKey: testConfigOnlyColumns.name,
+            searchConfigs: [testConfigOnlyColumns]
+          },
+          testConfigOnlyColumns.name
+        )
+      ).toBe(testConfigOnlyColumns)
+
+      expect(
+        (store as any).updateConfigBySelectedGroupKey(
+          {
+            ...initialState,
+            searchConfigComponentActive: true,
+            currentSearchConfig: current,
+            selectedGroupKey: 'default-key',
+            customGroupKey: 'default-key',
+            searchConfigs: [testConfigOnlyValues]
+          },
+          'default-key'
+        )
+      ).toBe(current)
+    })
+
+    it('should resolve selectedGroupKey helper for all branches', () => {
+      expect(
+        (store as any).updateSelectedGroupKeyByConfig(
+          {
+            ...initialState,
+            columnGroupComponentActive: false,
+            selectedGroupKey: 'default-key'
+          },
+          testConfigOnlyValues
+        )
+      ).toBe('default-key')
+
+      expect(
+        (store as any).updateSelectedGroupKeyByConfig(
+          {
+            ...initialState,
+            columnGroupComponentActive: true,
+            editMode: true,
+            selectedGroupKey: 'default-key'
+          },
+          testConfigOnlyValues
+        )
+      ).toBe('default-key')
+
+      expect(
+        (store as any).updateSelectedGroupKeyByConfig(
+          {
+            ...initialState,
+            columnGroupComponentActive: true,
+            selectedGroupKey: testConfigOnlyColumns.name,
+            searchConfigs: [testConfigOnlyColumns]
+          },
+          testConfigOnlyColumns
+        )
+      ).toBe(testConfigOnlyColumns.name)
+
+      expect(
+        (store as any).updateSelectedGroupKeyByConfig(
+          {
+            ...initialState,
+            columnGroupComponentActive: true,
+            selectedGroupKey: 'other-config',
+            customGroupKey: 'custom-group',
+            searchConfigs: [testConfigOnlyValues, { ...testConfigOnlyValues, name: 'other-config', values: { x: '1' } }]
+          },
+          testConfigOnlyValues
+        )
+      ).toBe('custom-group')
+
+      expect(
+        (store as any).updateSelectedGroupKeyByConfig(
+          {
+            ...initialState,
+            columnGroupComponentActive: true,
+            selectedGroupKey: testConfigOnlyColumns.name,
+            customGroupKey: 'custom-group',
+            searchConfigs: [testConfigOnlyColumns]
+          },
+          undefined
+        )
+      ).toBe('custom-group')
+
+      expect(
+        (store as any).updateSelectedGroupKeyByConfig(
+          {
+            ...initialState,
+            columnGroupComponentActive: true,
+            selectedGroupKey: 'default-key',
+            customGroupKey: 'custom-group',
+            searchConfigs: [testConfigOnlyValues]
+          },
+          undefined
+        )
+      ).toBe('default-key')
+    })
   })
 
   describe('storeUpdate effect', () => {
@@ -1052,6 +1583,24 @@ describe('SearchConfigStore', () => {
           }
         })
         done()
+      })
+    })
+
+    it('should parse date values with toISOString and stringify plain values', () => {
+      const dateValue = new Date('2024-03-05T12:00:00.000Z')
+
+      expect(
+        parseFieldValues({
+          createdAt: dateValue,
+          status: 'active',
+          count: 0,
+          empty: '',
+          truthyButNotDate: true
+        })
+      ).toEqual({
+        createdAt: dateValue.toISOString(),
+        status: 'active',
+        truthyButNotDate: 'true'
       })
     })
   })
