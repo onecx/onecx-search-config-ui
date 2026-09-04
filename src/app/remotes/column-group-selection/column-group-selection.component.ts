@@ -288,9 +288,9 @@ export class OneCXColumnGroupSelectionComponent
         {
           type: CreateOrEditSearchConfigDialogComponent,
           inputs: {
-            searchConfigName: config?.name,
-            saveInputValues: Object.keys(config?.values ?? {}).length > 0,
-            saveColumns: (config?.columns ?? []).length > 0
+            searchConfigName: config.name,
+            saveInputValues: Object.keys(config.values ?? {}).length > 0,
+            saveColumns: (config.columns ?? []).length > 0
           }
         },
         'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',

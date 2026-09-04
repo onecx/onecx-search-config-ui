@@ -4,7 +4,7 @@ import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed'
 import { NoopAnimationsModule } from '@angular/platform-browser/animations'
 import { provideHttpClient } from '@angular/common/http'
 import { TranslateTestingModule } from 'ngx-translate-testing'
-import { ReplaySubject, of, throwError } from 'rxjs'
+import { BehaviorSubject, ReplaySubject, Subject, of, throwError } from 'rxjs'
 import { DialogService } from 'primeng/dynamicdialog'
 
 import { REMOTE_COMPONENT_CONFIG, RemoteComponentConfig } from '@onecx/angular-utils'
@@ -18,7 +18,8 @@ import {
   SearchConfigMessage,
   SearchConfigStore
 } from 'src/app/shared/search-config.store'
-import { advancedViewMode } from 'src/app/shared/constants'
+import { advancedViewMode, basicViewMode } from 'src/app/shared/constants'
+import { CreateOrEditSearchConfigDialogComponent } from 'src/app/shared/components/create-or-edit-search-config-dialog/create-or-edit-search-config-dialog.component'
 import { Configuration, SearchConfigAPIService } from 'src/app/shared/generated'
 import { OneCXColumnGroupSelectionHarness } from './column-group-selection.harness'
 import { OneCXColumnGroupSelectionComponent } from './column-group-selection.component'
@@ -266,6 +267,90 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       const items = await columnGroupHarness.getItems()
       expect(items?.length).toBe(1)
       expect(await items?.at(0)?.getText()).toEqual(onlyColumnsConfig.name)
+    })
+
+    it('should handle missing manage button in open', async () => {
+      const { columnGroupHarness } = await setUpWithHarnessAndInit(allPermissions)
+
+      jest.spyOn(columnGroupHarness, 'isOpen').mockResolvedValue(false)
+      jest.spyOn(columnGroupHarness, 'getManageButton').mockResolvedValue(undefined as any)
+
+      await expect(columnGroupHarness.open()).resolves.toBeUndefined()
+    })
+
+    it('should handle missing overlay in getItems', async () => {
+      const { columnGroupHarness } = await setUpWithHarnessAndInit(allPermissions)
+
+      jest.spyOn(columnGroupHarness, 'open').mockResolvedValue(undefined)
+      jest.spyOn(columnGroupHarness, 'getHarnessLoaderForOverlay').mockResolvedValue(undefined as any)
+
+      await expect(columnGroupHarness.getItems()).resolves.toBeUndefined()
+    })
+
+    it('should handle optional hide and cleanup branches', () => {
+      component.op = undefined
+      expect(() => component.onColumnGroupChange('default')).not.toThrow()
+
+      component.dataRevertSub = undefined
+      component.selectedGroupKeySub = undefined
+      expect(() => component.ngOnDestroy()).not.toThrow()
+    })
+
+    it('should unsubscribe both subscriptions when component is destroyed', () => {
+      const revertSub = { unsubscribe: jest.fn() }
+      const selectedSub = { unsubscribe: jest.fn() }
+
+      component.dataRevertSub = revertSub as any
+      component.selectedGroupKeySub = selectedSub as any
+
+      component.ngOnDestroy()
+
+      expect(revertSub.unsubscribe).toHaveBeenCalledTimes(1)
+      expect(selectedSub.unsubscribe).toHaveBeenCalledTimes(1)
+    })
+
+    it('should format overlay text and helper methods for config and key states', () => {
+      const vm = {
+        editMode: false,
+        currentConfig: undefined,
+        selectedGroupKey: 'config-3',
+        searchConfigsWithColumns: [onlyColumnsConfig],
+        customGroupKey: 'custom',
+        nonSearchConfigGroupKeys: ['default'],
+        allGroupKeys: ['config-3', 'default', 'custom']
+      } as any
+
+      expect(
+        component.overlayButtonText({
+          ...vm,
+          editMode: true,
+          currentConfig: { name: 'config-3' }
+        })
+      ).toEqual({
+        type: 'config',
+        key: 'COLUMN_GROUP_SELECTION.EDITING',
+        params: { group: 'config-3' }
+      })
+
+      expect(component.overlayButtonText(vm)).toEqual({
+        type: 'config',
+        key: 'COLUMN_GROUP_SELECTION.ACTIVE',
+        params: { group: 'config-3' }
+      })
+
+      expect(component.overlayButtonText({ ...vm, selectedGroupKey: 'unknown' })).toEqual({
+        type: 'key',
+        key: 'COLUMN_GROUP_SELECTION.ACTIVE',
+        params: { group: 'unknown' }
+      })
+
+      expect(component.isReadonly('config-3', vm)).toBe(false)
+      expect(component.isReadonly('missing', vm)).toBe(false)
+      expect(component.getConfigByName(vm.searchConfigsWithColumns, 'config-3')).toEqual(onlyColumnsConfig)
+      expect(component.getConfigByName(vm.searchConfigsWithColumns, 'missing')).toBeUndefined()
+      expect(component.isConfig('config-3', vm)).toBe(true)
+      expect(component.isConfig('missing', vm)).toBe(false)
+      expect(component.allGroupKeysWithoutCustom(vm)).toEqual(['config-3', 'default'])
     })
   })
 
@@ -652,6 +737,178 @@ describe('OneCXColumnGroupSelectionComponent', () => {
       expect(cancelEditSpy).toHaveBeenCalledTimes(1)
     })
 
+    it('should use config fallback values when editing with no values or columns', fakeAsync(() => {
+      const updateSpy = jest.spyOn(searchConfigServiceSpy, 'updateSearchConfig').mockReturnValue(
+        of({
+          configs: [{ ...onlyColumnsConfig, values: {}, columns: [] }]
+        } as any)
+      )
+      const configWithoutValuesOrColumns = {
+        ...onlyColumnsConfig,
+        values: undefined,
+        columns: []
+      } as any
+
+      store.patchState({
+        displayedColumnsIds: ['col-2'],
+        fieldValues: { k: 'v_2' },
+        viewMode: basicViewMode,
+        layout: 'table'
+      } as any)
+
+      jest
+        .spyOn(searchConfigServiceSpy, 'getSearchConfig')
+        .mockReturnValue(of({ config: configWithoutValuesOrColumns } as any))
+      jest.spyOn(portalDialogSpy, 'openDialog').mockReturnValue(
+        of({
+          button: 'primary',
+          result: {
+            searchConfigName: undefined,
+            saveInputValues: false,
+            saveColumns: false
+          }
+        } as any)
+      )
+
+      component.onSearchConfigSaveEdit(configWithoutValuesOrColumns)
+      tick(500)
+
+      expect(updateSpy).toHaveBeenCalledWith(configWithoutValuesOrColumns.id, {
+        searchConfig: {
+          ...configWithoutValuesOrColumns,
+          name: configWithoutValuesOrColumns.name,
+          columns: [],
+          values: {},
+          isAdvanced: false
+        }
+      })
+    }))
+
+    it('should use empty string when dialog name and config name are undefined', fakeAsync(() => {
+      const configWithoutName = {
+        ...onlyColumnsConfig,
+        name: undefined
+      } as any
+
+      const updateSpy = jest
+        .spyOn(searchConfigServiceSpy, 'updateSearchConfig')
+        .mockReturnValue(of({ configs: [] } as any))
+
+      store.patchState({
+        displayedColumnsIds: [],
+        fieldValues: {},
+        viewMode: basicViewMode
+      } as any)
+
+      jest.spyOn(searchConfigServiceSpy, 'getSearchConfig').mockReturnValue(of({ config: configWithoutName } as any))
+
+      jest.spyOn(portalDialogSpy, 'openDialog').mockReturnValue(
+        of({
+          button: 'primary',
+          result: {
+            searchConfigName: undefined,
+            saveInputValues: false,
+            saveColumns: false
+          }
+        } as any)
+      )
+
+      component.onSearchConfigSaveEdit(configWithoutName)
+
+      tick(500)
+
+      expect(updateSpy).toHaveBeenCalledWith(configWithoutName.id, {
+        searchConfig: expect.objectContaining({
+          name: ''
+        })
+      })
+    }))
+
+    it('should use empty object when field values are undefined', fakeAsync(() => {
+      const updateSpy = jest
+        .spyOn(searchConfigServiceSpy, 'updateSearchConfig')
+        .mockReturnValue(of({ configs: [] } as any))
+
+      store.patchState({
+        displayedColumnsIds: [],
+        fieldValues: undefined,
+        viewMode: basicViewMode
+      } as any)
+
+      jest.spyOn(searchConfigServiceSpy, 'getSearchConfig').mockReturnValue(of({ config: onlyColumnsConfig } as any))
+
+      jest.spyOn(portalDialogSpy, 'openDialog').mockReturnValue(
+        of({
+          button: 'primary',
+          result: {
+            searchConfigName: 'new-name',
+            saveInputValues: true,
+            saveColumns: false
+          }
+        } as any)
+      )
+
+      component.onSearchConfigSaveEdit(onlyColumnsConfig)
+
+      tick(500)
+
+      expect(updateSpy).toHaveBeenCalledWith(
+        onlyColumnsConfig.id,
+        expect.objectContaining({
+          searchConfig: expect.objectContaining({
+            values: {}
+          })
+        })
+      )
+    }))
+
+    it('should set saveColumns to false when config columns are undefined', fakeAsync(() => {
+      const configWithoutData = {
+        ...config,
+        values: undefined,
+        columns: undefined
+      } as any
+      jest.spyOn(searchConfigServiceSpy, 'getSearchConfig').mockReturnValue(
+        of({
+          config: configWithoutData
+        } as any)
+      )
+
+      jest.spyOn(portalDialogSpy, 'openDialog').mockReturnValue(
+        of({
+          button: 'secondary'
+        } as any)
+      )
+      const configWithoutColumns = {
+        ...onlyColumnsConfig,
+        columns: undefined
+      } as any
+
+      const openDialogSpy = jest.spyOn(portalDialogSpy, 'openDialog').mockReturnValue(
+        of({
+          button: 'secondary'
+        } as any)
+      )
+
+      component.onSearchConfigSaveEdit(configWithoutColumns)
+
+      tick(500)
+
+      expect(openDialogSpy).toHaveBeenCalledWith(
+        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.EDIT_HEADER',
+        {
+          type: CreateOrEditSearchConfigDialogComponent,
+          inputs: {
+            searchConfigName: configWithoutColumns.name,
+            saveInputValues: false,
+            saveColumns: false
+          }
+        },
+        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CONFIRM',
+        'SEARCH_CONFIG.CREATE_EDIT_DIALOG.CANCEL'
+      )
+    }))
+
     it('should cancel edit if config is not set', fakeAsync(() => {
       const cancelEditSpy = jest.spyOn(store, 'cancelEdit')
 
@@ -780,6 +1037,62 @@ describe('OneCXColumnGroupSelectionComponent', () => {
         groupKey: 'full'
       })
     })
+
+    it('should ignore selectedGroupKey when it matches custom group or is not a config/predefined group', fakeAsync(() => {
+      const selectedGroupKey$ = new Subject<string>()
+      const vm$ = new BehaviorSubject<any>({
+        searchConfigsWithColumns: [],
+        customGroupKey: 'custom',
+        nonSearchConfigGroupKeys: ['default'],
+        selectedGroupKey: 'custom'
+      })
+      const fakeStore = {
+        dataToRevert$: of(undefined),
+        selectedGroupKey$,
+        columnSelectionVm$: vm$,
+        setSelectedGroupKey: jest.fn(),
+        setCustomGroupKey: jest.fn(),
+        updateDisplayedColumnsIds: jest.fn(),
+        updateLayout: jest.fn(),
+        setNonSearchConfigGroupKeys: jest.fn()
+      } as any
+
+      const fakeComponent = new OneCXColumnGroupSelectionComponent(
+        new ReplaySubject<RemoteComponentConfig>(1),
+        { lang$: new BehaviorSubject('en') } as any,
+        { use: jest.fn() } as any,
+        { configuration: new Configuration({ basePath: '' }) } as any,
+        fakeStore,
+        { openDialog: jest.fn() } as any,
+        { info: jest.fn(), error: jest.fn() } as any
+      )
+      fakeComponent.columns = [{ id: 'col-1' } as any, { id: 'col-2' } as any]
+
+      const emitterSpy = jest.spyOn(fakeComponent.groupSelectionChanged, 'emit')
+
+      vm$.next({
+        searchConfigsWithColumns: [],
+        customGroupKey: 'custom',
+        nonSearchConfigGroupKeys: ['default'],
+        selectedGroupKey: 'custom'
+      })
+      selectedGroupKey$.next('custom')
+      tick(60)
+      expect(emitterSpy).not.toHaveBeenCalled()
+
+      vm$.next({
+        searchConfigsWithColumns: [],
+        customGroupKey: 'custom',
+        nonSearchConfigGroupKeys: ['default'],
+        selectedGroupKey: 'default'
+      })
+      selectedGroupKey$.next('default')
+      tick(60)
+      expect(emitterSpy).toHaveBeenCalledWith({
+        activeColumns: [],
+        groupKey: 'default'
+      })
+    }))
   })
 
   describe('focusManageButton', () => {
