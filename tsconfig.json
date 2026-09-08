@@ -1,25 +1,25 @@
 {
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "importHelpers": true,
-    "lib": ["es2022", "dom"],
-    "module": "es2022",
+    "inlineSources": true,
+    "lib": ["ES2022", "DOM"],
+    "module": "ES2022",
     "moduleResolution": "bundler",
     "noFallthroughCasesInSwitch": true,
-    "esModuleInterop": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noPropertyAccessFromIndexSignature": true,
-    "paths": { "src/*": ["./src/*"] },
-    "skipDefaultLibCheck": true,
+    "paths": {
+      "src/*": ["./src/*"]
+    },
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
-    "composite": false,
-    "target": "es2022",
+    "target": "ES2022",
+    "types": ["node"],
     "useDefineForClassFields": false
   },
   "files": [],
@@ -34,7 +34,6 @@
     }
   ],
   "angularCompilerOptions": {
-    "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
     "strictTemplates": true
