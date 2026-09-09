@@ -79,7 +79,7 @@ const modifyMaterialPlugin = new ModifySourcePlugin({
       operations: [
         new ReplaceOperation(
           'all',
-          'document\\.createElement\\(',
+          String.raw`document\.createElement\(`,
           'document.createElementFromMaterial({"this": this, "arguments": Array.from(arguments)},'
         )
       ]
