@@ -10,11 +10,11 @@
             id="sc_column_group_selection_save_search_config_edit"
             [label]="'SEARCH_CONFIG.SAVE_EDIT.LABEL' | translate"
             icon="{{ saveIcon }}"
+            (onClick)="onSearchConfigSaveEdit(vm.currentConfig)"
+            (onKeydown.enter)="onSearchConfigSaveEdit(vm.currentConfig)"
+            [ariaLabel]="'SEARCH_CONFIG.SAVE_EDIT.ARIA_LABEL' | translate"
             [pTooltip]="'SEARCH_CONFIG.SAVE_EDIT.TOOLTIP' | translate"
             tooltipPosition="top"
-            (click)="onSearchConfigSaveEdit(vm.currentConfig)"
-            (keydown.enter)="onSearchConfigSaveEdit(vm.currentConfig)"
-            [ariaLabel]="'SEARCH_CONFIG.SAVE_EDIT.ARIA_LABEL' | translate"
           ></p-button>
         }
         @if (vm.editMode && vm.isInChargeOfEdit) {
@@ -22,11 +22,11 @@
             id="sc_column_group_selection_cancel_search_config_edit"
             [label]="'SEARCH_CONFIG.CANCEL_EDIT.LABEL' | translate"
             icon="{{ stopIcon }}"
+            (onClick)="onSearchConfigCancelEdit()"
+            (onKeydown.enter)="onSearchConfigCancelEdit()"
+            [ariaLabel]="'SEARCH_CONFIG.CANCEL_EDIT.ARIA_LABEL' | translate"
             [pTooltip]="'SEARCH_CONFIG.CANCEL_EDIT.TOOLTIP' | translate"
             tooltipPosition="top"
-            (click)="onSearchConfigCancelEdit()"
-            (keydown.enter)="onSearchConfigCancelEdit()"
-            [ariaLabel]="'SEARCH_CONFIG.CANCEL_EDIT.ARIA_LABEL' | translate"
           ></p-button>
         }
         @if (overlayButtonText(vm); as buttonData) {
@@ -39,10 +39,10 @@
                 : (buttonData.key | translate: { group: (buttonData.params.group | translate) })
             "
             (onClick)="op.toggle($event)"
-            (keydown.enter)="op.toggle($event)"
+            (onKeydown.enter)="op.toggle($event)"
+            [ariaLabel]="'COLUMN_GROUP_SELECTION.MANAGE.ARIA_LABEL' | translate"
             [pTooltip]="'COLUMN_GROUP_SELECTION.MANAGE.TOOLTIP' | translate"
             tooltipPosition="top"
-            [ariaLabel]="'COLUMN_GROUP_SELECTION.MANAGE.ARIA_LABEL' | translate"
             [disabled]="vm.editMode"
           ></p-button>
         }
@@ -75,23 +75,25 @@
                           *ocxIfPermission="'SEARCHCONFIG#EDIT'; permissions: permissions"
                           class="search_config_edit_button"
                           icon="{{ editIcon }}"
-                          [pTooltip]="'SEARCH_CONFIG.EDIT.TOOLTIP' | translate"
-                          tooltipPosition="top"
-                          (click)="onSearchConfigEdit(getConfigByName(vm.searchConfigsWithColumns, groupKey))"
-                          (keydown.enter)="onSearchConfigEdit(getConfigByName(vm.searchConfigsWithColumns, groupKey))"
+                          (onClick)="onSearchConfigEdit(getConfigByName(vm.searchConfigsWithColumns, groupKey))"
+                          (onKeydown.enter)="onSearchConfigEdit(getConfigByName(vm.searchConfigsWithColumns, groupKey))"
                           autofocus="true"
                           [ariaLabel]="'SEARCH_CONFIG.EDIT.ARIA_LABEL' | translate"
+                          [pTooltip]="'SEARCH_CONFIG.EDIT.TOOLTIP' | translate"
+                          tooltipPosition="top"
                         ></p-button>
                         <p-button
                           *ocxIfPermission="'SEARCHCONFIG#DELETE'; permissions: permissions"
                           class="search_config_delete_button"
                           icon="{{ deleteIcon }}"
-                          [pTooltip]="'SEARCH_CONFIG.DELETE.TOOLTIP' | translate"
-                          tooltipPosition="top"
-                          (click)="onSearchConfigDelete(getConfigByName(vm.searchConfigsWithColumns, groupKey))"
-                          (keydown.enter)="onSearchConfigDelete(getConfigByName(vm.searchConfigsWithColumns, groupKey))"
+                          (onClick)="onSearchConfigDelete(getConfigByName(vm.searchConfigsWithColumns, groupKey))"
+                          (onKeydown.enter)="
+                            onSearchConfigDelete(getConfigByName(vm.searchConfigsWithColumns, groupKey))
+                          "
                           autofocus="true"
                           [ariaLabel]="'SEARCH_CONFIG.DELETE.ARIA_LABEL' | translate"
+                          [pTooltip]="'SEARCH_CONFIG.DELETE.TOOLTIP' | translate"
+                          tooltipPosition="top"
                         ></p-button>
                       </ng-container>
                     }
@@ -99,11 +101,11 @@
                       [label]="'COLUMN_GROUP_SELECTION.SELECT.LABEL' | translate"
                       class="search_config_select_button"
                       icon="{{ selectIcon }}"
+                      (onClick)="onColumnGroupChange(groupKey)"
+                      (onKeydown.enter)="onColumnGroupChange(groupKey)"
+                      [ariaLabel]="'COLUMN_GROUP_SELECTION.SELECT.ARIA_LABEL' | translate"
                       [pTooltip]="'COLUMN_GROUP_SELECTION.SELECT.TOOLTIP' | translate"
                       tooltipPosition="top"
-                      (click)="onColumnGroupChange(groupKey)"
-                      (keydown.enter)="onColumnGroupChange(groupKey)"
-                      [ariaLabel]="'COLUMN_GROUP_SELECTION.SELECT.ARIA_LABEL' | translate"
                       autofocus="true"
                     ></p-button>
                   </div>
