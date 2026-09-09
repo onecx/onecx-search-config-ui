@@ -18,6 +18,13 @@ import {
 import { provideTranslateServiceForRoot } from '@onecx/angular-remote-components'
 
 import { environment } from 'src/environments/environment'
+import { searchConfigStoreName } from 'src/app/shared/constants'
+import {
+  SearchConfigStore,
+  SEARCH_CONFIG_STORE_NAME,
+  SEARCH_CONFIG_TOPIC,
+  SearchConfigTopic
+} from 'src/app/shared/search-config.store'
 import { OneCXSearchConfigComponent } from './search-config.component'
 
 function userProfileInitializer(userService: UserService) {
@@ -32,6 +39,15 @@ bootstrapRemoteComponent(OneCXSearchConfigComponent, 'ocx-search-config-componen
     provide: REMOTE_COMPONENT_CONFIG,
     useValue: new ReplaySubject<RemoteComponentConfig>(1)
   },
+  {
+    provide: SEARCH_CONFIG_STORE_NAME,
+    useValue: searchConfigStoreName
+  },
+  {
+    provide: SEARCH_CONFIG_TOPIC,
+    useValue: new SearchConfigTopic()
+  },
+  SearchConfigStore,
   importProvidersFrom(AngularAcceleratorModule, AngularAuthModule, BrowserAnimationsModule),
   provideAppInitializer(() => {
     const initializerFn = userProfileInitializer(inject(UserService))
