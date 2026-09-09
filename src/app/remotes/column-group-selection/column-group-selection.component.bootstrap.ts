@@ -18,6 +18,13 @@ import {
 } from '@onecx/angular-utils'
 
 import { environment } from 'src/environments/environment'
+import { columngGroupSelectionStoreName } from 'src/app/shared/constants'
+import {
+  SearchConfigStore,
+  SEARCH_CONFIG_STORE_NAME,
+  SEARCH_CONFIG_TOPIC,
+  SearchConfigTopic
+} from 'src/app/shared/search-config.store'
 import { OneCXColumnGroupSelectionComponent } from './column-group-selection.component'
 
 function userProfileInitializer(userService: UserService) {
@@ -36,6 +43,15 @@ bootstrapRemoteComponent(
       provide: REMOTE_COMPONENT_CONFIG,
       useValue: new ReplaySubject<RemoteComponentConfig>(1)
     },
+    {
+      provide: SEARCH_CONFIG_STORE_NAME,
+      useValue: columngGroupSelectionStoreName
+    },
+    {
+      provide: SEARCH_CONFIG_TOPIC,
+      useValue: new SearchConfigTopic()
+    },
+    SearchConfigStore,
     importProvidersFrom(AngularAcceleratorModule, AngularAuthModule, BrowserAnimationsModule),
     providePortalDialogService(),
     provideAppInitializer(() => {
