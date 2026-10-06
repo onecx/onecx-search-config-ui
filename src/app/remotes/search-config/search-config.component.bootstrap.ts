@@ -33,7 +33,7 @@ function userProfileInitializer(userService: UserService) {
   }
 }
 
-bootstrapRemoteComponent(OneCXSearchConfigComponent, 'ocx-search-config-component', environment.production, [
+void bootstrapRemoteComponent(OneCXSearchConfigComponent, 'ocx-search-config-component', environment.production, [
   provideHttpClient(withInterceptorsFromDi()),
   {
     provide: REMOTE_COMPONENT_CONFIG,

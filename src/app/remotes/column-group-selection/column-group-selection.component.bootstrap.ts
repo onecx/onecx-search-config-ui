@@ -33,7 +33,7 @@ function userProfileInitializer(userService: UserService) {
   }
 }
 
-bootstrapRemoteComponent(
+void bootstrapRemoteComponent(
   OneCXColumnGroupSelectionComponent,
   'ocx-column-group-selection-component',
   environment.production,
