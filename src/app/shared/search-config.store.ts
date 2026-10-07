@@ -684,13 +684,15 @@ export class SearchConfigStore extends ComponentStore<SearchConfigState> {
       }
       wholeState = true
     }
-    void this.searchConfigTopic$.publish({
-      payload: {
-        storeName: this.storeName,
-        stateToUpdate: stateToUpdate,
-        wholeState: wholeState
-      }
-    })
+    this.searchConfigTopic$
+      .publish({
+        payload: {
+          storeName: this.storeName,
+          stateToUpdate: stateToUpdate,
+          wholeState: wholeState
+        }
+      })
+      .catch((err) => console.error(err))
   }
 
   private buildDisplayedSearchData(

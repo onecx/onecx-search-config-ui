@@ -33,7 +33,7 @@ function userProfileInitializer(userService: UserService) {
   }
 }
 
-void bootstrapRemoteComponent(
+bootstrapRemoteComponent(
   OneCXColumnGroupSelectionComponent,
   'ocx-column-group-selection-component',
   environment.production,
@@ -69,4 +69,4 @@ void bootstrapRemoteComponent(
     }),
     provideThemeConfig()
   ]
-)
+).catch((err) => console.error(err))
