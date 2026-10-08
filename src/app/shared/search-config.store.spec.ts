@@ -113,6 +113,18 @@ describe('SearchConfigStore', () => {
         done()
       })
     })
+
+    it('should catch publish error and log it', async () => {
+      const error = new Error('publish failed')
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined)
+      jest.spyOn(mockSearchConfigStoreTopic, 'publish').mockRejectedValue(error)
+
+      store.setPageName('my-page')
+      await Promise.resolve()
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(error)
+      consoleErrorSpy.mockRestore()
+    })
   })
 
   describe('set custom group key', () => {

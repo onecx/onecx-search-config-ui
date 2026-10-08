@@ -69,4 +69,4 @@ bootstrapRemoteComponent(
     }),
     provideThemeConfig()
   ]
-)
+).catch((err) => console.error(err))

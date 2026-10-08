@@ -64,4 +64,4 @@ bootstrapRemoteComponent(OneCXSearchConfigComponent, 'ocx-search-config-componen
       deps: [HttpClient]
     }
   })
-])
+]).catch((err) => console.error(err))
