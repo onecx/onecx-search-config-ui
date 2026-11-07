@@ -1,74 +1,73 @@
-import { ComponentHarness, ContentContainerComponentHarness } from '@angular/cdk/testing'
+import { ContentContainerComponentHarness } from '@angular/cdk/testing'
+import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed'
 
-import { PButtonHarness } from '@onecx/angular-testing'
+import { ListItemHarness, PButtonHarness, PSelectHarness } from '@onecx/angular-testing'
 
-export class OneCXSearchConfigListItemHarness extends ComponentHarness {
-  public static readonly hostSelector = 'li'
+import { SEARCH_CONFIG_SAVE_AS_BUTTON_ID } from 'src/app/shared/constants'
 
-  getSpan = this.locatorFor('span')
-  getEditButton = this.locatorForOptional('p-button.search_config_edit_button')
-  getDeleteButton = this.locatorForOptional('p-button.search_config_delete_button')
-  getSelectButton = this.locatorForOptional('p-button.search_config_select_button')
-
-  async getText() {
-    return (await this.getSpan()).text()
-  }
-}
-
+/**
+ * Config select of the search header remote. The `p-select` panel renders inside `<p-select>`
+ * (PrimeNG's default `self` appendTo), so it stays scoped to this remote; tooltips append to `body`
+ * (forced: PrimeNG Tooltip only positions correctly with `body`/`target`).
+ */
 export class OneCXSearchConfigHarness extends ContentContainerComponentHarness {
   static readonly hostSelector = 'app-ocx-search-config'
 
-  private readonly _saveEditPButton = this.locatorForOptional(
-    PButtonHarness.with({ id: 'sc_search_config_save_search_config_edit' })
-  )
-  private readonly _cancelEditPButton = this.locatorForOptional(
-    PButtonHarness.with({ id: 'sc_search_config_cancel_search_config_edit' })
-  )
+  private readonly _select = this.locatorForOptional(PSelectHarness)
+  private readonly _saveAsButton = this.locatorForOptional(PButtonHarness.with({ id: SEARCH_CONFIG_SAVE_AS_BUTTON_ID }))
 
-  private readonly _managePButton = this.locatorForOptional(
-    PButtonHarness.with({ id: 'sc_search_config_manage_search_config' })
-  )
-
-  async getSaveEditButton() {
-    return await this._saveEditPButton()
+  async getConfigSelect() {
+    return await this._select()
   }
 
-  async getCancelEditButton() {
-    return await this._cancelEditPButton()
+  async getSaveAsButton() {
+    return await this._saveAsButton()
   }
 
-  async getManageButton() {
-    return await this._managePButton()
+  /**
+   * Rows of the opened config select. The panel renders inside `<p-select>` (PrimeNG's default `self`
+   * appendTo), but `PSelectHarness#getSelectItems` still resolves items from the document root (see
+   * `PSelectHarness#getSelectItems`); pick a single row by its rendered text from the returned list.
+   */
+  async getSelectItems(): Promise<ListItemHarness[]> {
+    const select = await this.getConfigSelect()
+    return (await select?.getSelectItems()) ?? []
   }
 
-  async getHarnessLoaderForOverlay() {
-    return this.documentRootLocatorFactory().harnessLoaderForOptional('.p-popover')
+  /**
+   * The rendered rows (`.sc-search-config-row`) of the opened config panel, resolved against the remote
+   * element's native DOM. The panel is `self`-appended (a descendant of the remote), so it stays within
+   * the remote element rather than the document body.
+   */
+  private async _openPanelAndRows(): Promise<HTMLElement> {
+    await (await this.getConfigSelect())?.open()
+    const host = TestbedHarnessEnvironment.getNativeElement(await this.host())
+    return host as HTMLElement
   }
 
-  async isOpen(): Promise<boolean> {
-    return !!(await this.getHarnessLoaderForOverlay())
-  }
-
-  async open() {
-    if (!(await this.isOpen())) {
-      await (await this.getManageButton())?.click()
+  /**
+   * The config row (`.sc-search-config-row`) rendered for a given config name. Opens the panel first so
+   * the rows are in the DOM, then resolves the row whose name text matches exactly.
+   */
+  async getRowByName(name: string): Promise<HTMLElement> {
+    const host = await this._openPanelAndRows()
+    const row = Array.from(host.querySelectorAll('.sc-search-config-row')).find((r) => {
+      const nameSpan = r.querySelector('.sc-search-config-row-name')
+      return nameSpan?.textContent?.trim() === name
+    })
+    if (!row) {
+      throw new Error(`No search-config row found for name "${name}"`)
     }
+    return row as HTMLElement
   }
 
-  async getAddItem() {
-    await this.open()
-    const overlay = await this.getHarnessLoaderForOverlay()
-    if (!overlay) return null
-    try {
-      return await overlay.getHarness(PButtonHarness)
-    } catch (err) {
-      return null
-    }
-  }
-
-  async getItems() {
-    await this.open()
-    const overlay = await this.getHarnessLoaderForOverlay()
-    return await overlay?.getAllHarnesses(OneCXSearchConfigListItemHarness)
+  /**
+   * The delete (trash) button rendered inside the config row for a given name, or `null` when the row is
+   * not deletable (no `SEARCHCONFIG#DELETE` permission or a read-only config) so the row renders no
+   * trash button.
+   */
+  async getDeleteButton(name: string): Promise<HTMLElement | null> {
+    const row = await this.getRowByName(name)
+    return row.querySelector('.sc-search-config-delete button.p-button') as HTMLElement | null
   }
 }
