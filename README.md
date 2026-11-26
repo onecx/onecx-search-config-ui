@@ -141,3 +141,5 @@ Some texts are passed in by the host as its own i18n keys, e.g. the predefined c
 (`<currentMfe.remoteBaseUrl>assets/i18n/`, see `src/app/shared/host-translation-path.ts`). The remote's
 own translations are merged last, so they win when a key exists in both. When no current MFE is
 published (standalone), only the remote's own translations are loaded.
+
+<!-- ai-workflows fork delivery test (onecx-ai-workflows#203) -->
